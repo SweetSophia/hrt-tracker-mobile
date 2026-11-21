@@ -1,4 +1,4 @@
-import { isPlausibleBirthYear, isTestosteroneEster, isT_LabUnit } from '../../../logic';
+import { isPlausibleBirthYear, isTestosteroneEster, isT_LabUnit } from '../../domain/engine';
 import type { ModeBlock, ModeKey, SyncState } from './types';
 import { emptySyncState } from './types';
 import { sanitizeTombstones } from './tombstones';

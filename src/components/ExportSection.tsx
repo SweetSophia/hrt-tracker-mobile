@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useDialog } from '../contexts/DialogContext';
+import { useApplicationRuntime } from '../contexts/RecordsContext';
 import { DoseEvent, LabResult } from '../../logic';
 import { Lock } from './icons';
 import { CopyTick } from './Tick';
@@ -10,11 +12,15 @@ import { MIN_PASSWORD_LENGTH, newPasswordLevel } from '../../passwordStrength';
 import PasswordStrengthHint from './PasswordStrengthHint';
 import { SwapLabel } from './StableLabel';
 
-interface ExportSectionProps {
+import { EncryptedExportSession } from '../hooks/uiSession';
+
+export interface ExportSectionProps {
     events: DoseEvent[];
     labResults: LabResult[];
     weight: number;
     onExport: (encrypt: boolean, password?: string) => Promise<string | null>;
+    /** The offline document picker can finish after this screen closes. */
+    exportSession?: EncryptedExportSession;
     /** Copies the export to the clipboard. Resolving to false means the copy
      *  failed; nothing returned is taken as done. */
     onQuickExport?: () => void | boolean | Promise<void | boolean>;
@@ -35,21 +41,45 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     labResults,
     weight,
     onExport,
+    exportSession,
     onQuickExport,
     onExportCompleteBackup,
 }) => {
     const { t, lang } = useTranslation();
-    const [showEncrypted, setShowEncrypted] = useState(false);
+    const { showDialog } = useDialog();
+    const runtime = useApplicationRuntime();
+    const [screenExport] = useState(() => new EncryptedExportSession());
+    const currentExport = exportSession ?? screenExport;
+    const encryptedExport = useSyncExternalStore(currentExport.subscribe, currentExport.getSnapshot);
+    const generatedPassword = encryptedExport?.status === 'saved' ? encryptedExport.password : null;
+    const saving = encryptedExport?.status === 'saving';
+    const passwordReady = generatedPassword !== null;
+    const [showEncrypted, setShowEncrypted] = useState(saving);
     const [password, setPassword] = useState('');
-    const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
+    const hasData = events.length > 0 || labResults.length > 0;
+    const showEncryptedRow = hasData || encryptedExport !== undefined;
+    const encryptedPanelOpen = showEncrypted || encryptedExport !== undefined;
+    const encryptedFormRef = useRef<HTMLDivElement>(null);
+    const encryptedRowRef = useRef<HTMLButtonElement>(null);
+    const backupRowRef = useRef<HTMLButtonElement>(null);
+    const passwordHeadingRef = useRef<HTMLHeadingElement>(null);
+    const hadEncryptedRow = useRef(showEncryptedRow);
+    useEffect(() => {
+        const active = document.activeElement;
+        if (passwordReady && (active === document.body || encryptedFormRef.current?.contains(active))) {
+            passwordHeadingRef.current?.focus();
+        }
+        if (hadEncryptedRow.current && !showEncryptedRow && active === document.body) {
+            backupRowRef.current?.focus();
+        }
+        hadEncryptedRow.current = showEncryptedRow;
+    }, [passwordReady, showEncryptedRow]);
     const [copied, setCopied] = useState(false);
     const [jsonCopied, setJsonCopied] = useState(false);
     // Which copy last failed, if any. A tick only ever means the clipboard
     // really has it: a password shown as copied when it wasn't is a backup
     // nobody can open.
     const [copyFailed, setCopyFailed] = useState<'json' | 'password' | null>(null);
-
-    const hasData = events.length > 0 || labResults.length > 0;
 
     // The file this password protects is downloaded and attacked offline, so
     // it gets the same floor the account password does. An empty field means
@@ -63,10 +93,15 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     };
 
     const handleEncryptedExport = async () => {
-        const pw = await onExport(true, password || undefined);
-        if (pw) {
-            setGeneratedPassword(pw);
-            setCopyFailed(null);
+        if (passwordBlocked) return;
+        const pending = { status: 'saving' } as const;
+        if (!currentExport.replace(undefined, pending)) return;
+        setCopyFailed(null);
+        try {
+            const generated = await onExport(true, password || undefined);
+            currentExport.replace(pending, generated ? { status: 'saved', password: generated } : undefined);
+        } finally {
+            currentExport.replace(pending);
         }
     };
 
@@ -107,16 +142,18 @@ const ExportSection: React.FC<ExportSectionProps> = ({
 
     const handleCsvExport = () => {
         const csv = exportToCSV({ events, labResults, weight, lang, t });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `hrt-data-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
+        void runtime.files
+            .save({
+                name: `hrt-data-${new Date().toISOString().split('T')[0]}.csv`,
+                mimeType: 'text/csv;charset=utf-8;',
+                bytes: new TextEncoder().encode(csv),
+            })
+            .catch(() => {
+                showDialog('alert', t('export.file_failed'));
+            });
     };
 
-    if (!hasData && !onExportCompleteBackup) {
+    if (!hasData && !onExportCompleteBackup && !encryptedExport) {
         return <p className="py-8 text-sm text-center text-[var(--text-muted)]">{t('drawer.empty_export')}</p>;
     }
 
@@ -126,7 +163,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                 {/* Complete backup. Deliberately unencrypted: the Tools workflow
                     owns OpenPGP and never receives keys or passphrases from us. */}
                 {onExportCompleteBackup && (
-                    <button onClick={onExportCompleteBackup} className={`${rowBase} ${rowBleed}`}>
+                    <button ref={backupRowRef} onClick={onExportCompleteBackup} className={`${rowBase} ${rowBleed}`}>
                         <span>
                             <span className={rowLabel}>{t('export.complete_title')}</span>
                             <span className={rowDesc}>{t('export.complete_desc')}</span>
@@ -167,108 +204,124 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                                 </span>
                             </button>
                         )}
+                    </>
+                )}
 
-                        {/* Encrypted JSON. Once a password is on screen the row stops
-                            being a toggle: that password is the only way into the file
-                            just saved, so a stray tap on the title must not wipe it.
-                            Only the panel's own OK closes it then. */}
-                        <div>
-                            <button
-                                onClick={() => {
-                                    if (!generatedPassword) setShowEncrypted(v => !v);
-                                }}
-                                aria-expanded={showEncrypted}
-                                aria-disabled={generatedPassword ? true : undefined}
-                                className={`${rowBase} ${generatedPassword ? 'row-bleed cursor-default' : rowBleed}`}
-                            >
-                                <span>
-                                    <span className={rowLabel}>{`JSON (${t('export.encrypt_label')})`}</span>
-                                    <span className={rowDesc}>{t('export.encrypt_ask_desc')}</span>
+                {/* Keep the panel open during a save and until the generated password is acknowledged. */}
+                {showEncryptedRow && (
+                    <div ref={encryptedFormRef}>
+                        <button
+                            ref={encryptedRowRef}
+                            onClick={() => {
+                                if (!encryptedExport) setShowEncrypted(v => !v);
+                            }}
+                            aria-expanded={encryptedPanelOpen}
+                            aria-disabled={encryptedExport ? true : undefined}
+                            className={`${rowBase} ${encryptedExport ? 'row-bleed cursor-default' : rowBleed}`}
+                        >
+                            <span>
+                                <span className={rowLabel}>{`JSON (${t('export.encrypt_label')})`}</span>
+                                <span className={rowDesc}>{t('export.encrypt_ask_desc')}</span>
+                            </span>
+                            {!encryptedExport && (
+                                <span className={action}>
+                                    <SwapLabel
+                                        show={showEncrypted}
+                                        off={t('export.btn_encrypted')}
+                                        on={t('btn.cancel')}
+                                        align="end"
+                                    />
                                 </span>
+                            )}
+                        </button>
+
+                        {encryptedPanelOpen && (
+                            <div className="pb-[18px] space-y-3">
                                 {!generatedPassword && (
-                                    <span className={action}>
-                                        <SwapLabel
-                                            show={showEncrypted}
-                                            off={t('export.btn_encrypted')}
-                                            on={t('btn.cancel')}
-                                            align="end"
-                                        />
-                                    </span>
+                                    <>
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                name="export-encryption-password"
+                                                value={password}
+                                                onChange={e => setPassword(e.target.value)}
+                                                placeholder={t('export.password_placeholder')}
+                                                className="input-base w-full pl-9 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)]"
+                                                disabled={saving}
+                                                autoComplete="new-password"
+                                                autoCorrect="off"
+                                                autoCapitalize="off"
+                                                spellCheck={false}
+                                            />
+                                            <Lock
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                                                size={14}
+                                            />
+                                        </div>
+                                        <p className="text-xs text-[var(--text-muted)]">
+                                            {t('export.password_hint_random')}
+                                        </p>
+                                        <PasswordStrengthHint level={tooShort ? 'tooShort' : level} />
+                                        <button
+                                            onClick={handleEncryptedExport}
+                                            disabled={passwordBlocked}
+                                            aria-disabled={saving || undefined}
+                                            aria-busy={saving || undefined}
+                                            className="btn-primary w-full aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+                                        >
+                                            {t('export.btn_encrypted')}
+                                        </button>
+                                    </>
                                 )}
-                            </button>
 
-                            {showEncrypted && (
-                                <div className="pb-[18px] space-y-3">
-                                    <div className="relative">
-                                        <input
-                                            type="password"
-                                            name="export-encryption-password"
-                                            value={password}
-                                            onChange={e => setPassword(e.target.value)}
-                                            placeholder={t('export.password_placeholder')}
-                                            className="input-base w-full pl-9 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)]"
-                                            autoComplete="new-password"
-                                            autoCorrect="off"
-                                            autoCapitalize="off"
-                                            spellCheck={false}
-                                        />
-                                        <Lock
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
-                                            size={14}
-                                        />
-                                    </div>
-                                    <p className="text-xs text-[var(--text-muted)]">
-                                        {t('export.password_hint_random')}
-                                    </p>
-                                    <PasswordStrengthHint level={tooShort ? 'tooShort' : level} />
-                                    <button
-                                        onClick={handleEncryptedExport}
-                                        disabled={passwordBlocked}
-                                        className="btn-primary w-full"
-                                    >
-                                        {t('export.btn_encrypted')}
-                                    </button>
-
-                                    {generatedPassword && (
-                                        <div className="mt-2 border-(length:--hairline) border-[var(--border)] rounded-lg p-3 space-y-2">
-                                            <p className="text-xs font-semibold text-[var(--text)]">
-                                                {t('export.password_title')}
-                                            </p>
-                                            <p className="text-xs text-[var(--text-muted)]">
-                                                {t('export.password_desc')}
-                                            </p>
-                                            <div className="flex items-center gap-2 bg-[var(--surface-hover)] rounded-md px-3 py-2">
-                                                <span className="font-mono text-sm text-[var(--text)] flex-1 select-all break-all">
-                                                    {generatedPassword}
-                                                </span>
-                                                <button
-                                                    onClick={handleCopyPassword}
-                                                    aria-label={copied ? t('export.copied') : t('btn.copy')}
-                                                    className="tap-target shrink-0 p-1 text-[var(--text-muted)]"
-                                                >
-                                                    <CopyTick copied={copied} size={14} />
-                                                </button>
-                                            </div>
-                                            {copyFailed === 'password' && (
-                                                <p className="text-xs text-[var(--text-muted)]">
-                                                    {t('export.copy_failed')}
-                                                </p>
-                                            )}
+                                {generatedPassword && (
+                                    <div className="mt-2 border-(length:--hairline) border-[var(--border)] rounded-lg p-3 space-y-2">
+                                        <h2
+                                            ref={passwordHeadingRef}
+                                            tabIndex={-1}
+                                            className="text-xs font-semibold text-[var(--text)]"
+                                        >
+                                            {t('export.password_title')}
+                                        </h2>
+                                        <p className="text-xs text-[var(--text-muted)]">{t('export.password_desc')}</p>
+                                        <div className="flex items-center gap-2 bg-[var(--surface-hover)] rounded-md px-3 py-2">
+                                            <span className="font-mono text-sm text-[var(--text)] flex-1 select-all break-all">
+                                                {generatedPassword}
+                                            </span>
                                             <button
-                                                onClick={() => {
-                                                    setGeneratedPassword(null);
-                                                    setShowEncrypted(false);
-                                                }}
-                                                className="tap-target w-full py-1.5 text-xs text-[var(--text-muted)]"
+                                                onClick={handleCopyPassword}
+                                                aria-label={copied ? t('export.copied') : t('btn.copy')}
+                                                className="tap-target shrink-0 p-1 text-[var(--text-muted)]"
                                             >
-                                                {t('btn.ok')}
+                                                <CopyTick copied={copied} size={14} />
                                             </button>
                                         </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                                        {copyFailed === 'password' && (
+                                            <p className="text-xs text-[var(--text-muted)]">
+                                                {t('export.copy_failed')}
+                                            </p>
+                                        )}
+                                        <button
+                                            onClick={() => {
+                                                (hasData ? encryptedRowRef : backupRowRef).current?.focus();
+                                                currentExport.replace(encryptedExport);
+                                                setCopied(false);
+                                                setCopyFailed(null);
+                                                setShowEncrypted(false);
+                                            }}
+                                            className="tap-target w-full py-1.5 text-xs text-[var(--text-muted)]"
+                                        >
+                                            {t('btn.ok')}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
 
+                {hasData && (
+                    <>
                         {/* CSV */}
                         <button onClick={handleCsvExport} className={`${rowBase} ${rowBleed}`}>
                             <span>
@@ -280,7 +333,11 @@ const ExportSection: React.FC<ExportSectionProps> = ({
 
                         {/* PDF */}
                         <button
-                            onClick={() => exportToPDF({ events, labResults, weight, lang, t })}
+                            onClick={() => {
+                                void exportToPDF({ events, labResults, weight, lang, t }, runtime.files).catch(() => {
+                                    showDialog('alert', t('export.file_failed'));
+                                });
+                            }}
                             className={`${rowBase} ${rowBleed}`}
                         >
                             <span>
@@ -298,7 +355,10 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                 as its name rather than as news, and a region that appears
                 already filled is often not read at all. It is emptied before
                 each try, so a second result is heard again. */}
-            {hasData && (
+            <p className="sr-only" role="status">
+                {passwordReady ? t('export.password_ready') : ''}
+            </p>
+            {(hasData || encryptedExport) && (
                 <p className="sr-only" role="status">
                     {copyFailed ? t('export.copy_failed') : jsonCopied ? t('export.copied') : ''}
                 </p>

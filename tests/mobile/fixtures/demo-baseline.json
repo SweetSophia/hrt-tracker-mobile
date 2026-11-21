@@ -1,0 +1,1402 @@
+{
+  "sourceCommit": "d9ceb84ddac763e5236bdbcfd2ddebeaf40c2eee",
+  "modelCommit": "de7fd0701dcb2e2feaf1a57b4529572e9d1374b6",
+  "cases": [
+    {
+      "name": "intro-false-false",
+      "task": {
+        "request": {
+          "kind": "onboarding",
+          "isTransmasc": false,
+          "anchorMs": 1736899056500
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "8c4684b7613388f49a67b8468c811555b8e059420b75f66f72b1323bdf9f4cda",
+      "readout": {
+        "unit": "pg/mL",
+        "labs": [
+          {
+            "x": 149.625,
+            "y": 59.1580572142875
+          },
+          {
+            "x": 253.875,
+            "y": 57.31924650223399
+          }
+        ]
+      }
+    },
+    {
+      "name": "intro-false-true",
+      "task": {
+        "request": {
+          "kind": "onboarding",
+          "isTransmasc": false,
+          "anchorMs": 1736899056500
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "1febd798769d28a9507ffccfed70fffc7519a19208636991993cc6552dd51ae1",
+      "readout": {
+        "unit": "pg/mL",
+        "labs": [
+          {
+            "x": 149.625,
+            "y": 104.02100001850275
+          },
+          {
+            "x": 253.875,
+            "y": 103.58415626908095
+          }
+        ]
+      }
+    },
+    {
+      "name": "intro-true-false",
+      "task": {
+        "request": {
+          "kind": "onboarding",
+          "isTransmasc": true,
+          "anchorMs": 1736899056500
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "5b5fb252d7c59d97f9834b00bc14d3982ae2cfc9309baebdafe2f7e231ac2b6b",
+      "readout": {
+        "unit": "ng/dL",
+        "labs": [
+          {
+            "x": 149.625,
+            "y": 85.69769145892658
+          },
+          {
+            "x": 253.875,
+            "y": 84.59647639502636
+          }
+        ]
+      }
+    },
+    {
+      "name": "intro-true-true",
+      "task": {
+        "request": {
+          "kind": "onboarding",
+          "isTransmasc": true,
+          "anchorMs": 1736899056500
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "84996b67340580238ea07c6e4cbb96e948c7d6434388c432f82ebe616038892f",
+      "readout": {
+        "unit": "ng/dL",
+        "labs": [
+          {
+            "x": 149.625,
+            "y": 106.48349066561516
+          },
+          {
+            "x": 253.875,
+            "y": 106.09088239285204
+          }
+        ]
+      }
+    },
+    {
+      "name": "model-false-injection",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": false,
+          "routeId": "injection",
+          "dose": 5,
+          "everyH": 168,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "9402ba4b2fb5ce5f25d143e1f3de91c9e75e05dcfd9e6f6c1b6175bb28a4c131",
+      "readout": {
+        "single": {
+          "peak": 341.3460736726498
+        },
+        "repeated": {
+          "mean": 241.40191998254951
+        },
+        "calibrated": {
+          "scale": 0.7111372968527445
+        }
+      }
+    },
+    {
+      "name": "model-false-oral",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": false,
+          "routeId": "oral",
+          "dose": 2,
+          "everyH": 24,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "60b5c1c7aa173717ec1a19524c8b975759ae561d76e7a80aa309a93191a0e836",
+      "readout": {
+        "single": {
+          "peak": 90.44765083699252
+        },
+        "repeated": {
+          "mean": 114.38791023914993
+        },
+        "calibrated": {
+          "scale": 0.7201615529704005
+        }
+      }
+    },
+    {
+      "name": "model-false-sublingual",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": false,
+          "routeId": "sublingual",
+          "dose": 2,
+          "everyH": 24,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "e5974dad6dfa9d181b7a0ffcd56c322ade897dfc2abcd4f8509913aae5816591",
+      "readout": {
+        "single": {
+          "peak": 695.4425877826085
+        },
+        "repeated": {
+          "mean": 88.97921439106965
+        },
+        "calibrated": {
+          "scale": 0.7307331497838274
+        }
+      }
+    },
+    {
+      "name": "model-false-gel",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": false,
+          "routeId": "gel",
+          "dose": 2,
+          "everyH": 24,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "866f4c45141c8f562225be27ad45f9205e10edf03d54161e76258c961875b7da",
+      "readout": {
+        "single": {
+          "peak": 28.90724007363211
+        },
+        "repeated": {
+          "mean": 68.94838651299675
+        },
+        "calibrated": {
+          "scale": 0.7210508912670281
+        }
+      }
+    },
+    {
+      "name": "model-true-injection",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": true,
+          "routeId": "injection",
+          "dose": 100,
+          "everyH": 168,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "a70e11742a55714888456d04fc0c34a9a6d913531e97eab9ab6874ce03046710",
+      "readout": {
+        "single": {
+          "peak": 715.6486728850323
+        },
+        "repeated": {
+          "mean": 718.1825332122933
+        },
+        "calibrated": {
+          "scale": 0.7005878391394582
+        }
+      }
+    },
+    {
+      "name": "model-true-oral",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": true,
+          "routeId": "oral",
+          "dose": 80,
+          "everyH": 24,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "fff225cb06e5c7a3882505279ff9261caf80274fdd6ed0598ac361a11a6fc36a",
+      "readout": {
+        "single": {
+          "peak": 1181.8329640459883
+        },
+        "repeated": {
+          "mean": 284.51693187525734
+        },
+        "calibrated": {
+          "scale": 0.9247244782497783
+        }
+      }
+    },
+    {
+      "name": "model-true-gel",
+      "task": {
+        "request": {
+          "kind": "model-guide",
+          "isTransmasc": true,
+          "routeId": "gel",
+          "dose": 50,
+          "everyH": 24,
+          "weight": 70,
+          "labRatio": 0.7,
+          "singleNowMs": 1736895461000,
+          "repeatedNowMs": 1736899061000
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "23213e69002b07daba656f4d0893012c87bf3a2d112856b88005f6b4d963c118",
+      "readout": {
+        "single": {
+          "peak": 552.9305831337351
+        },
+        "repeated": {
+          "mean": 582.0952137949746
+        },
+        "calibrated": {
+          "scale": 0.6990583511662667
+        }
+      }
+    },
+    {
+      "name": "cal-off",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 70,
+          "baseNowMs": 1736891861500,
+          "inputs": {
+            "method": "off",
+            "level": 1.4,
+            "change": 1,
+            "count": 4,
+            "wrong": false
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "bb55592a68eda9325bc26a6fd0d476ccd69cff8acce7dfc94b86b9ca8806b21c",
+      "readout": {
+        "atLab": 1,
+        "halfLife": 0,
+        "fit": null
+      }
+    },
+    {
+      "name": "cal-mipd",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 70,
+          "baseNowMs": 1736891861500,
+          "inputs": {
+            "method": "mipd",
+            "level": 1.4,
+            "change": 1,
+            "count": 4,
+            "wrong": false
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "eccec146a94f4e82fe14da8e43c7cda6ad2724bf75b549631aa599fab7cd0695",
+      "readout": {
+        "atLab": 1.4049645566661013,
+        "halfLife": 9.592248309274144,
+        "fit": 0.9312653157414141
+      }
+    },
+    {
+      "name": "cal-ekf",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 70,
+          "baseNowMs": 1736891861500,
+          "inputs": {
+            "method": "ekf",
+            "level": 1.4,
+            "change": 1,
+            "count": 4,
+            "wrong": false
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "2adbc6c2664bb8d143d7ba9f5e90b11376358414ce2061eebd4f4102ad6b731c",
+      "readout": {
+        "atLab": 1.4042701106378748,
+        "halfLife": 9.942587748006137,
+        "fit": 0.9860246710270859
+      }
+    },
+    {
+      "name": "cal-ou_kalman",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 70,
+          "baseNowMs": 1736891861500,
+          "inputs": {
+            "method": "ou_kalman",
+            "level": 1.4,
+            "change": 1,
+            "count": 4,
+            "wrong": false
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "a3bc3203cc18d46aca3231e4ac359adf335c716c037afa325b06e27431bf4ea9",
+      "readout": {
+        "atLab": 1.379255897654434,
+        "halfLife": 0,
+        "fit": 1.0892548346998376
+      }
+    },
+    {
+      "name": "cal-bayes",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 70,
+          "baseNowMs": 1736891861500,
+          "inputs": {
+            "method": "bayes",
+            "level": 1.4,
+            "change": 1,
+            "count": 4,
+            "wrong": false
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "baa92cf7830d93cae787a2f82909371ec1fc7a83df82383709539417c3e55fbd",
+      "readout": {
+        "atLab": 1.4027824165878484,
+        "halfLife": 11.040110679400183,
+        "fit": 0.9627871566951107
+      }
+    },
+    {
+      "name": "cal-mcmc",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 70,
+          "baseNowMs": 1736891861500,
+          "inputs": {
+            "method": "mcmc",
+            "level": 1.4,
+            "change": 1,
+            "count": 4,
+            "wrong": false
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "5cbe92c25295685c8b833e76152081743ed7e918d9879234dd0b79821665a2ca",
+      "readout": {
+        "atLab": 1.4140377158909636,
+        "halfLife": 10.834741399771254,
+        "fit": 0.9326043370226911
+      }
+    },
+    {
+      "name": "cal-outlier",
+      "task": {
+        "request": {
+          "kind": "calibration-guide",
+          "weight": 0,
+          "baseNowMs": 1736899061500,
+          "inputs": {
+            "method": "mcmc",
+            "level": 2.5,
+            "change": 0.5,
+            "count": 6,
+            "wrong": true
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "509ee6a9d329e9900e322028d4b02272ec2a86eb1cc54a79a07d41e766d4481a",
+      "readout": {
+        "atLab": 1.509380950944812,
+        "halfLife": 4.135718564525703,
+        "fit": 79.67755236523509
+      }
+    },
+    {
+      "name": "sandbox-injection:EV",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:EV",
+          "inputs": {
+            "doseMG": 5,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "676915b80911b0c1b5dc8eb8e5ecc09c40703aa940759385c482d1f57d0c12ca",
+      "readout": {
+        "peak": {
+          "value": 382.4184870656037,
+          "timeH": 57.800000000000004
+        },
+        "timeBelow200H": 129.1,
+        "timeBelow100H": 177.10000000000002
+      }
+    },
+    {
+      "name": "sandbox-injection:EB",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:EB",
+          "inputs": {
+            "doseMG": 5,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "9a7df1cc9e82dcc1e225b37c7e3423868cac07ee7128d5dfbd5dad5984703884",
+      "readout": {
+        "peak": {
+          "value": 1413.144928051156,
+          "timeH": 26.1
+        },
+        "timeBelow200H": 98,
+        "timeBelow100H": 118.10000000000001
+      }
+    },
+    {
+      "name": "sandbox-injection:EC",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:EC",
+          "inputs": {
+            "doseMG": 5,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "6ba9ef907e56a5083cca105ae78bebfb33e82fa0799eb6a20bf58df8a748882e",
+      "readout": {
+        "peak": {
+          "value": 265.7282783922506,
+          "timeH": 97.80000000000001
+        },
+        "timeBelow200H": 191.8,
+        "timeBelow100H": 343.8
+      }
+    },
+    {
+      "name": "sandbox-injection:EN",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:EN",
+          "inputs": {
+            "doseMG": 5,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "fc4d9155657597d3b45c8b9d14a905a6f7844c974f7c163e00af25ef66aecd07",
+      "readout": {
+        "peak": {
+          "value": 232.85626963643855,
+          "timeH": 146.9
+        },
+        "timeBelow200H": 227.9,
+        "timeBelow100H": 397
+      }
+    },
+    {
+      "name": "sandbox-injection:EU",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:EU",
+          "inputs": {
+            "doseMG": 5,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "3569c9a79d43d2dcd390b0d97697903a372cfcf49e8f3d6a96a9540aead7a4cf",
+      "readout": {
+        "peak": {
+          "value": 40.02786388304186,
+          "timeH": 196.20000000000002
+        },
+        "timeBelow200H": 196.20000000000002,
+        "timeBelow100H": 196.20000000000002
+      }
+    },
+    {
+      "name": "sandbox-oral:E2",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "oral:E2",
+          "inputs": {
+            "doseMG": 2,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "1915497125ff5040af69dc823d93485feec9d02114e8a593c44f75ac8e8f0bba",
+      "readout": {
+        "peak": {
+          "value": 39.17029726847769,
+          "timeH": 10.9
+        },
+        "timeBelow200H": 10.9,
+        "timeBelow100H": 10.9
+      }
+    },
+    {
+      "name": "sandbox-oral:EV",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "oral:EV",
+          "inputs": {
+            "doseMG": 2,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "744b834d25c4e86538ca1bf27b8e55c9a6cae0541e9582e4ad38ea689eb13d90",
+      "readout": {
+        "peak": {
+          "value": 33.95002848596117,
+          "timeH": 6.5
+        },
+        "timeBelow200H": 6.5,
+        "timeBelow100H": 6.5
+      }
+    },
+    {
+      "name": "sandbox-sublingual:E2",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "sublingual:E2",
+          "inputs": {
+            "doseMG": 2,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "sublingualHoldMin": 10,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "11fccd3704a761f3339235adda9790d0ba5b17145c380f96fc52506cc6b5c902",
+      "readout": {
+        "peak": {
+          "value": 748.5077043558547,
+          "timeH": 0.7000000000000001
+        },
+        "timeBelow200H": 2.8000000000000003,
+        "timeBelow100H": 3.7
+      }
+    },
+    {
+      "name": "sandbox-sublingual:EV",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "sublingual:EV",
+          "inputs": {
+            "doseMG": 2,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "sublingualHoldMin": 10,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "aba3e562acb760c1eacf60fea8b61395cac3f4e4cff7da373d2c50df881ce90b",
+      "readout": {
+        "peak": {
+          "value": 190.6588106433981,
+          "timeH": 6.4
+        },
+        "timeBelow200H": 6.4,
+        "timeBelow100H": 19.3
+      }
+    },
+    {
+      "name": "sandbox-gel:E2",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "gel:E2",
+          "inputs": {
+            "doseMG": 1,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "gelSite": 0,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "09e38899dc86b3898d96342ea6c483838067d40bda313aed502c3c4804ace0ba",
+      "readout": {
+        "peak": {
+          "value": 16.700254183707724,
+          "timeH": 8.8
+        },
+        "timeBelow200H": 8.8,
+        "timeBelow100H": 8.8
+      }
+    },
+    {
+      "name": "sandbox-patchApply:E2",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "patchApply:E2",
+          "inputs": {
+            "doseMG": 0,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 50,
+            "wearH": 84
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "8904a0b4fa65faf259a98a32195edff15a009b6dafe971c0d3183232d95ef58f",
+      "readout": {
+        "peak": {
+          "value": 42.722381102857895,
+          "timeH": 84
+        },
+        "timeBelow200H": 84,
+        "timeBelow100H": 84
+      }
+    },
+    {
+      "name": "sandbox-oral:CPA",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "oral:CPA",
+          "inputs": {
+            "doseMG": 50,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "185911f979673f28c76fe4839bc614f36ba873379325612e99f784f91ba9fa06",
+      "readout": {
+        "peak": {
+          "value": 142499.44282687557,
+          "timeH": 3
+        },
+        "timeBelow200H": null,
+        "timeBelow100H": null
+      }
+    },
+    {
+      "name": "sandbox-oral:BICA",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "oral:BICA",
+          "inputs": {
+            "doseMG": 50,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "a31ba8ccadbf0f276d7127a3271b1a247a77efc3b3cbce2bc5a25f1746c1ffad",
+      "readout": {
+        "peak": {
+          "value": 266716.2942218874,
+          "timeH": 31
+        },
+        "timeBelow200H": null,
+        "timeBelow100H": null
+      }
+    },
+    {
+      "name": "sandbox-injection:TC",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:TC",
+          "inputs": {
+            "doseMG": 100,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "daed4e9bf20148350811863b5b0b291c9d9c196c7dbeaa6e9598d0f43682e9cd",
+      "readout": {
+        "peak": {
+          "value": 7712.753106637965,
+          "timeH": 48.7
+        },
+        "timeBelow200H": 662.8000000000001,
+        "timeBelow100H": null
+      }
+    },
+    {
+      "name": "sandbox-injection:TE",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:TE",
+          "inputs": {
+            "doseMG": 100,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "6b9437b6430f40160c2b054b697bb0ddf494105ca251c0750bb587a0ca096665",
+      "readout": {
+        "peak": {
+          "value": 10579.8999107243,
+          "timeH": 42.300000000000004
+        },
+        "timeBelow200H": 484,
+        "timeBelow100H": 570.6
+      }
+    },
+    {
+      "name": "sandbox-injection:TU",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:TU",
+          "inputs": {
+            "doseMG": 100,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "c27fae2edc4ddf4a8741865517c6eaca445ecf4116960bcd2d590239169e192e",
+      "readout": {
+        "peak": {
+          "value": 661.0233946162937,
+          "timeH": 177.9
+        },
+        "timeBelow200H": null,
+        "timeBelow100H": null
+      }
+    },
+    {
+      "name": "sandbox-sc:T",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "sc:T",
+          "inputs": {
+            "doseMG": 100,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "1add754cf92df653495c60a61b5f77d3d5549df4d242d3221a32da0b161dffb4",
+      "readout": {
+        "peak": {
+          "value": 0,
+          "timeH": 0
+        },
+        "timeBelow200H": 0,
+        "timeBelow100H": 0
+      }
+    },
+    {
+      "name": "sandbox-gel:T",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "gel:T",
+          "inputs": {
+            "doseMG": 50,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "gelSite": 0,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "14de6dad0a95bac5a0472c682024a1ea450362b8d4edf57a14569e27458d9204",
+      "readout": {
+        "peak": {
+          "value": 6104.440469593799,
+          "timeH": 5.5
+        },
+        "timeBelow200H": null,
+        "timeBelow100H": null
+      }
+    },
+    {
+      "name": "sandbox-pellet:T",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "pellet:T",
+          "inputs": {
+            "doseMG": 0,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 1200
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "2265e293775489fb4b665ff4b21a7bd1f8805f5b5b8548dfa11652ecb6d4fdca",
+      "readout": {
+        "peak": {
+          "value": 1611.2787058082818,
+          "timeH": 84.5
+        },
+        "timeBelow200H": null,
+        "timeBelow100H": null
+      }
+    },
+    {
+      "name": "sandbox-nasal:T",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "nasal:T",
+          "inputs": {
+            "doseMG": 5,
+            "bodyWeightKG": 70,
+            "birthYear": 1990,
+            "releaseRateUGPerDay": 0
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": null
+      },
+      "sha256": "5bbd4ddbd97dcecb3102c9c2023a08c0aa5503394365c1bf085e574193fde6b2",
+      "readout": {
+        "peak": {
+          "value": 3719.0626232743725,
+          "timeH": 1
+        },
+        "timeBelow200H": 8.200000000000001,
+        "timeBelow100H": 9.700000000000001
+      }
+    },
+    {
+      "name": "sandbox-custom-sublingual:E2",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "sublingual:E2",
+          "inputs": {
+            "birthYear": null,
+            "sublingualHoldMin": 60
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "f2a1469b385edfb6a2632bd05b1ae3ccb2bf4931a2123b67ae085add1b2d2ba1",
+      "readout": {
+        "peak": {
+          "value": 2874.1939059040214,
+          "timeH": 0.7000000000000001
+        },
+        "timeBelow200H": 3.9000000000000004,
+        "timeBelow100H": 4.7
+      }
+    },
+    {
+      "name": "sandbox-custom-injection:EV",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "injection:EV",
+          "inputs": {
+            "birthYear": null
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "a040d37be08a3fbcc577d91da718eccafba40f865e5dfb5735ef7f6368021ba1",
+      "readout": {
+        "peak": {
+          "value": 883.2879139838795,
+          "timeH": 106.10000000000001
+        },
+        "timeBelow200H": 398,
+        "timeBelow100H": 500.90000000000003
+      }
+    },
+    {
+      "name": "sandbox-custom-gel:E2",
+      "task": {
+        "request": {
+          "kind": "sandbox",
+          "modelId": "gel:E2",
+          "inputs": {
+            "gelSite": 2
+          }
+        },
+        "nowMs": 1736899061500,
+        "pkParams": {
+          "e2_kClear": 0.41,
+          "e2_kClearInj": 0.007,
+          "e2_ff_EB": 0.1092,
+          "e2_ff_EV": 0.0623,
+          "e2_ff_EC": 0.1173,
+          "e2_ff_EN": 0.12,
+          "e2_ff_EU": 0.04,
+          "e2_oral_bio": 0.08,
+          "e2_sl_quick": 0.01,
+          "e2_sl_casual": 0.04,
+          "e2_sl_standard": 0.11,
+          "e2_sl_strict": 0.18,
+          "e2_gel_arm": 0.05,
+          "e2_gel_thigh": 0.05,
+          "e2_gel_scrotal": 0.25,
+          "t_kClear": 0.5,
+          "t_kClearInj": 0.01,
+          "t_ff_TC": 0.043,
+          "t_ff_TE": 0.043,
+          "t_ff_TU": 0.043,
+          "t_gel_arm": 0.1,
+          "t_gel_thigh": 0.1,
+          "t_gel_scrotal": 0.5
+        }
+      },
+      "sha256": "8ab58ffa86a4d584da2c329b00a57a21f9e04e9264803aa47573afd792b3110b",
+      "readout": {
+        "peak": {
+          "value": 83.5012709185386,
+          "timeH": 8.8
+        },
+        "timeBelow200H": 8.8,
+        "timeBelow100H": 8.8
+      }
+    }
+  ]
+}

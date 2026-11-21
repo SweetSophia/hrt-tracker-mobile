@@ -1,3 +1,5 @@
+import { NativeBackScope, useNativeBackOwner } from '../hooks/useNativeBackOwner';
+import { useMounted } from '../hooks/useMounted';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AddCancelLabel } from '../components/StableLabel';
 import PageHeader, { PAGE_COLUMN, headerAction } from '../components/PageHeader';
@@ -94,19 +96,19 @@ interface HistoryProps {
     isQuickAddOpen: boolean;
     setIsQuickAddOpen: (isOpen: boolean) => void;
     doseTemplates: DoseTemplate[];
-    onSaveEvent: (e: DoseEvent) => void;
-    onDeleteEvent: (id: string) => void;
-    onAddEvents: (events: DoseEvent[]) => void;
-    onDeleteEvents: (ids: string[]) => void;
-    onSaveTemplate: (t: DoseTemplate) => void;
-    onDeleteTemplate: (id: string) => void;
+    onSaveEvent: (e: DoseEvent) => Promise<boolean>;
+    onDeleteEvent: (id: string) => Promise<boolean>;
+    onAddEvents: (events: DoseEvent[]) => Promise<boolean>;
+    onDeleteEvents: (ids: string[]) => Promise<boolean>;
+    onSaveTemplate: (t: DoseTemplate) => Promise<boolean>;
+    onDeleteTemplate: (id: string) => Promise<boolean>;
     groupedEvents: DoseDayGroup[];
     /** Every dose, for the add form to start from what was taken last. */
     events?: DoseEvent[];
     /** The one-tap doses, shown at the top of the add form as they are in the edit sheet. */
     quickDoses?: QuickDose[];
-    onAddQuickDose?: (dose: QuickDose) => void;
-    onDeleteQuickDose?: (id: string) => void;
+    onAddQuickDose?: (dose: QuickDose) => Promise<boolean>;
+    onDeleteQuickDose?: (id: string) => Promise<boolean>;
     /** A dose to open for editing on arrival, when another page (a dose on
      *  the Overview's chart) sent someone here to change it. */
     openEditId?: string | null;
@@ -133,6 +135,7 @@ const History: React.FC<HistoryProps> = ({
     onOpenEditHandled,
 }) => {
     const { showDialog } = useDialog();
+    const isMounted = useMounted();
     const [editingId, setEditingId] = useState<string | null>(openEditId ?? null);
 
     // Batch add: repeat the quick-add dose at a fixed interval.
@@ -143,6 +146,10 @@ const History: React.FC<HistoryProps> = ({
     // Batch delete: selection mode over the list.
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    useNativeBackOwner(() => {
+        setSelectMode(false);
+        setSelectedIds(new Set());
+    }, selectMode);
 
     // Doses later than now fold into one section above the list, closed. A
     // batch add writes up to a year ahead, and newest first, those weeks that
@@ -273,7 +280,7 @@ const History: React.FC<HistoryProps> = ({
         setBatchOn(false);
     };
 
-    const handleQuickSave = (e: DoseEvent) => {
+    const handleQuickSave = async (e: DoseEvent) => {
         const interval = parseFloat(batchIntervalDays);
         const count = Math.min(MAX_BATCH_COUNT, Math.floor(parseFloat(batchCount)));
         if (batchOn && Number.isFinite(interval) && interval > 0 && Number.isFinite(count) && count > 1) {
@@ -286,13 +293,14 @@ const History: React.FC<HistoryProps> = ({
                     extras: { ...e.extras },
                 });
             }
-            onAddEvents(list);
+            if (!(await onAddEvents(list)) || !isMounted()) return false;
         } else {
-            onSaveEvent(e);
+            if (!(await onSaveEvent(e)) || !isMounted()) return false;
         }
         closeQuickAdd();
         // For a batch, the first of the series: the dose at the time chosen.
         markSaved(e);
+        return true;
     };
 
     const enterSelectMode = () => {
@@ -338,8 +346,8 @@ const History: React.FC<HistoryProps> = ({
         askDelete.current = showDialog(
             'confirm',
             msg,
-            () => {
-                onDeleteEvents([...selectedIds]);
+            async () => {
+                if (!(await onDeleteEvents([...selectedIds])) || !isMounted()) return;
                 exitSelectMode();
             },
             { danger: true, title: t('timeline.batch_delete_title'), confirmLabel: t('btn.delete') },
@@ -472,18 +480,20 @@ const History: React.FC<HistoryProps> = ({
                             <div className="pb-4 pt-1">
                                 <DoseForm
                                     eventToEdit={ev}
-                                    onSave={e => {
-                                        onSaveEvent(e);
+                                    onSave={async e => {
+                                        if (!(await onSaveEvent(e)) || !isMounted()) return false;
                                         setEditingId(null);
                                         markSaved(e);
+                                        return true;
                                     }}
                                     onCancel={closeEdit}
-                                    onDelete={id => {
+                                    onDelete={async id => {
                                         // The form calls onCancel after this, and the
                                         // row is going: nothing to hand focus back to.
                                         editingRowRef.current = null;
-                                        onDeleteEvent(id);
+                                        if (!(await onDeleteEvent(id)) || !isMounted()) return false;
                                         setEditingId(null);
+                                        return true;
                                     }}
                                     templates={doseTemplates}
                                     onSaveTemplate={onSaveTemplate}
@@ -638,22 +648,24 @@ const History: React.FC<HistoryProps> = ({
                                 </p>
                             </div>
                         )}
-                        <DoseForm
-                            // Force remount on open so the default date resets to "now" (this row never unmounts, only collapses via CSS).
-                            key={isQuickAddOpen ? 'open' : 'closed'}
-                            eventToEdit={null}
-                            onSave={handleQuickSave}
-                            onCancel={closeQuickAdd}
-                            onDelete={() => {}}
-                            templates={doseTemplates}
-                            onSaveTemplate={onSaveTemplate}
-                            onDeleteTemplate={onDeleteTemplate}
-                            isInline={true}
-                            events={events ?? allEvents}
-                            quickDoses={quickDoses}
-                            onAddQuickDose={onAddQuickDose}
-                            onDeleteQuickDose={onDeleteQuickDose}
-                        />
+                        <NativeBackScope active={isQuickAddOpen}>
+                            <DoseForm
+                                // Force remount on open so the default date resets to "now" (this row never unmounts, only collapses via CSS).
+                                key={isQuickAddOpen ? 'open' : 'closed'}
+                                eventToEdit={null}
+                                onSave={handleQuickSave}
+                                onCancel={closeQuickAdd}
+                                onDelete={async () => false}
+                                templates={doseTemplates}
+                                onSaveTemplate={onSaveTemplate}
+                                onDeleteTemplate={onDeleteTemplate}
+                                isInline={true}
+                                events={events ?? allEvents}
+                                quickDoses={quickDoses}
+                                onAddQuickDose={onAddQuickDose}
+                                onDeleteQuickDose={onDeleteQuickDose}
+                            />
+                        </NativeBackScope>
                     </div>
                 </div>
             </div>
@@ -694,7 +706,9 @@ const History: React.FC<HistoryProps> = ({
                             squares off their highlight nor cuts the ring's sides. */}
                         <div className="disclosure -mx-3" data-open={plannedOpen} {...inertWhen(!plannedOpen)}>
                             <div className="disclosure-inner">
-                                <div className="px-3 pb-3">{plannedDays.map(day => renderDay(day, false))}</div>
+                                <NativeBackScope active={plannedOpen}>
+                                    <div className="px-3 pb-3">{plannedDays.map(day => renderDay(day, false))}</div>
+                                </NativeBackScope>
                             </div>
                         </div>
                     </div>

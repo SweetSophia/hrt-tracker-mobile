@@ -1,0 +1,12 @@
+This app includes SQLCipher Community Edition 4.17.0.
+Copyright (c) 2008-2026, ZETETIC, LLC. All rights reserved.
+See SQLCIPHER_COMMUNITY_EDITION_LICENSE.txt and https://www.zetetic.net/sqlcipher/license/.
+
+This product includes software developed by the SQLite Project.
+SQLite is in the public domain: https://www.sqlite.org/copyright.html.
+
+The packaged SQLCipher native library includes LibTomCrypt.
+See LibTomCrypt-LICENSE.txt (public-domain dedication).
+
+This product includes AndroidX SQLite and Android platform bindings.
+See Apache-2.0.txt and https://developer.android.com/jetpack/androidx.

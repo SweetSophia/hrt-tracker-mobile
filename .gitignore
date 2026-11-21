@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-mobile/
+dist-mobile-offline-beta/
 dist-ssr
 *.tsbuildinfo
 src-tauri/target

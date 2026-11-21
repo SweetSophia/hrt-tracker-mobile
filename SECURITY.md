@@ -15,11 +15,11 @@ problem.** Report it privately instead:
 **请不要通过公开的 issue、讨论或 PR 报告安全问题**，请私下报告：
 
 1. Go to the repository's **Security** tab and choose **Report a vulnerability**,
-   or open <https://github.com/xunxunProjects/Oyama-s-HRT-Tracker/security/advisories/new>
+   or open <https://github.com/SweetSophia/hrt-tracker-mobile/security/advisories/new>
    directly.
 
    打开仓库的 **Security** 标签页并选择 **Report a vulnerability**，或直接访问
-   <https://github.com/xunxunProjects/Oyama-s-HRT-Tracker/security/advisories/new>。
+   <https://github.com/SweetSophia/hrt-tracker-mobile/security/advisories/new>。
 
 2. Describe the problem, how to reproduce it, which version or deployment it
    affects, and what an attacker could do with it. A proof of concept helps, but
@@ -53,11 +53,10 @@ Only the maintainers can see the report. You can write in English or Chinese.
 
 ## Supported versions 支持的版本
 
-Security fixes go into the latest release and the hosted site. Please update to
-the latest release before reporting, and tell us if an older version you rely
-on is affected.
+Security fixes go into the latest release. Please update to the latest release
+before reporting, and tell us if an older version you rely on is affected.
 
-安全修复会进入最新版本与官方托管站点。报告前请先更新到最新版本；如果你依赖的旧版本受影响，也请告诉我们。
+安全修复会进入最新版本。报告前请先更新到最新版本；如果你依赖的旧版本受影响，也请告诉我们。
 
 | Version 版本            | Supported 支持 |
 | ----------------------- | -------------- |
@@ -66,12 +65,14 @@ on is affected.
 
 ## Scope 范围
 
-In scope: the web app, the Cloudflare Worker API (`worker.ts`), the Docker
-image and the desktop app in this repository. Problems in a third-party
 deployment should go to whoever runs it, though we would like to hear about
 anything that comes from our code.
+In scope: the Android app, the web app, the Cloudflare Worker API
+(`worker.ts`), the Docker image and the desktop app in this repository.
+Problems in a third-party deployment should go to whoever runs it, though we
+would like to hear about anything that comes from our code.
 
-范围包括本仓库中的网页应用、Cloudflare Worker API（`worker.ts`）、Docker 镜像与桌面应用。
+范围包括本仓库中的安卓应用、网页应用、Cloudflare Worker API（`worker.ts`）、Docker 镜像与桌面应用。
 第三方部署的问题请联系其运营者；但如果问题源于我们的代码，也欢迎告诉我们。
 
 Questions about the accuracy of a concentration estimate are not security
@@ -81,33 +82,20 @@ issues; please use the issue templates for those.
 
 ## Release signing 发布签名
 
-Release binaries and checksum files are signed with the project's OpenPGP
-key. The signing key is currently held by **@fantuanmtf**. The Owner,
-**@SmirnovaOyama**, will be added to the Trusted Keys later; once that
-happens, two people will hold Trusted Keys and both will be trusted.
+The Android release APK is signed with the project's Android release key and
+installs as `org.askarys.hrttracker`. Updates must keep this package ID and the
+same signing certificate: APKs signed with the same certificate, including the
+earlier private beta builds, install in place. Compare a downloaded APK against
+any checksum published on its release page before installing it.
 
-Release downloads include the public key as `xunxunProjects-public.asc` and
-detached `.sig` files next to each binary and checksum file. Verify them
-before running a downloaded binary:
+安卓正式版 APK 使用项目的 Android 发布密钥签名，安装包名为 `org.askarys.hrttracker`。
+更新必须保持该包名与同一签名证书：证书一致的 APK（包括此前的私下测试版）可以覆盖安装。
+安装前请将下载的 APK 与发布页公布的校验值核对。
 
-发布二进制与校验和文件使用项目 OpenPGP 密钥签名。签名密钥目前由
-**@fantuanmtf** 持有。Owner **@SmirnovaOyama** 后续也会加入 Trusted Keys；
-此后将有两位持有 Trusted Keys 的人，且两人都是可信任的。
+The upstream web project signs its own desktop and web releases separately;
+see its [security policy](https://github.com/xunxunProjects/Oyama-s-HRT-Tracker/security/policy).
 
-版本下载会附带公钥 `xunxunProjects-public.asc`，以及每个二进制与校验和文件旁的
-分离签名 `.sig`。运行下载的二进制前请先验证：
-
-```bash
-gpg --import xunxunProjects-public.asc
-gpg --verify SHA512SUMS.sig SHA512SUMS
-sha512sum -c SHA512SUMS
-```
-
-GPG signatures verify file integrity and the signer's identity. They are not a
-substitute for Apple notarization or Windows Authenticode.
-
-GPG 签名用于验证文件完整性与签名者身份，不等同于 Apple 公证或 Windows
-Authenticode。
+上游网页项目的桌面与网页版本另行签名，详见其[安全政策](https://github.com/xunxunProjects/Oyama-s-HRT-Tracker/security/policy)。
 
 ---
 

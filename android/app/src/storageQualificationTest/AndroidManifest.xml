@@ -1,0 +1,8 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Synthetic documents only, in the instrumentation APK, never the app. -->
+        <provider android:name="org.askarys.hrttracker.storage.SyntheticDocumentsProvider"
+            android:authorities="org.askarys.hrttracker.synthetic.documents"
+            android:exported="true" android:grantUriPermissions="true" />
+    </application>
+</manifest>

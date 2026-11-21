@@ -19,8 +19,8 @@ interface QuickDoseButtonsProps {
     quickDoses: QuickDose[];
     currentDose: string;
     onSelectDose: (value: number) => void;
-    onAddQuickDose: (dose: QuickDose) => void;
-    onDeleteQuickDose: (id: string) => void;
+    onAddQuickDose: (dose: QuickDose) => Promise<boolean>;
+    onDeleteQuickDose: (id: string) => Promise<boolean>;
     unit?: string;
 }
 

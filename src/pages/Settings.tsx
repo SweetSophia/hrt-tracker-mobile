@@ -1,3 +1,5 @@
+import { getBuildTarget, getCapabilities } from '../platform/runtime';
+import { MOBILE_PROJECT_REPOSITORY, WEB_PROJECT_REPOSITORY } from '../data/projectRepositories';
 import React, { useEffect, useState } from 'react';
 import { ChevronRight, Sliders, Database, Info } from '../components/icons';
 import { Lang } from '../i18n/translations';
@@ -271,15 +273,20 @@ const Settings: React.FC<SettingsProps> = ({
     const renderGeneral = () => (
         <div className="space-y-8">
             {/* The funding vote and, once it closes, the addresses. Kept at
-                the top because the About tab was too easy to miss. */}
-            <SectionHeading title={t('settings.section.support')} />
-            <div className={section}>
-                <NavRow
-                    label={t('settings.support.title')}
-                    value={t(voteClosed ? 'settings.support.value_closed' : 'settings.support.value_open')}
-                    onClick={() => navTo(onNavigateToCommunity, 'general')}
-                />
-            </div>
+                the top because the About tab was too easy to miss. A
+                first-party build has no remote vote, so the door stays shut. */}
+            {getCapabilities().remoteBackend && (
+                <>
+                    <SectionHeading title={t('settings.section.support')} />
+                    <div className={section}>
+                        <NavRow
+                            label={t('settings.support.title')}
+                            value={t(voteClosed ? 'settings.support.value_closed' : 'settings.support.value_open')}
+                            onClick={() => navTo(onNavigateToCommunity, 'general')}
+                        />
+                    </div>
+                </>
+            )}
 
             {/* What the model is fed. */}
             <SectionHeading title={t('settings.section.model')} />
@@ -396,7 +403,7 @@ const Settings: React.FC<SettingsProps> = ({
 
     const renderData = () => (
         <div className="space-y-8">
-            {isLoggedIn && (
+            {getCapabilities().remoteBackend && isLoggedIn && (
                 <div>
                     <SectionHeading title={t('settings.section.sync')} />
                     <div className={section}>
@@ -449,12 +456,21 @@ const Settings: React.FC<SettingsProps> = ({
                     label={t('drawer.github')}
                     onClick={() =>
                         showDialog('confirm', t('drawer.github_confirm'), () =>
-                            window.open('https://github.com/xunxunProjects/Oyama-s-HRT-Tracker', '_blank'),
+                            window.open(
+                                getBuildTarget() === 'mobile' ? MOBILE_PROJECT_REPOSITORY : WEB_PROJECT_REPOSITORY,
+                                '_blank',
+                                'noopener,noreferrer',
+                            ),
                         )
                     }
                 />
-                <NavRow label={t('transparency.title')} onClick={() => navTo(onNavigateToTransparency, 'about')} />
-                <NavRow label="Credits" onClick={() => navTo(onNavigateToCredits, 'about')} />
+                {getCapabilities().remoteBackend && (
+                    <NavRow label={t('transparency.title')} onClick={() => navTo(onNavigateToTransparency, 'about')} />
+                )}
+                <NavRow
+                    label={getBuildTarget() === 'mobile' ? t('mobileCredits.title') : 'Credits'}
+                    onClick={() => navTo(onNavigateToCredits, 'about')}
+                />
                 <NavRow label={t('drawer.disclaimer')} onClick={() => navTo(onNavigateToDisclaimer, 'about')} />
                 <NavRow label={t('opsec.title')} onClick={() => navTo(onNavigateToOpSec, 'about')} />
                 {/* The intro only ever shows itself once, so this is the only way back
@@ -473,7 +489,7 @@ const Settings: React.FC<SettingsProps> = ({
                     checked={devMode}
                     onChange={setDevMode}
                 />
-                {devMode && (
+                {devMode && getBuildTarget() === 'web' && (
                     <SwitchRow
                         label={t('settings.hide_site_label')}
                         desc={t('settings.hide_site_label_desc')}

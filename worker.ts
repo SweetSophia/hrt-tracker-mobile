@@ -357,7 +357,8 @@ export default {
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, HEAD, POST, DELETE, OPTIONS, PATCH, PUT',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, If-Match, X-HRT-Base-Revision',
+            'Access-Control-Allow-Headers':
+                'Content-Type, Authorization, If-Match, X-HRT-Base-Revision, X-Admin-Reauth',
             // A VITE_API_ORIGIN build (the desktop app) calls cross-origin, where the
             // browser hides every response header outside the CORS-safe list unless
             // it is named here. The client reads Retry-After to back off, and

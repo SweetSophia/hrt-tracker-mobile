@@ -1,3 +1,4 @@
+import { useMounted } from '../hooks/useMounted';
 import React, { useState, useEffect } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { isPlausibleBodyWeightKG, BODY_WEIGHT_KG_MIN, BODY_WEIGHT_KG_MAX } from '../../logic';
@@ -6,11 +7,12 @@ import { useTranslation } from '../contexts/LanguageContext';
 
 interface WeightSettingsProps {
     weight: number;
-    onSave: (weight: number) => void;
+    onSave: (weight: number) => Promise<boolean>;
     onBack: () => void;
 }
 
 const WeightSettings: React.FC<WeightSettingsProps> = ({ weight, onSave, onBack }) => {
+    const isMounted = useMounted();
     const { t } = useTranslation();
     const [weightStr, setWeightStr] = useState(weight.toString());
     // Set by a Save that was turned down; the message then stays only for as
@@ -25,14 +27,13 @@ const WeightSettings: React.FC<WeightSettingsProps> = ({ weight, onSave, onBack 
     const showError = tried && !valid;
 
     // A form, so the keyboard's Done / Go key saves as well as the button.
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!valid) {
             setTried(true);
             return;
         }
-        onSave(parseFloat(weightStr));
-        onBack();
+        if ((await onSave(parseFloat(weightStr))) && isMounted()) onBack();
     };
 
     const divider = 'border-b-(length:--hairline) border-[var(--border)]';

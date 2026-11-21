@@ -97,7 +97,7 @@ interface Options {
     /** True once useAppData holds this account's data — never sync before then. */
     ready: boolean;
     buildPayload: () => any;
-    applyRemote: (state: SyncState) => void;
+    applyRemote: (state: SyncState, expectedPayload: unknown) => Promise<boolean>;
     /** Local data. Changes here schedule a push; the values themselves are unused. */
     events: unknown;
     labResults: unknown;
@@ -317,6 +317,7 @@ export const useCloudSync = ({
                 }
                 lockedRef.current = false;
 
+                const applyLocal = applyRemoteRef.current;
                 const localPayload = buildPayloadRef.current();
                 const local = normalizeSyncState(localPayload);
 
@@ -341,7 +342,8 @@ export const useCloudSync = ({
 
                 const result = mergeSyncStates(local, remote.kind === 'state' ? remote.state : null);
 
-                if (result.localChanged) applyRemoteRef.current(result.merged);
+                if (result.localChanged && !(await applyLocal(result.merged, localPayload))) return 'skipped';
+                if (!stillCurrent(account, authToken, force)) return 'skipped';
 
                 const mergedFingerprint = fingerprintState(result.merged);
                 lastSeenBackupRef.current = newestId;

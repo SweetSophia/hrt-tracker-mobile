@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
     test: {
         include: ['tests/**/*.test.ts'],
+        exclude: process.env.HRT_MOBILE_ARTIFACTS === '1' ? [] : ['tests/mobile/artifactPolicy.test.ts'],
         environment: 'node',
         setupFiles: ['tests/setup.ts'],
     },

@@ -1,5 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useDialog } from '../contexts/DialogContext';
+import { useApplicationRuntime } from '../contexts/RecordsContext';
+import { decodeDocumentText } from '../utils/decodeDocumentText';
+import { DocumentTooLargeError } from '../platform/contracts/files';
 import { ChevronDown } from './icons';
 import { settingsSection, rowBleed } from './SettingsListItem';
 
@@ -19,54 +23,55 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
     const { t } = useTranslation();
     const [showPaste, setShowPaste] = useState(false);
     const [text, setText] = useState('');
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const replaceFileInputRef = useRef<HTMLInputElement>(null);
-
-    const readFile = (e: React.ChangeEvent<HTMLInputElement>, run: (text: string) => unknown) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async () => {
-            await run(reader.result as string);
-        };
-        reader.readAsText(file);
-        e.target.value = '';
+    const { showDialog } = useDialog();
+    const runtime = useApplicationRuntime();
+    const importing = useRef(false);
+    const [busy, setBusy] = useState(false);
+    const runImport = async (run: () => Promise<void>) => {
+        if (importing.current) return;
+        importing.current = true;
+        setBusy(true);
+        try {
+            await run();
+        } finally {
+            importing.current = false;
+            setBusy(false);
+        }
     };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        void readFile(e, onImportJson);
-    };
-
-    const handleReplaceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        void readFile(e, onReplaceJson);
-    };
+    const pickFile = (run: (text: string) => boolean | Promise<boolean>) =>
+        runImport(async () => {
+            try {
+                const file = await runtime.filePicker.pick();
+                if (file) await run(decodeDocumentText(file.bytes));
+            } catch (error) {
+                showDialog(
+                    'alert',
+                    t(error instanceof DocumentTooLargeError ? 'import.file_too_large' : 'import.file_read_failed'),
+                );
+            }
+        });
 
     // The pasted text stays when the import doesn't go through (a Cancel at
     // "replace your records?", or a file it can't read), so it can be fixed
     // or tried again without pasting it all over.
-    const handleTextImport = async () => {
-        if (!(await onImportJson(text))) return;
-        setText('');
-        setShowPaste(false);
-    };
-
-    const handleTextReplace = async () => {
-        if (!(await onReplaceJson(text))) return;
-        setText('');
-        setShowPaste(false);
-    };
+    const importText = (run: (text: string) => boolean | Promise<boolean>) =>
+        runImport(async () => {
+            if (!(await run(text))) return;
+            setText('');
+            setShowPaste(false);
+        });
 
     return (
         <div className={settingsSection}>
             {/* File import */}
-            <button onClick={() => fileInputRef.current?.click()} className={`${rowBase} ${rowBleed}`}>
+            <button disabled={busy} onClick={() => void pickFile(onImportJson)} className={`${rowBase} ${rowBleed}`}>
                 <span className={rowLabel}>{t('import.file')}</span>
                 <span className={action}>{t('import.file_btn')}</span>
             </button>
 
             {/* Replace from a complete backup. Deliberately separate from the
                 merge import: this is the only action that clears categories. */}
-            <button onClick={() => replaceFileInputRef.current?.click()} className={`${rowBase} ${rowBleed}`}>
+            <button disabled={busy} onClick={() => void pickFile(onReplaceJson)} className={`${rowBase} ${rowBleed}`}>
                 <span>
                     <span className="block text-sm text-[var(--danger)]">{t('import.replace_complete_row')}</span>
                     <span className={rowDesc}>{t('import.replace_complete_desc')}</span>
@@ -79,6 +84,7 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
             {/* Paste JSON */}
             <div>
                 <button
+                    disabled={busy}
                     onClick={() => {
                         setShowPaste(v => !v);
                         setText('');
@@ -98,6 +104,7 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
                 {showPaste && (
                     <div className="pb-4 space-y-3">
                         <textarea
+                            disabled={busy}
                             className="w-full h-28 p-3 bg-[var(--field)] border-(length:--hairline) border-[var(--border)] rounded-md outline-none focus:border-[var(--border-strong)] text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none"
                             style={{ fontSize: '16px' }}
                             placeholder={t('import.paste_hint')}
@@ -110,10 +117,18 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
                         />
                         <div className="flex justify-end gap-2">
                             {/* Red is for the confirm that follows, not the way to it. */}
-                            <button onClick={handleTextReplace} disabled={!text.trim()} className="btn-secondary">
+                            <button
+                                onClick={() => void importText(onReplaceJson)}
+                                disabled={busy || !text.trim()}
+                                className="btn-secondary"
+                            >
                                 {t('import.replace_complete_paste_btn')}
                             </button>
-                            <button onClick={handleTextImport} disabled={!text.trim()} className="btn-primary">
+                            <button
+                                onClick={() => void importText(onImportJson)}
+                                disabled={busy || !text.trim()}
+                                className="btn-primary"
+                            >
                                 {/* Plain "Import": the text can hold labs, weight and
                                     parameters as well as doses. */}
                                 {t('import.btn')}
@@ -122,22 +137,6 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
                     </div>
                 )}
             </div>
-
-            {/* Never shown, so it draws no divider of its own. */}
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json"
-                className="hidden"
-                onChange={handleFileChange}
-            />
-            <input
-                ref={replaceFileInputRef}
-                type="file"
-                accept="application/json"
-                className="hidden"
-                onChange={handleReplaceFileChange}
-            />
         </div>
     );
 };

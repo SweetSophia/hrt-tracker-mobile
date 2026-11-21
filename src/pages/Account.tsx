@@ -1,3 +1,4 @@
+import { useHRTMode } from '../contexts/HRTModeContext';
 import React, { useState, useEffect, useMemo, useRef, useId } from 'react';
 import {
     CloudUp,
@@ -160,6 +161,7 @@ const Account: React.FC<AccountProps> = ({
     const [unlockLoading, setUnlockLoading] = useState(false);
     const { showDialog } = useDialog();
     const { lang } = useTranslation();
+    const { mode } = useHRTMode();
     const locale = LOCALE_MAP[lang] || 'en-US';
 
     // Inline auth form state
@@ -293,7 +295,7 @@ const Account: React.FC<AccountProps> = ({
             const backup = await cloudService.loadOne(token!, b.id);
             const res = await readCloudBackup(backup.data);
             if (res.status === 'ok') {
-                setExpandedData(prev => ({ ...prev, [b.id]: normalizeBackupPayload(res.data) }));
+                setExpandedData(prev => ({ ...prev, [b.id]: normalizeBackupPayload(res.data, mode) }));
             } else if (res.status === 'locked') {
                 // Encrypted but no key on this device — ask for the password.
                 setExpandLoading(null);
@@ -394,7 +396,7 @@ const Account: React.FC<AccountProps> = ({
             }
             const res = await unlockCloudBackup(unlockTarget.rawData, password, user.id);
             if (res.status === 'ok') {
-                setExpandedData(prev => ({ ...prev, [unlockTarget.backupId]: normalizeBackupPayload(res.data) }));
+                setExpandedData(prev => ({ ...prev, [unlockTarget.backupId]: normalizeBackupPayload(res.data, mode) }));
                 setExpandedId(unlockTarget.backupId);
                 setUnlockTarget(null);
             } else {
@@ -1126,8 +1128,8 @@ const Account: React.FC<AccountProps> = ({
                                                                         </button>
                                                                         <button
                                                                             onClick={() => {
+                                                                                // Keep the inline confirmation anchor mounted.
                                                                                 onCloudLoad(b.id);
-                                                                                setExpandedId(null);
                                                                             }}
                                                                             className="btn-primary flex-1"
                                                                         >

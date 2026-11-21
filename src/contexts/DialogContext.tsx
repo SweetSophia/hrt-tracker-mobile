@@ -1,3 +1,5 @@
+import { BACK_PRIORITY } from '../application/backNavigation';
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import React, {
     createContext,
     useContext,
@@ -26,7 +28,7 @@ interface DialogOptions {
      *  in place of "OK", so the button says what pressing it will do. */
     confirmLabel?: string;
     /** Runs when a confirm is backed out of: the way-out button, Escape, the
-     *  system Back, or the page it was asked on going away. */
+     *  system Back, replacement by another prompt, or the page going away. */
     onCancel?: () => void;
 }
 
@@ -299,6 +301,8 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
         [cancel, handleConfirm],
     );
 
+    useNativeBackOwner(() => dismiss(), !!prompt, BACK_PRIORITY.prompt);
+
     const showDialog = useCallback<ShowDialog>(
         (type, message, onConfirm, options) => {
             if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
@@ -320,10 +324,14 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
                 host,
                 view: host?.closest(PAGE_AREA) ?? null,
             };
-            // One line at a time: a new one takes the old one's place.
-            promptRef.current?.host?.remove();
+            // Replacing a confirmation cancels it; otherwise a caller waiting
+            // for its answer can stay pending forever. Install the new prompt
+            // first so a cancellation callback can safely open a later follow-up.
+            const previous = promptRef.current;
+            previous?.host?.remove();
             promptRef.current = next;
             setPrompt(next);
+            if (previous?.type === 'confirm') previous.options.onCancel?.();
             return () => {
                 if (promptRef.current?.id === id) dismiss(false);
             };
@@ -385,7 +393,13 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
         if (!host) return;
         const check = () => {
             const current = promptRef.current;
-            if (host.isConnected || current?.host !== host) return;
+            if (current?.host !== host) return;
+            if (host.isConnected) {
+                // Retained disclosures keep their DOM host, but no longer show
+                // the question. Settle it before it can own an invisible Back.
+                if (host.closest('[inert], [hidden]')) dismiss(false);
+                return;
+            }
             if (current.view?.isConnected) {
                 const moved = { ...current, host: null };
                 promptRef.current = moved;
@@ -394,7 +408,12 @@ export const DialogProvider = ({ children }: { children: React.ReactNode }) => {
         };
         check();
         const watch = new MutationObserver(check);
-        watch.observe(document.body, { childList: true, subtree: true });
+        watch.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['inert', 'hidden'],
+        });
         return () => watch.disconnect();
     }, [prompt, dismiss]);
 

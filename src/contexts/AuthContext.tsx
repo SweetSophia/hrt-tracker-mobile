@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authService, User, AuthResponse, rememberDevicePass, sessionIdFromToken } from '../services/auth';
 import { cacheCloudKey, deriveAndCacheCloudKey, getCloudKey } from '../utils/cloudBackup';
-import { clearAccountHealthData } from '../utils/backupState';
 import { rewrapLiveShareKeys } from '../services/sharing';
-import { UNAUTHORIZED_EVENT } from '../services/apiClient';
+import { ApiError, UNAUTHORIZED_EVENT } from '../services/apiClient';
+import { getCapabilities } from '../platform/runtime';
 import { useDialog } from './DialogContext';
 import { useTranslation } from './LanguageContext';
+import { useApplicationRuntime } from './RecordsContext';
 
 interface AuthContextType {
     user: User | null;
@@ -22,7 +23,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     updateProfile: (username: string) => Promise<void>;
     changePassword: (current: string, newPass: string, totpCode?: string, backupCode?: string) => Promise<void>;
-    deleteAccount: (password: string, code?: string, backupCode?: string) => Promise<void>;
+    deleteAccount: (password: string, code?: string, backupCode?: string) => Promise<boolean>;
     /** The signed-in account's password was below the strength floor at its last sign-in. */
     weakPassword: boolean;
 }
@@ -35,11 +36,37 @@ export const useAuth = () => {
     return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const unavailable = async (): Promise<never> => {
+    throw new ApiError(0, 'BACKEND_DISABLED', 'Remote services are unavailable in this build.');
+};
+const standaloneAuth: AuthContextType = {
+    user: null,
+    token: null,
+    weakPassword: false,
+    login: unavailable,
+    loginWithToken: unavailable,
+    register: unavailable,
+    logout: unavailable,
+    updateProfile: unavailable,
+    changePassword: unavailable,
+    deleteAccount: unavailable,
+};
+
+// Do not mount web session effects or adopt/delete dormant account records.
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
+    getCapabilities().remoteBackend ? (
+        <WebAuthProvider>{children}</WebAuthProvider>
+    ) : (
+        <AuthContext.Provider value={standaloneAuth}>{children}</AuthContext.Provider>
+    );
+
+const WebAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { showDialog } = useDialog();
     const { t } = useTranslation();
+    const runtime = useApplicationRuntime();
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
+    const pendingDeletion = useRef<{ token: string; expired: boolean } | null>(null);
     // Remembered across reloads until the password changes or the user signs out.
     const [weakPassword, setWeakPassword] = useState(() => localStorage.getItem('weak_password') === '1');
     const markWeakPassword = (weak: boolean) => {
@@ -113,17 +140,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Clear this device's copy of the session. Split out so the forced sign-out
     // below can reuse it without trying to revoke a session the server has
-    // already destroyed. Explicit sign-out and account deletion also remove the
-    // account's unencrypted health records; a forced 401 leaves them in place so
-    // a temporary network/session problem does not destroy local data.
-    const clearLocalSession = (clearHealthData = false) => {
-        if (clearHealthData && user) clearAccountHealthData(localStorage, user.id);
+    // already destroyed. Session expiry preserves the existing account records.
+    const clearLocalSession = () => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
         markWeakPassword(false);
         cacheCloudKey(null);
+    };
+
+    const finishExplicitSignOut = async (owner: string | undefined, expectedToken: string | null) => {
+        if (localStorage.getItem('auth_token') !== expectedToken) return false;
+        const clearing = owner ? runtime.clearSignedInRecords(owner) : undefined;
+        clearLocalSession();
+        return clearing
+            ? clearing.then(
+                  () => true,
+                  () => false,
+              )
+            : true;
     };
 
     const logout = async () => {
@@ -134,8 +170,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // timeout never fired either. Anyone who had copied the token out of
         // localStorage kept the account for a week. Best effort — a failed
         // request must never trap the user in a signed-in UI.
-        const currentToken = localStorage.getItem('auth_token');
+        const currentToken = token;
+        if (localStorage.getItem('auth_token') !== currentToken) return;
         const sid = sessionIdFromToken(currentToken);
+        const clearing = finishExplicitSignOut(user?.id, currentToken);
         if (currentToken && sid) {
             try {
                 await authService.terminateSession(currentToken, sid);
@@ -143,7 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 /* revoke is best-effort */
             }
         }
-        clearLocalSession(true);
+        if (!(await clearing)) showDialog('alert', t('storage.save_failed'));
     };
 
     // When the server reports the session is no longer valid, drop the stale
@@ -155,7 +193,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     onUnauthorizedRef.current = () => {
         // Already signed out — ignore so several concurrent 401s don't stack
         // multiple prompts.
-        if (!localStorage.getItem('auth_token')) return;
+        const currentToken = localStorage.getItem('auth_token');
+        if (!currentToken || currentToken !== token) return;
+        if (pendingDeletion.current?.token === currentToken) {
+            // Deletion invalidates the session on the server before its response
+            // arrives. Keep the record scope available until its outcome is known.
+            pendingDeletion.current.expired = true;
+            return;
+        }
         // The worker only sends X-Session-Invalid once the row is already gone,
         // so there is nothing left to revoke — just drop the local copy.
         clearLocalSession();
@@ -194,10 +239,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const deleteAccount = async (password: string, code?: string, backupCode?: string) => {
-        if (!token) return;
-        await authService.deleteAccount(token, password, code, backupCode);
-        // The account delete already dropped every sessions row for this user.
-        clearLocalSession(true);
+        if (!token || localStorage.getItem('auth_token') !== token || pendingDeletion.current) {
+            throw new Error(t('error.generic'));
+        }
+        const deletion = { token, expired: false };
+        pendingDeletion.current = deletion;
+        try {
+            await authService.deleteAccount(token, password, code, backupCode);
+        } catch (error) {
+            if (deletion.expired && localStorage.getItem('auth_token') === token) {
+                clearLocalSession();
+                showDialog('alert', t('auth.session_expired'));
+            }
+            throw error;
+        } finally {
+            pendingDeletion.current = null;
+        }
+        return finishExplicitSignOut(user?.id, token);
     };
 
     return (

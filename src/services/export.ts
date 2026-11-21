@@ -3,6 +3,7 @@ import { autoTable } from 'jspdf-autotable';
 import { DoseEvent, LabResult, activeCompoundName, isT_LabUnit } from '../../logic';
 import { formatDate } from '../utils/helpers';
 import { Lang, TRANSLATIONS } from '../i18n/translations';
+import type { FileSavePort, FileSaveResult } from '../platform/contracts/files';
 
 // Define the type for user-friendly export data
 interface ExportData {
@@ -110,9 +111,12 @@ export const buildPDFDocument = (data: ExportData, generatedAt = new Date()) => 
     return doc;
 };
 
-export const exportToPDF = (data: ExportData) => {
+export const exportToPDF = async (data: ExportData, files: FileSavePort): Promise<FileSaveResult> => {
     const generatedAt = new Date();
     const doc = buildPDFDocument(data, generatedAt);
-
-    doc.save(`hrt-report-${generatedAt.toISOString().split('T')[0]}.pdf`);
+    return files.save({
+        name: `hrt-report-${generatedAt.toISOString().split('T')[0]}.pdf`,
+        mimeType: 'application/pdf',
+        bytes: new Uint8Array(doc.output('arraybuffer')),
+    });
 };

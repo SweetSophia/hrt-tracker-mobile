@@ -7,15 +7,18 @@
 //   node docker/reconcile.mjs <database> --local --persist-to <dir>
 //   node docker/reconcile.mjs <database> --remote
 //
-// Arguments after the database name go to every `wrangler d1 execute` call.
+// Pass --apply before the database name to apply migrations after reconciliation.
+// Arguments after the database name select the same database for both steps.
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const [database, ...target] = process.argv.slice(2);
+const apply = process.argv[2] === '--apply';
+const [database, ...target] = process.argv.slice(apply ? 3 : 2);
 if (!database) {
-    console.error('Usage: node docker/reconcile.mjs <database> (--local [--persist-to <dir>] | --remote)');
+    console.error('Usage: node docker/reconcile.mjs [--apply] <database> (--local [--persist-to <dir>] | --remote)');
     process.exit(2);
 }
 
@@ -48,4 +51,26 @@ if (columns.includes('totp_secret') && !columns.includes('totp_last_step')) {
     execute(['--command', 'ALTER TABLE users ADD COLUMN totp_last_step INTEGER']);
 }
 
+const donation = JSON.parse(
+    execute(
+        [
+            '--json',
+            '--command',
+            "SELECT name FROM pragma_table_info('donation_addresses') WHERE name = 'monero_payout_address'",
+        ],
+        true,
+    ),
+)[0].results;
+if (donation.length > 0) {
+    // The worker can add the payout column before migration 0017 runs.
+    // Apply its idempotent trade DDL so the ledger can safely record 0017.
+    const migration = readFileSync(new URL('../migrations/0017_donation_trocador.sql', import.meta.url), 'utf8');
+    const [, repair] = migration.split(/^ALTER TABLE donation_addresses ADD COLUMN monero_payout_address [^;]+;$/m);
+    if (!repair?.trim()) throw new Error('Expected the trade schema after the payout column in 0017');
+    execute(['--command', repair.trim()]);
+}
+
 execute(['--file', fileURLToPath(new URL('mark-applied-migrations.sql', import.meta.url))]);
+if (apply) {
+    execFileSync(process.execPath, [wrangler, 'd1', 'migrations', 'apply', database, ...target], { stdio: 'inherit' });
+}

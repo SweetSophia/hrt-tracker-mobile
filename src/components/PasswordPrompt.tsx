@@ -1,3 +1,5 @@
+import { BACK_PRIORITY } from '../application/backNavigation';
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import { useState, useEffect, useId } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { PromptPlace, useInlineHost } from '../contexts/DialogContext';
@@ -44,6 +46,13 @@ const PasswordPrompt = ({
     const id = useId();
 
     useEscape(onClose, isOpen);
+    useNativeBackOwner(
+        () => {
+            if (!loading) onClose();
+        },
+        isOpen,
+        BACK_PRIORITY.input,
+    );
 
     useEffect(() => {
         if (isOpen) {

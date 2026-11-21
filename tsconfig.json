@@ -14,5 +14,17 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["node_modules", "dist", "src-tauri"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-mobile",
+    "src-tauri",
+    "android/**/build",
+    "android/app/src/main/assets",
+    "android/capacitor-cordova-android-plugins",
+    "e2e/mobile",
+    "tests/mobile",
+    "tests/native-storage-runner.test.ts",
+    ".superpowers"
+  ]
 }

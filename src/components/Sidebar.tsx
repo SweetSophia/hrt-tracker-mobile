@@ -14,9 +14,10 @@ interface SidebarProps {
     navItems: NavItem[];
     currentView: string;
     onViewChange: (view: any) => void;
+    modelReady?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ navItems, currentView, onViewChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ navItems, currentView, onViewChange, modelReady = true }) => {
     // Opened by a finger (a touch laptop's screen): hover is off while the
     // last input was touch, so the app icon at the top opens the labels, and
     // a tap anywhere else, or a mouse leaving, closes them again.
@@ -85,7 +86,12 @@ const Sidebar: React.FC<SidebarProps> = ({ navItems, currentView, onViewChange }
                     pages, so the whole page beside it can go to the chart. The
                     Overview fills this through a portal; elsewhere it is empty
                     and takes no room. */}
-                <div id="sidebar-status" className="hidden touch-short:block empty:hidden" />
+                <div
+                    id="sidebar-status"
+                    className="hidden touch-short:block empty:hidden"
+                    style={modelReady ? undefined : { visibility: 'hidden', opacity: 0 }}
+                    aria-hidden={!modelReady || undefined}
+                />
 
                 {/* Navigation Items. The current page sits on a filled pill with
                     the rest lift to full text on hover; every drawing is in

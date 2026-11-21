@@ -1,23 +1,17 @@
+import type { DemoCompute } from '../application/demoProtocol';
+import { SPAN_H, LAB_SLOTS } from '../application/demos/calibrationGuide';
+import { useDemoProjection } from '../hooks/useDemoProjection';
+import { ModelStatus } from '../components/ModelStatus';
 import React, { useDeferredValue, useMemo, useRef, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
-import ModelChart, { type ModelSeries } from '../components/ModelChart';
+import ModelChart from '../components/ModelChart';
 import CustomSelect from '../components/CustomSelect';
 import Switch from '../components/Switch';
 import CalibrationDoodle from '../components/CalibrationDoodle';
 import { useTranslation } from '../contexts/LanguageContext';
-import {
-    runSimulation,
-    computeCalibration,
-    interpolateConcentration_E2,
-    Route,
-    Ester,
-    ExtraKey,
-    type CalibrationMethod,
-    type DoseEvent,
-    type LabResult,
-} from '../../logic';
+import type { CalibrationMethod } from '../../logic';
 
 /**
  * How each calibration method works, one level below the calibration
@@ -31,20 +25,6 @@ const METHODS: CalibrationMethod[] = ['off', 'mipd', 'ekf', 'ou_kalman', 'bayes'
 const CLEARANCE: CalibrationMethod[] = ['mipd', 'ekf', 'bayes', 'mcmc'];
 
 const D = 24;
-const WEEK = 7 * D;
-const DOSES = 12;
-const SPAN_H = DOSES * WEEK + 3 * D;
-const SAMPLES = 280;
-/** Labs in the second half of the picture: which dose they follow, and how many hours after it. */
-const LAB_SLOTS: [number, number][] = [
-    [5, 100],
-    [6, 160],
-    [7, 40],
-    [8, 150],
-    [9, 70],
-    [10, 165],
-];
-const Z90 = 1.6448536269514722;
 
 /** Each formula as short lines, so none runs past a phone's width. */
 const FORMULAS: Record<CalibrationMethod, string[]> = {
@@ -116,7 +96,11 @@ const Slider: React.FC<{
 
 const times = (n: number) => `×${n.toFixed(2)}`;
 
-const CalibrationGuide: React.FC<{ onBack: () => void; weight: number }> = ({ onBack, weight }) => {
+const CalibrationGuide: React.FC<{ onBack: () => void; weight: number; runDemo?: DemoCompute }> = ({
+    onBack,
+    weight,
+    runDemo,
+}) => {
     const { t } = useTranslation();
     const top = useRef<HTMLDivElement>(null);
 
@@ -128,59 +112,16 @@ const CalibrationGuide: React.FC<{ onBack: () => void; weight: number }> = ({ on
     // Sampling methods take a moment; the sliders stay smooth and the picture follows.
     const inputs = useDeferredValue({ method, level, change, count, wrong });
 
-    // Weekly 5 mg estradiol valerate for twelve weeks, ending a few days before now.
-    const base = useMemo(() => {
-        const t0 = Math.floor(Date.now() / 3_600_000) - SPAN_H;
-        const events: DoseEvent[] = Array.from({ length: DOSES }, (_, i) => ({
-            id: `cal-guide-${i}`,
-            route: Route.injection,
-            ester: Ester.EV,
-            timeH: t0 + i * WEEK,
-            doseMG: 5,
-            extras: { [ExtraKey.concentrationMGmL]: 20 },
-        }));
-        const w = Math.min(120, Math.max(40, Math.round(weight || 60)));
-        const sim = runSimulation(events, w);
-        return { t0, events, sim, w };
-    }, [weight]);
-
-    const picture = useMemo(() => {
-        const { t0, events, sim, w } = base;
-        if (!sim) return null;
-        const at = (h: number) => interpolateConcentration_E2(sim, h) ?? 0;
-        const n = inputs.count;
-        const wrongAt = Math.min(n - 1, 2);
-        const labs: LabResult[] = LAB_SLOTS.slice(0, n).map(([dose, after], i) => {
-            const h = t0 + dose * WEEK + after;
-            const ratio =
-                (i >= 3 ? inputs.level * inputs.change : inputs.level) * (inputs.wrong && i === wrongAt ? 3 : 1);
-            return { id: `cal-guide-lab-${i}`, timeH: h, concValue: Math.round(at(h) * ratio), unit: 'pg/ml' };
-        });
-        const cal = computeCalibration(sim, events, w, labs, inputs.method, 'retrospective');
-        const hours = Array.from({ length: SAMPLES }, (_, i) => t0 + (i / (SAMPLES - 1)) * SPAN_H);
-        const raw = hours.map(at);
-        const fitted = hours.map((h, i) => raw[i] * cal.factorFn(h));
-        const sd = cal.factorSdFn;
-        const series: ModelSeries[] = [{ values: raw, ghost: true }];
-        if (sd && inputs.method !== 'off') {
-            const hi = hours.map((h, i) => fitted[i] * Math.exp(Z90 * sd(h)));
-            const lo = hours.map((h, i) => fitted[i] * Math.exp(-Z90 * sd(h)));
-            series.push({ values: hi, edge: true, fillTo: 2 }, { values: lo, edge: true });
-        } else {
-            // Keep the same number of lines, so switching method glides instead of snapping.
-            series.push({ values: fitted, edge: true }, { values: fitted, edge: true });
-        }
-        series.push({ values: fitted });
-        const lastLab = labs[labs.length - 1];
-        return {
-            series,
-            labs: labs.map(l => ({ x: (l.timeH - t0) / D, y: l.concValue })),
-            doses: events.map(e => (e.timeH - t0) / D),
-            atLab: cal.factorFn(lastLab.timeH),
-            halfLife: cal.halfLifeDeltaPct,
-            fit: cal.fitErrPct,
-        };
-    }, [base, inputs]);
+    // eslint-disable-next-line react-hooks/purity -- Preserve the source clock for this memoized numerical input.
+    const anchor = useMemo(() => ({ weight, nowMs: Date.now() }), [weight]);
+    const {
+        value: picture,
+        status,
+        retry,
+    } = useDemoProjection<'calibration-guide'>(
+        { kind: 'calibration-guide', weight, baseNowMs: anchor.nowMs, inputs },
+        runDemo,
+    );
 
     const signedPct = (p: number) => `${p >= 0 ? '+' : ''}${p.toFixed(0)}%`;
     const tryThis = (m: CalibrationMethod) => {
@@ -192,6 +133,7 @@ const CalibrationGuide: React.FC<{ onBack: () => void; weight: number }> = ({ on
         <div className="md:pb-32">
             <PageHeader title={t('cal_guide.title')} onBack={onBack} />
             <div className={`${PAGE_COLUMN} mt-3`}>
+                <ModelStatus status={status} onRetry={retry} />
                 <p className="text-sm leading-relaxed text-[var(--text)]">{t('cal_guide.lead')}</p>
 
                 <section ref={top} className="mt-10 scroll-mt-24">

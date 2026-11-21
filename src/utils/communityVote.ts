@@ -47,15 +47,20 @@ export const voteDaysLeft = (closesAt: number, nowSec: number): number =>
  * days or the records. It reads the same keys `useAppData` writes for a signed-in
  * account: `hrt-u<id>-events` and `hrt-u<id>-masc-events`.
  */
-export const countHrtDaysSince = (userId: string, sinceSec: number, nowSec: number): number => {
-    if (typeof localStorage === 'undefined' || !userId) return 0;
+export const countHrtDaysSince = (
+    userId: string,
+    sinceSec: number,
+    nowSec: number,
+    storage: Pick<Storage, 'getItem'>,
+): number => {
+    if (!storage || !userId) return 0;
 
     const startMs = sinceSec * 1000;
     const endMs = nowSec * 1000;
     const days = new Set<string>();
 
     for (const suffix of ['events', 'masc-events']) {
-        const raw = localStorage.getItem(`hrt-u${userId}-${suffix}`);
+        const raw = storage.getItem(`hrt-u${userId}-${suffix}`);
         if (!raw) continue;
 
         let events: unknown;

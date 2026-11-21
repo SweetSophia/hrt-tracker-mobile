@@ -1,3 +1,4 @@
+import type { DemoCompute } from '../application/demoProtocol';
 import React, { useState } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import Tabs from '../components/Tabs';
@@ -12,7 +13,7 @@ type DemoTab = 'curve' | 'single';
  * the single dose working, switched with tabs. Two rows made About a list of
  * ten.
  */
-const PKDemos: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const PKDemos: React.FC<{ onBack: () => void; runDemo?: DemoCompute }> = ({ onBack, runDemo }) => {
     const { t } = useTranslation();
     const [tab, setTab] = useState<DemoTab>('curve');
     return (
@@ -27,7 +28,9 @@ const PKDemos: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     value={tab}
                     onChange={setTab}
                 />
-                <div className="mt-5">{tab === 'curve' ? <PKVisualization /> : <PKCalculationSandbox />}</div>
+                <div className="mt-5">
+                    {tab === 'curve' ? <PKVisualization /> : <PKCalculationSandbox runDemo={runDemo} />}
+                </div>
             </div>
         </div>
     );

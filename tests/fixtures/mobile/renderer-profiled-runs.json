@@ -1,0 +1,1656 @@
+[
+  {
+    "report": {
+      "serial": "emulator-5580",
+      "outcome": "pass",
+      "negativeControl": null,
+      "rendererProfileControl": null,
+      "avd": "HRT_Feasibility_API36",
+      "pageSize": 4096,
+      "api": 36,
+      "abi": "x86_64",
+      "apks": [
+        {
+          "path": "storageQualification/app-storageQualification.apk",
+          "sha256": "74264e7030ac72a147b6c10c25b2ad448ca0c91d013db86bdd10ac85c29da102"
+        },
+        {
+          "path": "androidTest/storageQualification/app-storageQualification-androidTest.apk",
+          "sha256": "535247868e764f882da3e45eea8d077957e40c417c6eccd18379f818ea332c0b"
+        }
+      ],
+      "cases": [
+        {
+          "className": "org.askarys.hrttracker.storage.LongHistoryPerformanceTest",
+          "name": "ordinaryCappedHistory"
+        }
+      ],
+      "reports": [
+        {
+          "outcome": "pass",
+          "measurementOnly": true,
+          "performanceAccepted": false,
+          "rendererProfile": true,
+          "localOrigin": true,
+          "snapshotUnchanged": true,
+          "beforeHash": "e9c2cb26e4bd6a94efa6bf362eb3c36af2e4227b5f9b18cf2cebf92b4132e0bf",
+          "afterHash": "e9c2cb26e4bd6a94efa6bf362eb3c36af2e4227b5f9b18cf2cebf92b4132e0bf",
+          "checks": {
+            "ordinaryHook": true,
+            "cappedGrid": true,
+            "settledPresentation": true,
+            "workerProgress": true,
+            "snapshotStable": true,
+            "phaseOrder": true
+          },
+          "trace": {
+            "phase": "complete",
+            "attempts": 2,
+            "discardedAttempts": 1,
+            "workerId": 3,
+            "requestId": 4,
+            "events": 43,
+            "method": "mcmc",
+            "samples": 100437,
+            "screenSamples": 103177,
+            "frames": 2,
+            "metrics": {
+              "actionToPostMs": 20.19999999999709,
+              "postToStartedMs": 16.80000000000291,
+              "startedToResultMs": 1090.3999999999942,
+              "resultToFrameMs": 95.69999999999709,
+              "totalMs": 1223.0999999999913,
+              "ticks": 212,
+              "workerTicks": 205,
+              "maxGapMs": 156.29999999998836
+            }
+          }
+        }
+      ],
+      "rendererProfile": {
+        "measurementOnly": true,
+        "performanceAccepted": false,
+        "renderer": {
+          "pid": 3748,
+          "tid": 3762
+        },
+        "selected": {
+          "workerId": 3,
+          "requestId": 4
+        },
+        "windows": {
+          "actionToPostMs": 20.19999999999709,
+          "postToStartedMs": 16.80000000000291,
+          "startedToResultMs": 1090.3999999999942,
+          "resultToFrameMs": 95.69999999999709,
+          "totalMs": 1223.0999999999913
+        },
+        "mainThreadTasks": {
+          "busyWallMs": 196.76,
+          "timeline": [
+            {
+              "name": "FunctionCall",
+              "wallMs": 155.808
+            },
+            {
+              "name": "HandlePostMessage",
+              "wallMs": 118.077
+            },
+            {
+              "name": "Layout",
+              "wallMs": 8.536
+            },
+            {
+              "name": "UpdateLayoutTree",
+              "wallMs": 8.033
+            },
+            {
+              "name": "MinorGC",
+              "wallMs": 6.734
+            },
+            {
+              "name": "MajorGC",
+              "wallMs": 5.16
+            },
+            {
+              "name": "FireAnimationFrame",
+              "wallMs": 4.067
+            },
+            {
+              "name": "EvaluateScript",
+              "wallMs": 1.421
+            },
+            {
+              "name": "PrePaint",
+              "wallMs": 1.387
+            },
+            {
+              "name": "Paint",
+              "wallMs": 0.982
+            }
+          ],
+          "largest": [
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1060.97,
+              "wallMs": 117.75
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1179.42,
+              "wallMs": 37.296
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 10.404,
+              "wallMs": 8.096
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1219.772,
+              "wallMs": 3.071
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1216.779,
+              "wallMs": 2.982
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1005.821,
+              "wallMs": 1.926
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 18.547,
+              "wallMs": 1.779
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 20.336,
+              "wallMs": 1.181
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 0,
+              "wallMs": 0.989
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 648.847,
+              "wallMs": 0.977
+            }
+          ],
+          "categories": [
+            {
+              "name": "toplevel",
+              "wallMs": 196.76
+            }
+          ]
+        },
+        "cpu": {
+          "samples": 5882,
+          "byPhase": {
+            "actionToPost": 120,
+            "postToStarted": 55,
+            "startedToResult": 5166,
+            "resultToFrame": 541
+          },
+          "topFrames": [
+            {
+              "functionName": "(idle)",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 4827
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 22884,
+              "samples": 334
+            },
+            {
+              "functionName": "EB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 64535,
+              "samples": 104
+            },
+            {
+              "functionName": "(program)",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 85
+            },
+            {
+              "functionName": "(garbage collector)",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 78
+            },
+            {
+              "functionName": "o",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 694042,
+              "samples": 77
+            },
+            {
+              "functionName": "NB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59238,
+              "samples": 56
+            },
+            {
+              "functionName": "jB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59923,
+              "samples": 48
+            },
+            {
+              "functionName": "Vw",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 28150,
+              "samples": 35
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 65125,
+              "samples": 31
+            },
+            {
+              "functionName": "hh",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59647,
+              "samples": 29
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 4274,
+              "samples": 20
+            },
+            {
+              "functionName": "v",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 46,
+              "columnNumber": 2225,
+              "samples": 17
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 6347,
+              "samples": 9
+            },
+            {
+              "functionName": "b$",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20212,
+              "samples": 7
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59694,
+              "samples": 6
+            },
+            {
+              "functionName": "wt",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 4331,
+              "samples": 6
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 5399,
+              "samples": 5
+            },
+            {
+              "functionName": "gP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 15022,
+              "samples": 5
+            },
+            {
+              "functionName": "r6",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 40843,
+              "samples": 5
+            },
+            {
+              "functionName": "setAttribute",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 5
+            },
+            {
+              "functionName": "kP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 40653,
+              "samples": 4
+            },
+            {
+              "functionName": "YC",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20709,
+              "samples": 3
+            },
+            {
+              "functionName": "mark",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 3
+            },
+            {
+              "functionName": "randomUUID",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 3
+            },
+            {
+              "functionName": "removeChild",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 3
+            },
+            {
+              "functionName": "requestAnimationFrame",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 3
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 702527,
+              "samples": 2
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 60636,
+              "samples": 2
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 66761,
+              "samples": 2
+            },
+            {
+              "functionName": "HC",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 68563,
+              "samples": 2
+            },
+            {
+              "functionName": "Ke",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 20496,
+              "samples": 2
+            },
+            {
+              "functionName": "Qo",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 27646,
+              "samples": 2
+            },
+            {
+              "functionName": "Yd",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 17758,
+              "samples": 2
+            },
+            {
+              "functionName": "c",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 23888,
+              "samples": 2
+            },
+            {
+              "functionName": "o",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 17,
+              "columnNumber": 274,
+              "samples": 2
+            },
+            {
+              "functionName": "pw",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 22217,
+              "samples": 2
+            },
+            {
+              "functionName": "schedule",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 61466,
+              "samples": 2
+            },
+            {
+              "functionName": "",
+              "url": "",
+              "lineNumber": 0,
+              "columnNumber": 0,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 60956,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20029,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20616,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20819,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20903,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 5868,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 18420,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 26661,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 30387,
+              "samples": 1
+            },
+            {
+              "functionName": "By",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 22867,
+              "samples": 1
+            },
+            {
+              "functionName": "El",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 31338,
+              "samples": 1
+            },
+            {
+              "functionName": "Eu",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 16528,
+              "samples": 1
+            },
+            {
+              "functionName": "G",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 3173,
+              "samples": 1
+            },
+            {
+              "functionName": "Ow",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 12774,
+              "samples": 1
+            },
+            {
+              "functionName": "Po",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 49243,
+              "samples": 1
+            },
+            {
+              "functionName": "Py",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 3097,
+              "samples": 1
+            },
+            {
+              "functionName": "RR",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 89001,
+              "samples": 1
+            },
+            {
+              "functionName": "S8",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 2702,
+              "samples": 1
+            },
+            {
+              "functionName": "Sr",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 7719,
+              "samples": 1
+            },
+            {
+              "functionName": "UB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 80457,
+              "samples": 1
+            },
+            {
+              "functionName": "UH",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 67944,
+              "samples": 1
+            },
+            {
+              "functionName": "Worker",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "ZA",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 702423,
+              "samples": 1
+            },
+            {
+              "functionName": "Zw",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 35282,
+              "samples": 1
+            },
+            {
+              "functionName": "_p",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 42298,
+              "samples": 1
+            },
+            {
+              "functionName": "af",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 127,
+              "samples": 1
+            },
+            {
+              "functionName": "apply",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 21790,
+              "samples": 1
+            },
+            {
+              "functionName": "apply",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 22320,
+              "samples": 1
+            },
+            {
+              "functionName": "begin",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 17990,
+              "samples": 1
+            },
+            {
+              "functionName": "bn",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 9264,
+              "samples": 1
+            },
+            {
+              "functionName": "dp",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 18725,
+              "samples": 1
+            },
+            {
+              "functionName": "eE",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 3013,
+              "samples": 1
+            },
+            {
+              "functionName": "ere",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 599,
+              "columnNumber": 4032,
+              "samples": 1
+            },
+            {
+              "functionName": "i6",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 44865,
+              "samples": 1
+            },
+            {
+              "functionName": "l3",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 67982,
+              "samples": 1
+            },
+            {
+              "functionName": "mP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 11699,
+              "samples": 1
+            },
+            {
+              "functionName": "now",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "pi",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 1454,
+              "samples": 1
+            },
+            {
+              "functionName": "postMessage",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "presented",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 19477,
+              "samples": 1
+            },
+            {
+              "functionName": "pz",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 662970,
+              "samples": 1
+            },
+            {
+              "functionName": "qa",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 10906,
+              "samples": 1
+            },
+            {
+              "functionName": "qr",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 8584,
+              "samples": 1
+            },
+            {
+              "functionName": "re",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 5460,
+              "samples": 1
+            },
+            {
+              "functionName": "sF",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 631481,
+              "samples": 1
+            },
+            {
+              "functionName": "useMemo",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 24243,
+              "samples": 1
+            },
+            {
+              "functionName": "v8",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 19905,
+              "samples": 1
+            },
+            {
+              "functionName": "wd",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 69138,
+              "samples": 1
+            },
+            {
+              "functionName": "win.androidBridge.onmessage",
+              "url": "",
+              "lineNumber": 928,
+              "columnNumber": 55,
+              "samples": 1
+            },
+            {
+              "functionName": "zR",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 90905,
+              "samples": 1
+            },
+            {
+              "functionName": "zt",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 7883,
+              "samples": 1
+            }
+          ]
+        }
+      }
+    },
+    "pin": {
+      "sha256": "bc0d6c03785670762979daf320a763fd10c8d73d82b69f8cd56a0b2566719524"
+    }
+  },
+  {
+    "report": {
+      "serial": "emulator-5582",
+      "outcome": "pass",
+      "negativeControl": null,
+      "rendererProfileControl": null,
+      "avd": "HRT_Feasibility_16KB",
+      "pageSize": 16384,
+      "api": 37,
+      "abi": "x86_64",
+      "apks": [
+        {
+          "path": "storageQualification/app-storageQualification.apk",
+          "sha256": "74264e7030ac72a147b6c10c25b2ad448ca0c91d013db86bdd10ac85c29da102"
+        },
+        {
+          "path": "androidTest/storageQualification/app-storageQualification-androidTest.apk",
+          "sha256": "535247868e764f882da3e45eea8d077957e40c417c6eccd18379f818ea332c0b"
+        }
+      ],
+      "cases": [
+        {
+          "className": "org.askarys.hrttracker.storage.LongHistoryPerformanceTest",
+          "name": "ordinaryCappedHistory"
+        }
+      ],
+      "reports": [
+        {
+          "outcome": "pass",
+          "measurementOnly": true,
+          "performanceAccepted": false,
+          "rendererProfile": true,
+          "localOrigin": true,
+          "snapshotUnchanged": true,
+          "beforeHash": "04ea4bd5239a2326330f819852dea1c747aa19714b6a024b0a12b23fd81fd556",
+          "afterHash": "04ea4bd5239a2326330f819852dea1c747aa19714b6a024b0a12b23fd81fd556",
+          "checks": {
+            "ordinaryHook": true,
+            "cappedGrid": true,
+            "settledPresentation": true,
+            "workerProgress": true,
+            "snapshotStable": true,
+            "phaseOrder": true
+          },
+          "trace": {
+            "phase": "complete",
+            "attempts": 2,
+            "discardedAttempts": 1,
+            "workerId": 3,
+            "requestId": 4,
+            "events": 43,
+            "method": "mcmc",
+            "samples": 100437,
+            "screenSamples": 103177,
+            "frames": 2,
+            "metrics": {
+              "actionToPostMs": 42.10000000000218,
+              "postToStartedMs": 21.200000000000728,
+              "startedToResultMs": 1472.199999999997,
+              "resultToFrameMs": 97.20000000000437,
+              "totalMs": 1632.7000000000044,
+              "ticks": 289,
+              "workerTicks": 279,
+              "maxGapMs": 167
+            }
+          }
+        }
+      ],
+      "rendererProfile": {
+        "measurementOnly": true,
+        "performanceAccepted": false,
+        "renderer": {
+          "pid": 3120,
+          "tid": 3145
+        },
+        "selected": {
+          "workerId": 3,
+          "requestId": 4
+        },
+        "windows": {
+          "actionToPostMs": 42.10000000000218,
+          "postToStartedMs": 21.200000000000728,
+          "startedToResultMs": 1472.199999999997,
+          "resultToFrameMs": 97.20000000000391,
+          "totalMs": 1632.700000000004
+        },
+        "mainThreadTasks": {
+          "busyWallMs": 240.355,
+          "timeline": [
+            {
+              "name": "FunctionCall",
+              "wallMs": 188.708
+            },
+            {
+              "name": "HandlePostMessage",
+              "wallMs": 119.316
+            },
+            {
+              "name": "MinorGC",
+              "wallMs": 27.711
+            },
+            {
+              "name": "Layout",
+              "wallMs": 14.719
+            },
+            {
+              "name": "UpdateLayoutTree",
+              "wallMs": 10.725
+            },
+            {
+              "name": "FireAnimationFrame",
+              "wallMs": 5.789
+            },
+            {
+              "name": "EvaluateScript",
+              "wallMs": 2.552
+            },
+            {
+              "name": "PrePaint",
+              "wallMs": 1.412
+            },
+            {
+              "name": "Paint",
+              "wallMs": 0.945
+            }
+          ],
+          "largest": [
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1457.39,
+              "wallMs": 119.159
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1577.253,
+              "wallMs": 44.909
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 32.332,
+              "wallMs": 11.009
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 21.084,
+              "wallMs": 10.056
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1625.335,
+              "wallMs": 7.336
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 1622.227,
+              "wallMs": 3.047
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 0,
+              "wallMs": 1.861
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 65.327,
+              "wallMs": 1.657
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 31.152,
+              "wallMs": 1.171
+            },
+            {
+              "name": "ThreadControllerImpl::RunTask",
+              "startOffsetMs": 288.307,
+              "wallMs": 1.048
+            }
+          ],
+          "categories": [
+            {
+              "name": "toplevel",
+              "wallMs": 240.355
+            }
+          ]
+        },
+        "cpu": {
+          "samples": 7307,
+          "byPhase": {
+            "actionToPost": 184,
+            "postToStarted": 80,
+            "startedToResult": 6563,
+            "resultToFrame": 480
+          },
+          "topFrames": [
+            {
+              "functionName": "(idle)",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 5848
+            },
+            {
+              "functionName": "(program)",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 520
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 22884,
+              "samples": 312
+            },
+            {
+              "functionName": "(garbage collector)",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 126
+            },
+            {
+              "functionName": "o",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 694042,
+              "samples": 95
+            },
+            {
+              "functionName": "EB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 64535,
+              "samples": 84
+            },
+            {
+              "functionName": "jB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59923,
+              "samples": 47
+            },
+            {
+              "functionName": "NB",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59238,
+              "samples": 42
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 65125,
+              "samples": 38
+            },
+            {
+              "functionName": "hh",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 59647,
+              "samples": 29
+            },
+            {
+              "functionName": "v",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 46,
+              "columnNumber": 2225,
+              "samples": 16
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 4274,
+              "samples": 10
+            },
+            {
+              "functionName": "requestAnimationFrame",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 8
+            },
+            {
+              "functionName": "Ow",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 12774,
+              "samples": 7
+            },
+            {
+              "functionName": "mark",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 6
+            },
+            {
+              "functionName": "b$",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20212,
+              "samples": 5
+            },
+            {
+              "functionName": "wt",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 4331,
+              "samples": 5
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 6347,
+              "samples": 4
+            },
+            {
+              "functionName": "Worker",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 4
+            },
+            {
+              "functionName": "YC",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20709,
+              "samples": 4
+            },
+            {
+              "functionName": "gP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 15022,
+              "samples": 4
+            },
+            {
+              "functionName": "i6",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 44865,
+              "samples": 4
+            },
+            {
+              "functionName": "kP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 40653,
+              "samples": 4
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 66761,
+              "samples": 3
+            },
+            {
+              "functionName": "getBoundingClientRect",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 3
+            },
+            {
+              "functionName": "postMessage",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 3
+            },
+            {
+              "functionName": "qa",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 10906,
+              "samples": 3
+            },
+            {
+              "functionName": "U$",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 21930,
+              "samples": 2
+            },
+            {
+              "functionName": "U.getState",
+              "url": "https://localhost/assets/nativeRuntime-ByikS2zt.js",
+              "lineNumber": 0,
+              "columnNumber": 1869,
+              "samples": 2
+            },
+            {
+              "functionName": "UH",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 67944,
+              "samples": 2
+            },
+            {
+              "functionName": "bn",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 9264,
+              "samples": 2
+            },
+            {
+              "functionName": "c",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 23888,
+              "samples": 2
+            },
+            {
+              "functionName": "eE",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 3013,
+              "samples": 2
+            },
+            {
+              "functionName": "lP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 22858,
+              "samples": 2
+            },
+            {
+              "functionName": "o",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 17,
+              "columnNumber": 274,
+              "samples": 2
+            },
+            {
+              "functionName": "read",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 24709,
+              "samples": 2
+            },
+            {
+              "functionName": "setAttribute",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 2
+            },
+            {
+              "functionName": "tick",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 19705,
+              "samples": 2
+            },
+            {
+              "functionName": "xd",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 702333,
+              "samples": 2
+            },
+            {
+              "functionName": "",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 20697,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 23847,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 702527,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 62029,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 69284,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 82273,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 20029,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 45,
+              "columnNumber": 28372,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 5717,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 23195,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 23949,
+              "samples": 1
+            },
+            {
+              "functionName": "",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 30387,
+              "samples": 1
+            },
+            {
+              "functionName": "$a",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 37,
+              "columnNumber": 26981,
+              "samples": 1
+            },
+            {
+              "functionName": "Gx",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 662256,
+              "samples": 1
+            },
+            {
+              "functionName": "M",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 6783,
+              "samples": 1
+            },
+            {
+              "functionName": "NP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 41303,
+              "samples": 1
+            },
+            {
+              "functionName": "P8",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 29487,
+              "samples": 1
+            },
+            {
+              "functionName": "Qo",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 27646,
+              "samples": 1
+            },
+            {
+              "functionName": "S1",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 16795,
+              "samples": 1
+            },
+            {
+              "functionName": "Sr",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 7719,
+              "samples": 1
+            },
+            {
+              "functionName": "T6",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 88886,
+              "samples": 1
+            },
+            {
+              "functionName": "Vw",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 28150,
+              "samples": 1
+            },
+            {
+              "functionName": "Yd",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 38,
+              "columnNumber": 17758,
+              "samples": 1
+            },
+            {
+              "functionName": "ZA",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 702423,
+              "samples": 1
+            },
+            {
+              "functionName": "addEventListener",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "apply",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 21790,
+              "samples": 1
+            },
+            {
+              "functionName": "begin",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 17990,
+              "samples": 1
+            },
+            {
+              "functionName": "bo",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 12092,
+              "samples": 1
+            },
+            {
+              "functionName": "ere",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 599,
+              "columnNumber": 4032,
+              "samples": 1
+            },
+            {
+              "functionName": "f",
+              "url": "https://localhost/assets/index-BeA9GRuD.js",
+              "lineNumber": 0,
+              "columnNumber": 4018,
+              "samples": 1
+            },
+            {
+              "functionName": "fi",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 34392,
+              "samples": 1
+            },
+            {
+              "functionName": "getClientRects",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "isActive",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 25229,
+              "samples": 1
+            },
+            {
+              "functionName": "j",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 33,
+              "columnNumber": 4874,
+              "samples": 1
+            },
+            {
+              "functionName": "mt",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 37,
+              "columnNumber": 6446,
+              "samples": 1
+            },
+            {
+              "functionName": "post",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 18484,
+              "samples": 1
+            },
+            {
+              "functionName": "postToNative",
+              "url": "",
+              "lineNumber": 843,
+              "columnNumber": 31,
+              "samples": 1
+            },
+            {
+              "functionName": "pt",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 37,
+              "columnNumber": 5652,
+              "samples": 1
+            },
+            {
+              "functionName": "randomUUID",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "re",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 5460,
+              "samples": 1
+            },
+            {
+              "functionName": "read",
+              "url": "https://localhost/assets/entry-Dss9hC3m.js",
+              "lineNumber": 0,
+              "columnNumber": 19924,
+              "samples": 1
+            },
+            {
+              "functionName": "removeEventListener",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "schedule",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 61466,
+              "samples": 1
+            },
+            {
+              "functionName": "setInterval",
+              "url": "",
+              "lineNumber": null,
+              "columnNumber": null,
+              "samples": 1
+            },
+            {
+              "functionName": "st",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 37,
+              "columnNumber": 7506,
+              "samples": 1
+            },
+            {
+              "functionName": "wd",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 44,
+              "columnNumber": 69138,
+              "samples": 1
+            },
+            {
+              "functionName": "xP",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 40,
+              "columnNumber": 31740,
+              "samples": 1
+            },
+            {
+              "functionName": "yg",
+              "url": "https://localhost/assets/index-C6akKdWc.js",
+              "lineNumber": 47,
+              "columnNumber": 29,
+              "samples": 1
+            }
+          ]
+        }
+      }
+    },
+    "pin": {
+      "sha256": "eae9bd5bffd31bf3c6905fbf9df3bf191548fd8eb050add863f9da5c8eabbeed"
+    }
+  }
+]

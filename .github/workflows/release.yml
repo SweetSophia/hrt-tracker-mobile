@@ -22,6 +22,7 @@ env:
 jobs:
   prepare:
     name: Check the tag and draft the release
+    if: github.repository == 'xunxunProjects/Oyama-s-HRT-Tracker'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -143,7 +144,8 @@ jobs:
                       APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
             if [ -z "${!name}" ]; then unset "$name"; fi
           done
-          npm run tauri:build -- $BUILD_ARGS
+          desktop_config=$(node scripts/desktop-api-config.mjs)
+          npm run tauri:build -- --config "$desktop_config" $BUILD_ARGS
 
       - name: Check the macOS signature
         if: runner.os == 'macOS'

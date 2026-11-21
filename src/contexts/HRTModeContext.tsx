@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useDevicePreference } from './RecordsContext';
 import { HRTMode } from '../../logic';
 
 interface HRTModeContextValue {
@@ -18,16 +19,9 @@ export const useHRTMode = (): HRTModeContextValue => {
 const STORAGE_KEY = 'hrt-mode';
 
 export const HRTModeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [mode, setModeState] = useState<HRTMode>(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved === 'transmasc' || saved === 'transfem' ? saved : 'transfem';
-    });
-
-    useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, mode);
-    }, [mode]);
-
-    const setMode = (m: HRTMode) => setModeState(m);
+    const [mode, setMode] = useDevicePreference<HRTMode>(STORAGE_KEY, raw =>
+        raw === 'transmasc' ? 'transmasc' : 'transfem',
+    );
 
     return (
         <HRTModeContext.Provider value={{ mode, setMode, isTransmasc: mode === 'transmasc' }}>

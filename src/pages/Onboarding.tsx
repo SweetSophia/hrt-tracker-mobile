@@ -1,3 +1,9 @@
+import type { DemoCompute } from '../application/demoProtocol';
+import type { AppModelStatus } from '../hooks/appModelTypes';
+import { ModelStatus } from '../components/ModelStatus';
+import { useMounted } from '../hooks/useMounted';
+import type { UiSession } from '../hooks/uiSession';
+import type { ApplicationRuntime } from '../application/runtime';
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Close } from '../components/icons';
 import { BODY_WEIGHT_KG_MAX, BODY_WEIGHT_KG_MIN, ExtraKey, Route, isPlausibleBodyWeightKG } from '../../logic';
@@ -29,22 +35,9 @@ const ONBOARDING_KEY = 'app-onboarded';
  * account. Matched by shape rather than listed, since the accounts on a device
  * aren't known here.
  */
-const EVENTS_KEY = /^hrt-(u[^-]+-)?(masc-)?events$/;
-
-export const shouldShowOnboarding = (): boolean => {
-    if (localStorage.getItem(ONBOARDING_KEY) === 'true') return false;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (!key || !EVENTS_KEY.test(key)) continue;
-        const value = localStorage.getItem(key);
-        if (value && value !== '[]') return false;
-    }
-    return true;
-};
-
-export const markOnboardingSeen = (): void => {
-    localStorage.setItem(ONBOARDING_KEY, 'true');
-};
+export const shouldShowOnboarding = (runtime: ApplicationRuntime): boolean =>
+    runtime.getState().device[ONBOARDING_KEY] !== 'true' && !runtime.hasPriorRecords;
+export const markOnboardingSeen = (runtime: ApplicationRuntime): boolean => runtime.setDevice(ONBOARDING_KEY, 'true');
 
 const divider = 'border-b-(length:--hairline) border-[var(--border)]';
 
@@ -104,7 +97,11 @@ const HOW_ROWS: { mark: DoodleName; title: string; desc: string }[] = [
  * Owns its clock, and is mounted only while the step is showing, so leaving
  * and coming back starts the story from the top.
  */
-const HowStep: React.FC<{ curve: CurveData | null }> = ({ curve }) => {
+const HowStep: React.FC<{ curve: CurveData | null; status: AppModelStatus; retry(): void }> = ({
+    curve,
+    status,
+    retry,
+}) => {
     const { t } = useTranslation();
     const [beat, setBeat] = useState<Beat>(0);
     // Bumped on every replay: a beat restarted from its own start is the same
@@ -150,6 +147,7 @@ const HowStep: React.FC<{ curve: CurveData | null }> = ({ curve }) => {
                 empty page. */}
             <Stage>
                 <div className="w-full">
+                    <ModelStatus status={status} onRetry={retry} />
                     <OnboardingCurve
                         data={curve}
                         beat={beat}
@@ -191,6 +189,7 @@ const HowStep: React.FC<{ curve: CurveData | null }> = ({ curve }) => {
 };
 
 interface OnboardingProps {
+    runDemo?: DemoCompute;
     /** Same list Settings uses, rather than a second copy that can drift. */
     languageOptions: { value: string; label: string }[];
     /**
@@ -198,10 +197,11 @@ interface OnboardingProps {
      * set, so walking through it again changes nothing that isn't touched.
      */
     weight: number;
-    onWeightChange: (kg: number) => void;
+    session: UiSession;
+    onWeightChange: (kg: number) => Promise<boolean>;
     plan: PlanItem[];
-    onAddPlanItem: (item: PlanItem) => void;
-    onDeletePlanItem: (id: string) => void;
+    onAddPlanItem: (item: PlanItem) => Promise<boolean>;
+    onDeletePlanItem: (id: string) => Promise<boolean>;
     onDone: () => void;
 }
 
@@ -222,30 +222,34 @@ interface OnboardingProps {
  * that the flow exists to ask about.
  */
 const Onboarding: React.FC<OnboardingProps> = ({
+    runDemo,
     languageOptions,
     weight,
+    session,
     onWeightChange,
     plan,
     onAddPlanItem,
     onDeletePlanItem,
     onDone,
 }) => {
+    const isMounted = useMounted();
     const { t, lang, setLang } = useTranslation();
     const { mode, setMode, isTransmasc } = useHRTMode();
     const { showDialog } = useDialog();
-    const curve = useOnboardingCurve(isTransmasc);
+    const { value: curve, status: curveStatus, retry: retryCurve } = useOnboardingCurve(isTransmasc, runDemo);
 
     // Kept as typed, so a half-typed figure ("6" on the way to "65") isn't
     // snapped back. Each plausible value is applied as it lands, like the
     // language and mode rows: leaving by Skip keeps it too.
     const [weightStr, setWeightStr] = useState(() => String(weight));
     const weightOk = isPlausibleBodyWeightKG(parseFloat(weightStr));
+    const pendingWeight = useRef<Promise<boolean>>(Promise.resolve(true));
     const typeWeight = (s: string) => {
         setWeightStr(s);
         const kg = parseFloat(s);
         // Unchanged is left alone: setWeight stamps the value for sync, and
         // passing through the intro again is not an edit.
-        if (isPlausibleBodyWeightKG(kg) && kg !== weight) onWeightChange(kg);
+        if (isPlausibleBodyWeightKG(kg) && kg !== weight) pendingWeight.current = onWeightChange(kg);
     };
 
     // Adding to the plan from the intro: the Plan page's own questions (below).
@@ -254,7 +258,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
         (PLAN_DRUGS[mode][r] ?? []).some(e => !plan.some(i => i.route === r && i.ester === e)),
     );
 
-    const [step, setStep] = useState(0);
+    const [step, setStep] = useState(() => session.getOnboardingStep());
     // Only so the step change slides the way the app's view changes do.
     const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
 
@@ -404,7 +408,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
             </div>
         </div>,
 
-        <HowStep key="how" curve={curve} />,
+        <HowStep key="how" curve={curve} status={curveStatus} retry={retryCurve} />,
 
         // Prefilled with what the model is using right now — 70 kg on a fresh
         // install — so Next on its own is an answer, and it is the answer the
@@ -527,13 +531,14 @@ const Onboarding: React.FC<OnboardingProps> = ({
 
     const go = (next: number) => {
         setDirection(next > step ? 'forward' : 'backward');
+        session.setOnboardingStep(next);
         setStep(next);
     };
-    const forward = () => {
-        if (!ready) return;
+    async function forward() {
+        if (!ready || !(await pendingWeight.current) || !isMounted()) return;
         if (isLast) onDone();
         else go(step + 1);
-    };
+    }
 
     // The plan's questions take the intro's place while they run, under a
     // title whose back arrow backs out of them, the way the Plan page has
@@ -549,9 +554,10 @@ const Onboarding: React.FC<OnboardingProps> = ({
                     <PageHeader onBack={() => setAddingPlan(false)} title={t('plan.add')} />
                     <PlanWizard
                         plan={plan}
-                        onAdd={item => {
-                            onAddPlanItem(item);
+                        onAdd={async item => {
+                            if (!(await onAddPlanItem(item))) return false;
                             setAddingPlan(false);
+                            return true;
                         }}
                         onCancel={() => setAddingPlan(false)}
                         aboveNav={false}
@@ -568,7 +574,9 @@ const Onboarding: React.FC<OnboardingProps> = ({
         >
             <div className="flex shrink-0 justify-end px-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] short:pt-[calc(0.5rem+env(safe-area-inset-top,0px))]">
                 <button
-                    onClick={onDone}
+                    onClick={async () => {
+                        if ((await pendingWeight.current) && isMounted()) onDone();
+                    }}
                     className={`rounded-lg px-2 py-1.5 text-xs text-muted hover:bg-[var(--surface-hover)] ${isLast ? 'invisible' : ''}`}
                     tabIndex={isLast ? -1 : 0}
                 >

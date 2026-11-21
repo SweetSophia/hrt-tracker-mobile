@@ -312,13 +312,13 @@ describe('local HRT day counting', () => {
             getItem: (key: string) => storage.get(key) ?? null,
         });
 
-        expect(countHrtDaysSince(USER_ID, since, now)).toBe(4);
+        expect(countHrtDaysSince(USER_ID, since, now, globalThis.localStorage)).toBe(4);
     });
 
     it('returns zero without storage or a user id', () => {
-        expect(countHrtDaysSince('', 0, NOW)).toBe(0);
+        expect(countHrtDaysSince('', 0, NOW, globalThis.localStorage)).toBe(0);
         vi.stubGlobal('localStorage', { getItem: () => null });
-        expect(countHrtDaysSince(USER_ID, 0, NOW)).toBe(0);
+        expect(countHrtDaysSince(USER_ID, 0, NOW, globalThis.localStorage)).toBe(0);
     });
 });
 

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { TRANSLATIONS, Lang } from '../i18n/translations';
+import { usePortablePreference } from './RecordsContext';
 import { setAppLocale } from '../i18n/locale';
 
 const LanguageContext = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: string) => string } | null>(
@@ -50,11 +51,10 @@ const FALLBACK: Record<Lang, readonly Lang[]> = {
 };
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-    const [lang, setLang] = useState<Lang>(() => (localStorage.getItem('hrt-lang') as Lang) || 'zh');
+    const [lang, setLang] = usePortablePreference<Lang>('hrt-lang', raw => (raw as Lang) || 'zh');
     setAppLocale(LANG_LOCALE[lang] ?? lang);
 
     useEffect(() => {
-        localStorage.setItem('hrt-lang', lang);
         document.title = (TRANSLATIONS as Record<string, Record<string, string>>)[lang]?.['app.title'] ?? 'HRT Tracker';
         document.documentElement.lang = LANG_LOCALE[lang] ?? lang;
     }, [lang]);

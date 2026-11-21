@@ -16,7 +16,7 @@ import {
     normalizeCalibrationMethod,
     type CalibrationHistoryMode,
     type CalibrationMethod,
-} from '../../logic';
+} from '../domain/engine';
 import { MODE_KEYS, ModeKey, SyncState, Tombstones, pruneTombstones, sanitizeTombstones } from './syncMerge';
 import { cleanDoseMG } from './cleanDose';
 import { legacyCpaItem, normalizePlanItem, type PlanItem } from './plan';
@@ -208,6 +208,7 @@ export const SHARED_SUFFIXES = [
     'birth-year-at',
     'age-beta',
     'model-settings-at',
+    'cpa-plan',
 ] as const;
 
 /**

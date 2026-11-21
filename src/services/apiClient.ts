@@ -3,6 +3,8 @@
 // AuthContext listens for this to clear the stale session and prompt re-login,
 // instead of leaving the UI in a broken "logged-in but every request 401s"
 // state.
+import { getCapabilities } from '../platform/runtime';
+
 export const UNAUTHORIZED_EVENT = 'auth:unauthorized';
 
 /**
@@ -74,7 +76,14 @@ const configuredApiOrigin = (() => {
  * builds can set VITE_API_ORIGIN without embedding a production hostname in
  * application code.
  */
+export function requireRemoteBackend(): void {
+    if (!getCapabilities().remoteBackend) {
+        throw new ApiError(0, 'BACKEND_DISABLED', 'Remote services are unavailable in this build.');
+    }
+}
+
 export function apiEndpoint(path: string): string {
+    requireRemoteBackend();
     if (!path.startsWith('/')) throw new Error('API paths must start with "/"');
     return configuredApiOrigin ? `${configuredApiOrigin}${path}` : path;
 }
@@ -116,6 +125,7 @@ export async function apiRequest<T>(
  * the caller untouched and never trigger a sign-out.
  */
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    requireRemoteBackend();
     const target =
         typeof input === 'string' && input.startsWith('/') && !input.startsWith('//') ? apiEndpoint(input) : input;
     const res = await fetch(target, init);

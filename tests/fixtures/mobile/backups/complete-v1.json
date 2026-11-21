@@ -1,0 +1,289 @@
+{
+  "format": "oyama-hrt-complete-backup",
+  "formatVersion": 1,
+  "createdAt": "2030-01-02T00:00:00.000Z",
+  "mode": "transfem",
+  "modes": {
+    "transfem": {
+      "events": [
+        {
+          "id": "synthetic-transfem-event",
+          "route": "oral",
+          "ester": "E2",
+          "timeH": 500000,
+          "doseMG": 2,
+          "extras": {},
+          "updatedAt": 1893542399000
+        }
+      ],
+      "labResults": [
+        {
+          "id": "synthetic-transfem-lab",
+          "timeH": 500001,
+          "concValue": 120,
+          "unit": "pg/ml",
+          "updatedAt": 1893542399000
+        }
+      ],
+      "doseTemplates": [
+        {
+          "id": "synthetic-transfem-template",
+          "name": "Synthetic 💜 模板",
+          "route": "oral",
+          "ester": "E2",
+          "doseMG": 2,
+          "extras": {},
+          "createdAt": 1893542398000,
+          "updatedAt": 1893542399000
+        }
+      ],
+      "quickDoses": [
+        {
+          "id": "synthetic-transfem-quick",
+          "route": "oral",
+          "ester": "E2",
+          "value": 2,
+          "createdAt": 1893542399000
+        }
+      ],
+      "supplies": [
+        {
+          "id": "synthetic-transfem-supply-0",
+          "route": "oral",
+          "ester": "E2",
+          "pack": {
+            "kind": "vial",
+            "ml": 5,
+            "mgPerMl": 40
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transfem-supply-1",
+          "route": "oral",
+          "ester": "E2",
+          "pack": {
+            "kind": "pill",
+            "mg": 2
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transfem-supply-2",
+          "route": "oral",
+          "ester": "E2",
+          "pack": {
+            "kind": "pump",
+            "mg": 1.25
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transfem-supply-3",
+          "route": "oral",
+          "ester": "E2",
+          "pack": {
+            "kind": "sachet",
+            "mg": 1.5
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transfem-supply-4",
+          "route": "patchApply",
+          "ester": "E2",
+          "pack": {
+            "kind": "patch"
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transfem-supply-5",
+          "route": "oral",
+          "ester": "E2",
+          "pack": {
+            "kind": "bulk"
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        }
+      ],
+      "plan": [
+        {
+          "id": "synthetic-transfem-plan",
+          "route": "oral",
+          "ester": "E2",
+          "doseMG": 2,
+          "extras": {},
+          "everyDays": 2,
+          "timesPerDay": 1
+        }
+      ],
+      "deletions": {
+        "events": {
+          "synthetic-transfem-deleted-event": 1893542340000
+        },
+        "labResults": {
+          "synthetic-transfem-deleted-lab": 1893542340000
+        },
+        "doseTemplates": {
+          "synthetic-transfem-deleted-template": 1893542340000
+        }
+      }
+    },
+    "transmasc": {
+      "events": [
+        {
+          "id": "synthetic-transmasc-event",
+          "route": "injection",
+          "ester": "TE",
+          "timeH": 500000,
+          "doseMG": 40,
+          "extras": {},
+          "updatedAt": 1893542399000
+        }
+      ],
+      "labResults": [
+        {
+          "id": "synthetic-transmasc-lab",
+          "timeH": 500001,
+          "concValue": 120,
+          "unit": "ng/dl",
+          "updatedAt": 1893542399000
+        }
+      ],
+      "doseTemplates": [
+        {
+          "id": "synthetic-transmasc-template",
+          "name": "Synthetic 💜 模板",
+          "route": "injection",
+          "ester": "TE",
+          "doseMG": 40,
+          "extras": {},
+          "createdAt": 1893542398000,
+          "updatedAt": 1893542399000
+        }
+      ],
+      "quickDoses": [
+        {
+          "id": "synthetic-transmasc-quick",
+          "route": "injection",
+          "ester": "TE",
+          "value": 40,
+          "createdAt": 1893542399000
+        }
+      ],
+      "supplies": [
+        {
+          "id": "synthetic-transmasc-supply-0",
+          "route": "injection",
+          "ester": "TE",
+          "pack": {
+            "kind": "vial",
+            "ml": 5,
+            "mgPerMl": 40
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transmasc-supply-1",
+          "route": "injection",
+          "ester": "TE",
+          "pack": {
+            "kind": "pill",
+            "mg": 2
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transmasc-supply-2",
+          "route": "injection",
+          "ester": "TE",
+          "pack": {
+            "kind": "pump",
+            "mg": 1.25
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transmasc-supply-3",
+          "route": "injection",
+          "ester": "TE",
+          "pack": {
+            "kind": "sachet",
+            "mg": 1.5
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transmasc-supply-4",
+          "route": "patchApply",
+          "ester": "TE",
+          "pack": {
+            "kind": "patch"
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        },
+        {
+          "id": "synthetic-transmasc-supply-5",
+          "route": "injection",
+          "ester": "TE",
+          "pack": {
+            "kind": "bulk"
+          },
+          "count": 2,
+          "startedAt": 1893542399000
+        }
+      ],
+      "plan": [
+        {
+          "id": "synthetic-transmasc-plan",
+          "route": "injection",
+          "ester": "TE",
+          "doseMG": 40,
+          "extras": {},
+          "everyDays": 2,
+          "timesPerDay": 1
+        }
+      ],
+      "deletions": {
+        "events": {
+          "synthetic-transmasc-deleted-event": 1893542340000
+        },
+        "labResults": {
+          "synthetic-transmasc-deleted-lab": 1893542340000
+        },
+        "doseTemplates": {
+          "synthetic-transmasc-deleted-template": 1893542340000
+        }
+      }
+    }
+  },
+  "weight": 72,
+  "weightUpdatedAt": 1893542400000,
+  "pkParams": {
+    "e2_kClear": 0.42
+  },
+  "pkParamsUpdatedAt": 1893542400000,
+  "calibration": {
+    "method": "ekf",
+    "historyMode": "forward"
+  },
+  "preferences": {
+    "app-theme": "dark",
+    "hrt-lang": "en",
+    "app-show-prediction": true,
+    "app-hide-site-label": false,
+    "hrt-supply-lead-days": 14
+  }
+}

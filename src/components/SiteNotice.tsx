@@ -1,3 +1,4 @@
+import { useDevicePreference } from '../contexts/RecordsContext';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Megaphone, Close } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -15,14 +16,6 @@ const DISMISS_KEY = 'site-notice-dismissed';
 /** Re-check while the tab sits open, so a notice posted mid-session arrives. */
 const POLL_INTERVAL_MS = 10 * 60_000;
 const MIN_FETCH_INTERVAL_MS = 60_000;
-
-const readDismissed = (): number => {
-    try {
-        return Number(localStorage.getItem(DISMISS_KEY)) || 0;
-    } catch {
-        return 0;
-    }
-};
 
 /**
  * Render the body with bare http(s) URLs turned into links. Everything stays a
@@ -53,7 +46,7 @@ const linkify = (text: string): React.ReactNode[] =>
 const SiteNoticeBanner: React.FC = () => {
     const { t, lang } = useTranslation();
     const [notice, setNotice] = useState<Notice | null>(null);
-    const [dismissed, setDismissed] = useState<number>(readDismissed);
+    const [dismissed, setDismissed] = useDevicePreference(DISMISS_KEY, raw => Number(raw) || 0);
     const lastFetchRef = useRef(0);
 
     const load = useCallback(async () => {
@@ -93,11 +86,6 @@ const SiteNoticeBanner: React.FC = () => {
     if (!notice || notice.revision <= dismissed) return null;
 
     const dismiss = () => {
-        try {
-            localStorage.setItem(DISMISS_KEY, String(notice.revision));
-        } catch {
-            /* private mode */
-        }
         setDismissed(notice.revision);
     };
 

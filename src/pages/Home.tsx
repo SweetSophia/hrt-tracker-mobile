@@ -12,6 +12,9 @@ import {
     CPA_MIN_NGML,
 } from '../../logic';
 import ResultChart from '../components/ResultChart';
+import { ModelBoundary } from '../components/ModelBoundary';
+import type { AppModelStatus } from '../hooks/appModelTypes';
+
 import DoseHeatmap from '../components/DoseHeatmap';
 import DoseAdvisoryNotice from '../components/DoseAdvisory';
 import RollingNumber from '../components/RollingNumber';
@@ -19,6 +22,7 @@ import LevelRail from '../components/LevelRail';
 import PixelCat from '../components/PixelCat';
 import DoseDoodle from '../components/DoseDoodle';
 import CommunityVotePrompt from '../components/CommunityVotePrompt';
+import { getCapabilities } from '../platform/runtime';
 import Doodle from '../components/Doodle';
 import Tick from '../components/Tick';
 import { useHRTMode } from '../contexts/HRTModeContext';
@@ -31,6 +35,8 @@ import { Regimen, Supply, supplyStatus } from '../utils/regimen';
 import { PlanItem, planStatus, matchesItem } from '../utils/plan';
 import { planItemLabel, supplyLabel, dueLabel, fill, fillNodes } from '../utils/regimenText';
 import { headerAction, headerActionAccent } from '../components/PageHeader';
+
+const EMPTY_MODEL_SNAPSHOT = Object.freeze({});
 
 interface HomeProps {
     t: (key: string) => string;
@@ -47,6 +53,10 @@ interface HomeProps {
     labResults: LabResult[];
     onEditEvent: (e: DoseEvent) => void;
     calibrationFn: (timeH: number) => number;
+    /** Clock covered by the exact mobile calibration table. */
+    modelNowMs?: number;
+    modelStatus?: AppModelStatus;
+    modelSnapshot?: object;
     theme: AppTheme;
     onNavigateToHistory: () => void;
     onNavigateToLab: () => void;
@@ -85,6 +95,9 @@ const Home: React.FC<HomeProps> = ({
     labResults,
     onEditEvent,
     calibrationFn,
+    modelNowMs,
+    modelStatus = 'ready',
+    modelSnapshot = EMPTY_MODEL_SNAPSHOT,
     theme,
     onNavigateToHistory,
     onNavigateToLab,
@@ -258,53 +271,57 @@ const Home: React.FC<HomeProps> = ({
     const sideStatus =
         chartFirst && hasReading && sideSlot
             ? createPortal(
-                  <div className="px-[1.375rem] pb-5">
-                      {showCats && (
-                          <span className="mb-3 flex items-end gap-1.5">
-                              {events.length > 0 && <PixelCat pose="donut" size={64} />}
-                              {labResults.length > 0 && <PixelCat pose="loaf" size={64} />}
-                          </span>
-                      )}
-                      <p className={`text-xs font-medium ${muted}`}>{primary.label}</p>
-                      <p className={`${readingSlot} mt-1.5 text-[length:var(--text-reading-sm-size)]`}>
-                          {primary.value > 0 ? (
-                              <>
-                                  <span className={on}>
-                                      <RollingNumber
-                                          key={primary.unit}
-                                          value={primary.value}
-                                          decimals={primary.decimals}
-                                      />
-                                  </span>
-                                  <span className={`text-sm font-normal tracking-normal ${muted}`}>{primary.unit}</span>
-                              </>
-                          ) : (
-                              <span className={dim}>--</span>
+                  <ModelBoundary status={modelStatus} snapshot={modelSnapshot}>
+                      <div className="px-[1.375rem] pb-5">
+                          {showCats && (
+                              <span className="mb-3 flex items-end gap-1.5">
+                                  {events.length > 0 && <PixelCat pose="donut" size={64} />}
+                                  {labResults.length > 0 && <PixelCat pose="loaf" size={64} />}
+                              </span>
                           )}
-                      </p>
-                      {companion && companion.value > 0 && (
-                          <p className={`mt-1 text-xs tabular-nums ${muted}`}>
-                              {companion.label}{' '}
-                              <RollingNumber
-                                  key={companion.unit}
-                                  value={companion.value}
-                                  decimals={companion.decimals}
-                              />{' '}
-                              {companion.unit}
+                          <p className={`text-xs font-medium ${muted}`}>{primary.label}</p>
+                          <p className={`${readingSlot} mt-1.5 text-[length:var(--text-reading-sm-size)]`}>
+                              {primary.value > 0 ? (
+                                  <>
+                                      <span className={on}>
+                                          <RollingNumber
+                                              key={primary.unit}
+                                              value={primary.value}
+                                              decimals={primary.decimals}
+                                          />
+                                      </span>
+                                      <span className={`text-sm font-normal tracking-normal ${muted}`}>
+                                          {primary.unit}
+                                      </span>
+                                  </>
+                              ) : (
+                                  <span className={dim}>--</span>
+                              )}
                           </p>
-                      )}
-                      {primary.value > 0 && (
-                          <div className="mt-3">
-                              <LevelRail
-                                  value={primary.value}
-                                  band={primary.band}
-                                  domain={primary.domain}
-                                  label={currentStatus ? t(currentStatus.label) : undefined}
-                                  tone={currentStatus?.color}
-                              />
-                          </div>
-                      )}
-                  </div>,
+                          {companion && companion.value > 0 && (
+                              <p className={`mt-1 text-xs tabular-nums ${muted}`}>
+                                  {companion.label}{' '}
+                                  <RollingNumber
+                                      key={companion.unit}
+                                      value={companion.value}
+                                      decimals={companion.decimals}
+                                  />{' '}
+                                  {companion.unit}
+                              </p>
+                          )}
+                          {primary.value > 0 && (
+                              <div className="mt-3">
+                                  <LevelRail
+                                      value={primary.value}
+                                      band={primary.band}
+                                      domain={primary.domain}
+                                      label={currentStatus ? t(currentStatus.label) : undefined}
+                                      tone={currentStatus?.color}
+                                  />
+                              </div>
+                          )}
+                      </div>
+                  </ModelBoundary>,
                   sideSlot,
               )
             : null;
@@ -324,72 +341,75 @@ const Home: React.FC<HomeProps> = ({
                 >
                     <div className={`mx-auto px-6 md:px-8 max-w-2xl ${overviewColumn}`}>
                         {hasReading && (
-                            <>
-                                {/* Title row. The whole title unfolds the explainer under
+                            <ModelBoundary status={modelStatus} snapshot={modelSnapshot}>
+                                <>
+                                    {/* Title row. The whole title unfolds the explainer under
                     it, not just the 13px icon after it. */}
-                                <div className="flex items-center justify-between gap-3 mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEstimateInfoOpen(open => !open)}
-                                        aria-expanded={isEstimateInfoOpen}
-                                        aria-controls="estimate-explainer"
-                                        className={`tap-target group inline-flex min-w-0 items-center gap-1.5 text-left text-sm ${isEstimateInfoOpen ? 'text-[var(--text)]' : muted} hover:text-[var(--text)]`}
-                                        title={t('status.read_me')}
-                                    >
-                                        <span className="truncate">{t('status.estimate')}</span>
-                                        <Info
-                                            size={13}
-                                            className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
-                                        />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (!authToken) {
-                                                onAuthRequired();
-                                                return;
-                                            }
-                                            onNavigateToShare();
-                                        }}
-                                        className={`${muted} tap-target inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 -mr-2 text-xs font-medium hover:text-[var(--text)] hover:bg-[var(--surface-hover)]`}
-                                        title={shareCopy.modalDescription}
-                                    >
-                                        <Share size={14} strokeWidth={1.75} />
-                                        {shareCopy.action}
-                                    </button>
-                                </div>
+                                    <div className="flex items-center justify-between gap-3 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEstimateInfoOpen(open => !open)}
+                                            aria-expanded={isEstimateInfoOpen}
+                                            aria-controls="estimate-explainer"
+                                            className={`tap-target group inline-flex min-w-0 items-center gap-1.5 text-left text-sm ${isEstimateInfoOpen ? 'text-[var(--text)]' : muted} hover:text-[var(--text)]`}
+                                            title={t('status.read_me')}
+                                        >
+                                            <span className="truncate">{t('status.estimate')}</span>
+                                            <Info
+                                                size={13}
+                                                className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+                                            />
+                                        </button>
+                                        {getCapabilities().remoteBackend && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!authToken) {
+                                                        onAuthRequired();
+                                                        return;
+                                                    }
+                                                    onNavigateToShare();
+                                                }}
+                                                className={`${muted} tap-target inline-flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 -mr-2 text-xs font-medium hover:text-[var(--text)] hover:bg-[var(--surface-hover)]`}
+                                                title={shareCopy.modalDescription}
+                                            >
+                                                <Share size={14} strokeWidth={1.75} />
+                                                {shareCopy.action}
+                                            </button>
+                                        )}
+                                    </div>
 
-                                {/* What the number is, unfolded in place under the
+                                    {/* What the number is, unfolded in place under the
                     title that asked. It used to open as a dialog. */}
-                                <div
-                                    id="estimate-explainer"
-                                    className="disclosure"
-                                    data-open={isEstimateInfoOpen}
-                                    {...(isEstimateInfoOpen ? {} : { inert: '' })}
-                                >
-                                    <div className="disclosure-inner">
-                                        <div className="pb-5 space-y-3 text-sm leading-relaxed text-[var(--text-muted)] max-w-prose">
-                                            <p>{t('modal.estimate.p1')}</p>
-                                            <p className="callout text-[var(--text)] font-medium">
-                                                {t('modal.estimate.p2')}
-                                            </p>
-                                            <p>{t('modal.estimate.p3')}</p>
-                                            <p className="text-xs">
-                                                {t('modal.estimate.source')}{' '}
-                                                <a
-                                                    href="https://transfemscience.org"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[var(--accent-ink)] underline underline-offset-2"
-                                                >
-                                                    transfemscience.org
-                                                </a>
-                                            </p>
+                                    <div
+                                        id="estimate-explainer"
+                                        className="disclosure"
+                                        data-open={isEstimateInfoOpen}
+                                        {...(isEstimateInfoOpen ? {} : { inert: '' })}
+                                    >
+                                        <div className="disclosure-inner">
+                                            <div className="pb-5 space-y-3 text-sm leading-relaxed text-[var(--text-muted)] max-w-prose">
+                                                <p>{t('modal.estimate.p1')}</p>
+                                                <p className="callout text-[var(--text)] font-medium">
+                                                    {t('modal.estimate.p2')}
+                                                </p>
+                                                <p>{t('modal.estimate.p3')}</p>
+                                                <p className="text-xs">
+                                                    {t('modal.estimate.source')}{' '}
+                                                    <a
+                                                        href="https://transfemscience.org"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-[var(--accent-ink)] underline underline-offset-2"
+                                                    >
+                                                        transfemscience.org
+                                                    </a>
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Readings. A grid rather than two flex columns so each row
+                                    {/* Readings. A grid rather than two flex columns so each row
                     lines up on its own: the labels share a baseline, and so do
                     the two numbers. The second reading always sits top right,
                     beside the first, rather than stacked under its scale, where
@@ -400,115 +420,122 @@ const Home: React.FC<HomeProps> = ({
                     the second number is set smaller, and the first gives up a
                     little size too where the column is narrower than an
                     ordinary phone's. */}
-                                <div className={`@container ${sideStatus ? 'touch-short:hidden' : ''}`}>
-                                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1.5 @min-[32rem]:gap-x-6">
-                                        {/* Until a blood test anchors the estimate, the way to
+                                    <div className={`@container ${sideStatus ? 'touch-short:hidden' : ''}`}>
+                                        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1.5 @min-[32rem]:gap-x-6">
+                                            {/* Until a blood test anchors the estimate, the way to
                             add one rides beside the label of the reading it would
                             correct: as a line of its own under the scale it took
                             a row of the header to say so. */}
-                                        <div className="col-start-1 row-start-1 flex min-w-0 items-baseline gap-3">
-                                            <p className={`shrink-0 text-xs font-medium ${muted}`}>{primary.label}</p>
-                                            {showCalibrate && (
-                                                <button
-                                                    type="button"
-                                                    onClick={onNavigateToLab}
-                                                    className="tap-target min-w-0 truncate text-xs font-medium text-[var(--accent-ink)] underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
-                                                >
-                                                    {t('advisory.calibrate.cta')}
-                                                </button>
-                                            )}
-                                        </div>
+                                            <div className="col-start-1 row-start-1 flex min-w-0 items-baseline gap-3">
+                                                <p className={`shrink-0 text-xs font-medium ${muted}`}>
+                                                    {primary.label}
+                                                </p>
+                                                {showCalibrate && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={onNavigateToLab}
+                                                        className="tap-target min-w-0 truncate text-xs font-medium text-[var(--accent-ink)] underline decoration-transparent underline-offset-2 transition-colors hover:decoration-current"
+                                                    >
+                                                        {t('advisory.calibrate.cta')}
+                                                    </button>
+                                                )}
+                                            </div>
 
-                                        {/* Number and unit sit in a slot wide enough for a
+                                            {/* Number and unit sit in a slot wide enough for a
                             four-digit reading (two for the second column), so a
                             reading gaining a digit, or counting up from zero on
                             load, doesn't shove the cats or the other column about.
                             The status rides on the tick scale, which a screen
                             reader skips, so it is said here, after the unit. */}
-                                        <div className="col-start-1 row-start-2 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                                            <span
-                                                className={`${readingSlot} ${companion ? pairedSize : fullSize}`}
-                                                style={{
-                                                    minWidth: companion ? undefined : slotWidth(4, primary.decimals),
-                                                }}
-                                            >
-                                                {primary.value > 0 ? (
-                                                    <>
-                                                        <span className={on}>
-                                                            <RollingNumber
-                                                                key={primary.unit}
-                                                                value={primary.value}
-                                                                decimals={primary.decimals}
-                                                            />
-                                                        </span>
-                                                        <span
-                                                            className={`text-sm font-normal tracking-normal ${muted}`}
-                                                        >
-                                                            {primary.unit}
-                                                        </span>
-                                                        {currentStatus && (
-                                                            <span className="sr-only">{t(currentStatus.label)}</span>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <span className={dim}>--</span>
-                                                )}
-                                            </span>
-                                            {!companion && cats}
-                                        </div>
-
-                                        {/* The scale belongs to the first reading and runs the
-                            full width under both: kept to the first reading's
-                            column on a phone, its 100 and 200 ran together. */}
-                                        {primary.value > 0 && (
-                                            <div className="col-span-2 col-start-1 row-start-3 mt-0.5">
-                                                <LevelRail
-                                                    value={primary.value}
-                                                    band={primary.band}
-                                                    domain={primary.domain}
-                                                    label={currentStatus ? t(currentStatus.label) : undefined}
-                                                    tone={currentStatus?.color}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {companion && (
-                                            <>
-                                                {companion.label && (
-                                                    <p
-                                                        className={`col-start-2 row-start-1 text-right text-xs font-medium ${muted}`}
-                                                    >
-                                                        {companion.label}
-                                                    </p>
-                                                )}
+                                            <div className="col-start-1 row-start-2 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
                                                 <span
-                                                    className={`${readingSlot} ${pairedSize} col-start-2 row-start-2 justify-end whitespace-nowrap`}
-                                                    style={{ minWidth: slotWidth(2, companion.decimals) }}
+                                                    className={`${readingSlot} ${companion ? pairedSize : fullSize}`}
+                                                    style={{
+                                                        minWidth: companion
+                                                            ? undefined
+                                                            : slotWidth(4, primary.decimals),
+                                                    }}
                                                 >
-                                                    {companion.value > 0 ? (
+                                                    {primary.value > 0 ? (
                                                         <>
                                                             <span className={on}>
                                                                 <RollingNumber
-                                                                    key={companion.unit}
-                                                                    value={companion.value}
-                                                                    decimals={companion.decimals}
+                                                                    key={primary.unit}
+                                                                    value={primary.value}
+                                                                    decimals={primary.decimals}
                                                                 />
                                                             </span>
                                                             <span
                                                                 className={`text-sm font-normal tracking-normal ${muted}`}
                                                             >
-                                                                {companion.unit}
+                                                                {primary.unit}
                                                             </span>
+                                                            {currentStatus && (
+                                                                <span className="sr-only">
+                                                                    {t(currentStatus.label)}
+                                                                </span>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <span className={dim}>--</span>
                                                     )}
                                                 </span>
-                                            </>
-                                        )}
+                                                {!companion && cats}
+                                            </div>
+
+                                            {/* The scale belongs to the first reading and runs the
+                            full width under both: kept to the first reading's
+                            column on a phone, its 100 and 200 ran together. */}
+                                            {primary.value > 0 && (
+                                                <div className="col-span-2 col-start-1 row-start-3 mt-0.5">
+                                                    <LevelRail
+                                                        value={primary.value}
+                                                        band={primary.band}
+                                                        domain={primary.domain}
+                                                        label={currentStatus ? t(currentStatus.label) : undefined}
+                                                        tone={currentStatus?.color}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {companion && (
+                                                <>
+                                                    {companion.label && (
+                                                        <p
+                                                            className={`col-start-2 row-start-1 text-right text-xs font-medium ${muted}`}
+                                                        >
+                                                            {companion.label}
+                                                        </p>
+                                                    )}
+                                                    <span
+                                                        className={`${readingSlot} ${pairedSize} col-start-2 row-start-2 justify-end whitespace-nowrap`}
+                                                        style={{ minWidth: slotWidth(2, companion.decimals) }}
+                                                    >
+                                                        {companion.value > 0 ? (
+                                                            <>
+                                                                <span className={on}>
+                                                                    <RollingNumber
+                                                                        key={companion.unit}
+                                                                        value={companion.value}
+                                                                        decimals={companion.decimals}
+                                                                    />
+                                                                </span>
+                                                                <span
+                                                                    className={`text-sm font-normal tracking-normal ${muted}`}
+                                                                >
+                                                                    {companion.unit}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className={dim}>--</span>
+                                                        )}
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </>
+                                </>
+                            </ModelBoundary>
                         )}
 
                         {hasAdvisory && (
@@ -766,19 +793,22 @@ const Home: React.FC<HomeProps> = ({
                 ) : (
                     <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-10">
                         <div className="min-w-0 xl:flex-2">
-                            <ResultChart
-                                sim={simulation}
-                                showAhead={showPrediction}
-                                ahead={simulationAhead}
-                                aheadBasis={simulationAhead ? (plan.length ? 'plan' : 'rhythm') : 'none'}
-                                events={events}
-                                onPointClick={onEditEvent}
-                                labResults={labResults}
-                                calibrationFn={calibrationFn}
-                                isDarkMode={isDarkMode}
-                                isMono={isMono}
-                                fillShort={chartFirst}
-                            />
+                            <ModelBoundary status={modelStatus} snapshot={modelSnapshot}>
+                                <ResultChart
+                                    sim={simulation}
+                                    showAhead={showPrediction}
+                                    ahead={simulationAhead}
+                                    aheadBasis={simulationAhead ? (plan.length ? 'plan' : 'rhythm') : 'none'}
+                                    events={events}
+                                    onPointClick={onEditEvent}
+                                    labResults={labResults}
+                                    calibrationFn={calibrationFn}
+                                    modelNowMs={modelNowMs}
+                                    isDarkMode={isDarkMode}
+                                    isMono={isMono}
+                                    fillShort={chartFirst}
+                                />
+                            </ModelBoundary>
                         </div>
                         <DoseHeatmap
                             events={events}
@@ -799,7 +829,9 @@ const Home: React.FC<HomeProps> = ({
                         </button>
                     </div>
                 )}
-                <CommunityVotePrompt onVote={onNavigateToCommunityVote} onSignIn={onCommunityVoteSignIn} />
+                {getCapabilities().remoteBackend && (
+                    <CommunityVotePrompt onVote={onNavigateToCommunityVote} onSignIn={onCommunityVoteSignIn} />
+                )}
             </main>
         </div>
     );

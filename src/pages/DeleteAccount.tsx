@@ -40,7 +40,7 @@ const DeleteAccount: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setIsLoading(true);
         setError('');
         try {
-            await deleteAccount(
+            const cleared = await deleteAccount(
                 password,
                 twoFAEnabled && !useBackup ? code : undefined,
                 twoFAEnabled && useBackup ? backupCode.trim() : undefined,
@@ -50,7 +50,9 @@ const DeleteAccount: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             // say it happened: the page simply vanishing left people unsure
             // whether it had.
             onBack();
-            showDialog('alert', t('account.delete_done'), undefined, { title: t('account.delete_account') });
+            showDialog('alert', cleared ? t('account.delete_done') : t('account.delete_cleanup_failed'), undefined, {
+                title: t('account.delete_account'),
+            });
         } catch (e: any) {
             const code = apiErrorCode(e);
             if (code === 'TWO_FACTOR_REQUIRED' || code === 'TWO_FACTOR_INVALID' || code === 'STEP_UP_REQUIRED') {
@@ -74,11 +76,6 @@ const DeleteAccount: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <PageHeader onBack={onBack} title={t('account.delete_account')} />
 
             <div className={`${PAGE_COLUMN} mt-4 space-y-5 [&>*]:max-w-md`}>
-                {/* What goes and what stays, said plainly before the password
-                    is asked for. "All your data will be lost" was true of the
-                    server and wrong about this device, where the records stay
-                    filed under the account but are no longer shown once it is
-                    gone, so the one way to keep them is to export first. */}
                 <div className="flex items-start gap-3">
                     <span className="icon-line text-sm leading-relaxed">
                         <Warning size={18} className="text-[var(--danger)]" />

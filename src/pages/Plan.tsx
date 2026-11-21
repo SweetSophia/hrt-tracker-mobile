@@ -1,3 +1,4 @@
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import React, { useState } from 'react';
 import { Calendar, ChevronDown, Download, Plus } from '../components/icons';
 import { ExtraKey, GEL_SITE_ORDER, Route, SL_TIER_ORDER, SublingualTierParams } from '../../logic';
@@ -9,6 +10,7 @@ import { SettingsListItem, settingsSection } from '../components/SettingsListIte
 import { planToCalendar } from '../utils/planCalendar';
 import type { DoseEvent } from '../../logic';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useApplicationRuntime } from '../contexts/RecordsContext';
 import { useHRTMode } from '../contexts/HRTModeContext';
 import { useDialog } from '../contexts/DialogContext';
 import CustomRhythm from '../components/CustomRhythm';
@@ -111,8 +113,8 @@ const AmountFields: React.FC<{
 interface PlanProps {
     onBack: () => void;
     plan: PlanItem[];
-    onSave: (item: PlanItem) => void;
-    onDelete: (id: string) => void;
+    onSave: (item: PlanItem) => Promise<boolean>;
+    onDelete: (id: string) => Promise<boolean>;
     /** The log, for the time of day each drug is usually taken at. */
     events: DoseEvent[];
 }
@@ -121,6 +123,7 @@ const Plan: React.FC<PlanProps> = ({ onBack, plan, onSave, onDelete, events }) =
     const { t } = useTranslation();
     const { mode } = useHRTMode();
     const { showDialog } = useDialog();
+    const runtime = useApplicationRuntime();
 
     // Nothing left to add once every drug of every route is in the plan.
     const canAdd = (Object.keys(PLAN_DRUGS[mode]) as Route[]).some(r =>
@@ -132,6 +135,7 @@ const Plan: React.FC<PlanProps> = ({ onBack, plan, onSave, onDelete, events }) =
     const [cameInEmpty, setCameInEmpty] = useState(plan.length === 0);
     const [openId, setOpenId] = useState<string | null>(null);
     const [edit, setEdit] = useState<PlanDraft | null>(null);
+    useNativeBackOwner(() => setOpenId(null), !adding && plan.some(item => item.id === openId));
 
     const openRow = (item: PlanItem) => {
         if (openId === item.id) {
@@ -141,10 +145,10 @@ const Plan: React.FC<PlanProps> = ({ onBack, plan, onSave, onDelete, events }) =
         setOpenId(item.id);
         setEdit(itemToDraft(item));
     };
-    const saveEdit = (item: PlanItem) => {
+    const saveEdit = async (item: PlanItem) => {
         const next = edit && draftToItem(edit, item.id);
         if (!next) return;
-        onSave(next);
+        if (!(await onSave(next))) return;
         setOpenId(null);
     };
 
@@ -155,13 +159,19 @@ const Plan: React.FC<PlanProps> = ({ onBack, plan, onSave, onDelete, events }) =
             title: item => regimenLabel(item, t),
             note: t('plan.calendar_note'),
         });
-        const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'oyama-plan.ics';
-        link.click();
-        URL.revokeObjectURL(url);
-        showDialog('alert', t('plan.calendar_done'));
+        void runtime.files
+            .save({
+                name: 'oyama-plan.ics',
+                mimeType: 'text/calendar;charset=utf-8',
+                bytes: new TextEncoder().encode(ics),
+            })
+            .then(result => {
+                if (result === 'cancelled') return;
+                showDialog('alert', t(result === 'saved' ? 'plan.calendar_done' : 'plan.calendar_download_requested'));
+            })
+            .catch(() => {
+                showDialog('alert', t('export.file_failed'));
+            });
     };
 
     // Backing out of the questions this page opened with goes back where they came from.
@@ -175,10 +185,11 @@ const Plan: React.FC<PlanProps> = ({ onBack, plan, onSave, onDelete, events }) =
                 <PageHeader onBack={cancelAdding} title={t('plan.add')} />
                 <PlanWizard
                     plan={plan}
-                    onAdd={item => {
-                        onSave(item);
+                    onAdd={async item => {
+                        if (!(await onSave(item))) return false;
                         setAdding(false);
                         setCameInEmpty(false);
+                        return true;
                     }}
                     onCancel={cancelAdding}
                 />

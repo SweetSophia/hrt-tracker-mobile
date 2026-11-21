@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "strict": false },
+  "include": ["src/vite-env.d.ts", "e2e/mobile/**/*.ts", "tests/mobile/**/*.ts", "tests/native-storage-runner.test.ts"],
+  "exclude": ["node_modules"]
+}

@@ -20,7 +20,7 @@ import {
     isPlausibleBirthYear,
     isTestosteroneEster,
     sanitizePKParams,
-} from '../../logic';
+} from '../domain/engine';
 import {
     DoseTemplate,
     StorageLike,

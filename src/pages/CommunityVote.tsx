@@ -1,3 +1,4 @@
+import { useRecordReader } from '../contexts/RecordsContext';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { Check, Close, Copy, Info, Lock } from '../components/icons';
@@ -189,6 +190,7 @@ interface CommunityVoteProps {
 }
 
 const CommunityVote: React.FC<CommunityVoteProps> = ({ onBack, onSignIn }) => {
+    const recordReader = useRecordReader();
     const { t, lang } = useTranslation();
     const { user, token } = useAuth();
     const userId = user?.id;
@@ -267,7 +269,7 @@ const CommunityVote: React.FC<CommunityVoteProps> = ({ onBack, onSignIn }) => {
                 setMeError(null);
                 setHrtDays(
                     userId && data.accountCreatedAt
-                        ? countHrtDaysSince(userId, data.accountCreatedAt, Math.floor(Date.now() / 1000))
+                        ? countHrtDaysSince(userId, data.accountCreatedAt, Math.floor(Date.now() / 1000), recordReader)
                         : 0,
                 );
             } catch (e) {
@@ -278,7 +280,7 @@ const CommunityVote: React.FC<CommunityVoteProps> = ({ onBack, onSignIn }) => {
                 if (request === meRequest.current) setMeLoading(false);
             }
         },
-        [t, token, userId],
+        [t, token, userId, recordReader],
     );
 
     // Account eligibility can change while the page is open, and auto-sync can

@@ -1,0 +1,11 @@
+[
+  {
+    "id": "synthetic-transfem-event",
+    "route": "oral",
+    "ester": "E2",
+    "timeH": 500000,
+    "doseMG": 2,
+    "extras": {},
+    "updatedAt": 1893542399000
+  }
+]

@@ -1,3 +1,4 @@
+import { NativeBackScope, useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import React, { useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronDown } from '../components/icons';
@@ -61,8 +62,8 @@ const LEAD_DAYS = [7, 14, 30] as const;
 interface SuppliesProps {
     onBack: () => void;
     supplies: Supply[];
-    onSave: (s: Supply) => void;
-    onDelete: (id: string) => void;
+    onSave: (s: Supply) => Promise<boolean>;
+    onDelete: (id: string) => Promise<boolean>;
     events: DoseEvent[];
     regimens: Regimen[];
     nowH: number;
@@ -248,6 +249,11 @@ const Supplies: React.FC<SuppliesProps> = ({
     const [pack, setPack] = useState<Pack>(() => packFor(packKindsFor(pickRoute)[0], pickRoute, pickEster));
     const [count, setCount] = useState('');
     const [openId, setOpenId] = useState<string | null>(null);
+    useNativeBackOwner(
+        () => setOpenId(null),
+        supplies.some(supply => supply.id === openId),
+    );
+    useNativeBackOwner(() => setAdding(false), adding);
     const [recount, setRecount] = useState('');
     const [recountMg, setRecountMg] = useState('');
 
@@ -262,9 +268,19 @@ const Supplies: React.FC<SuppliesProps> = ({
     const packValid = (p: Pack) => p.kind === 'patch' || p.kind === 'bulk' || packUnitMG(p) > 0;
     const countNum = num(count);
     const canAdd = !!pick && countNum > 0 && packValid(pack);
-    const add = () => {
+    const add = async () => {
         if (!canAdd) return;
-        onSave({ id: uuidv4(), route: pickRoute, ester: pickEster, pack, count: countNum, startedAt: Date.now() });
+        if (
+            !(await onSave({
+                id: uuidv4(),
+                route: pickRoute,
+                ester: pickEster,
+                pack,
+                count: countNum,
+                startedAt: Date.now(),
+            }))
+        )
+            return;
         setCount('');
         setAdding(false);
     };
@@ -288,11 +304,11 @@ const Supplies: React.FC<SuppliesProps> = ({
             setRecountMg('');
         }
     };
-    const applyRecount = (s: Supply) => {
+    const applyRecount = async (s: Supply) => {
         const whole = num(recount);
         if (!(whole >= 0)) return;
         const extra = s.pack.kind === 'vial' ? (num(recountMg) || 0) / packUnitMG(s.pack) : 0;
-        onSave({ ...s, count: whole + extra, startedAt: Date.now() });
+        if (!(await onSave({ ...s, count: whole + extra, startedAt: Date.now() }))) return;
         setOpenId(null);
     };
 
@@ -310,47 +326,54 @@ const Supplies: React.FC<SuppliesProps> = ({
 
             {/* The add form drops down from the title bar, the way the lab page's does. */}
             <div className="disclosure" data-open={adding} {...inertWhen(!adding)}>
-                <div className="disclosure-inner">
-                    <div className={`${PAGE_COLUMN} mt-3 mb-6`}>
-                        {/* What, how it comes, what one holds, how many: the count last, on a row of its own. */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <CustomSelect label={t('supplies.drug')} value={pick} onChange={choose} options={options} />
-                            <CustomSelect
-                                label={t('supplies.pack')}
-                                value={pack.kind}
-                                onChange={k => setPack(packFor(k as PackKind, pickRoute, pickEster))}
-                                options={packOptions}
-                            />
-                            <PackFields pack={pack} onChange={setPack} t={t} />
-                            <label className="block col-span-2">
-                                <span className={labelCls}>
-                                    {t('supplies.amount')} ({packUnit(pack, t)})
-                                </span>
-                                <input
-                                    type="number"
-                                    inputMode="decimal"
-                                    min="0"
-                                    step="any"
-                                    value={count}
-                                    onChange={e => setCount(e.target.value)}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter') add();
-                                    }}
-                                    className={inputCls}
-                                    style={{ fontSize: '16px' }}
+                <NativeBackScope active={adding}>
+                    <div className="disclosure-inner">
+                        <div className={`${PAGE_COLUMN} mt-3 mb-6`}>
+                            {/* What, how it comes, what one holds, how many: the count last, on a row of its own. */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <CustomSelect
+                                    label={t('supplies.drug')}
+                                    value={pick}
+                                    onChange={choose}
+                                    options={options}
                                 />
-                            </label>
-                        </div>
-                        <div className="mt-4 flex justify-end gap-2">
-                            <button type="button" onClick={() => setAdding(false)} className={cancelBtn}>
-                                {t('btn.cancel')}
-                            </button>
-                            <button type="button" onClick={add} disabled={!canAdd} className={confirmBtn}>
-                                {t('supplies.confirm_add')}
-                            </button>
+                                <CustomSelect
+                                    label={t('supplies.pack')}
+                                    value={pack.kind}
+                                    onChange={k => setPack(packFor(k as PackKind, pickRoute, pickEster))}
+                                    options={packOptions}
+                                />
+                                <PackFields pack={pack} onChange={setPack} t={t} />
+                                <label className="block col-span-2">
+                                    <span className={labelCls}>
+                                        {t('supplies.amount')} ({packUnit(pack, t)})
+                                    </span>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        min="0"
+                                        step="any"
+                                        value={count}
+                                        onChange={e => setCount(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') add();
+                                        }}
+                                        className={inputCls}
+                                        style={{ fontSize: '16px' }}
+                                    />
+                                </label>
+                            </div>
+                            <div className="mt-4 flex justify-end gap-2">
+                                <button type="button" onClick={() => setAdding(false)} className={cancelBtn}>
+                                    {t('btn.cancel')}
+                                </button>
+                                <button type="button" onClick={add} disabled={!canAdd} className={confirmBtn}>
+                                    {t('supplies.confirm_add')}
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </NativeBackScope>
             </div>
 
             <div className={`${PAGE_COLUMN} mt-3 space-y-8`}>

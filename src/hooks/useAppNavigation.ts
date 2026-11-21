@@ -1,9 +1,13 @@
+import { getBackPort } from '../platform/back';
+import { appBackOwners, connectBackNavigation } from '../application/backNavigation';
+import type { UiSession } from './uiSession';
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import type { ElementType } from 'react';
 import { House, Log, Labs, Gear, Account, Shield, Users } from '../components/icons';
 import { voteStatusAt } from '../../communityVote';
 import { runViewMove, type ViewMove } from '../motion/viewMove';
 import { useTranslation } from '../contexts/LanguageContext';
+import { getCapabilities } from '../platform/runtime';
 import {
     depthLeft,
     isSteppingBack,
@@ -95,6 +99,12 @@ const VIEW_TAB: Partial<Record<ViewKey, ViewKey>> = {
 };
 export const tabForView = (view: ViewKey): ViewKey => VIEW_TAB[view] ?? view;
 
+const availableView = (view: ViewKey): ViewKey =>
+    !getCapabilities().remoteBackend &&
+    (tabForView(view) === 'account' || ['admin', 'share', 'settings-transparency', 'settings-community'].includes(view))
+        ? 'home'
+        : view;
+
 /**
  * Where Back leads from a page: its tab, as above. The admin area is a tab of
  * its own beside a wide screen's sidebar, but a phone opens it from Settings,
@@ -165,17 +175,22 @@ interface NavItem {
     badge?: boolean;
 }
 
-export const useAppNavigation = (user: any) => {
+export interface NavigationSession {
+    view: ViewKey;
+    openedUnder: ViewKey | null;
+}
+
+export const useAppNavigation = (user: any, session?: UiSession, onLeaveView?: () => void) => {
     const { t } = useTranslation();
 
     // --- State ---
-    const [currentView, setCurrentView] = useState<ViewKey>('home');
+    const [currentView, setCurrentView] = useState<ViewKey>(() => session?.getNavigation()?.view ?? 'home');
     const [transitionDirection, setTransitionDirection] = useState<Direction>('forward');
     // How the view on screen arrived, for browsers that animate it themselves
     // only on the page's side (see motion/viewMove.ts).
     const [move, setMove] = useState<ViewMove>('fade');
     // Set while a page from ALSO_UNDER is open under the other tab.
-    const [openedUnder, setOpenedUnder] = useState<ViewKey | null>(null);
+    const [openedUnder, setOpenedUnder] = useState<ViewKey | null>(() => session?.getNavigation()?.openedUnder ?? null);
     // Whether the funding vote still has an open door in the sidebar. It
     // closes on its own at the deadline, without waiting for a reload.
     const [voteOpen, setVoteOpen] = useState(() => voteStatusAt(Math.floor(Date.now() / 1000)) !== 'closed');
@@ -186,8 +201,10 @@ export const useAppNavigation = (user: any) => {
         return () => window.clearInterval(id);
     }, []);
     const mainScrollRef = useRef<HTMLDivElement>(null);
-    // The view on screen, for the history listener, which outlives renders.
-    const viewRef = useRef<ViewKey>('home');
+    // The latest accepted view, even while its transition is waiting to render.
+    const viewRef = useRef<ViewKey>(currentView);
+    // Back and Forward can both be accepted before either transition applies.
+    const pendingViewUpdates = useRef(0);
     // How far down each page was when it was last left, and whether the move
     // under way goes back to one, so Back lands where you were, not at the top.
     const scrollTops = useRef<Partial<Record<ViewKey, number>>>({});
@@ -199,10 +216,14 @@ export const useAppNavigation = (user: any) => {
     // --- Actions ---
     const show = useCallback(
         (view: ViewKey, direction: Direction, restore: boolean, under?: ViewKey, how: ViewMove = 'fade') => {
+            view = availableView(view);
+            if (view !== viewRef.current) onLeaveView?.();
+            under = under ? availableView(under) : undefined;
             const el = mainScrollRef.current;
             if (el) scrollTops.current[viewRef.current] = el.scrollTop;
             viewRef.current = view;
             restoreScroll.current = restore;
+            pendingViewUpdates.current += 1;
             runViewMove(
                 how,
                 () => {
@@ -210,6 +231,7 @@ export const useAppNavigation = (user: any) => {
                     setMove(how);
                     setOpenedUnder(under ?? null);
                     setCurrentView(view);
+                    pendingViewUpdates.current -= 1;
                 },
                 // Inside a move the frame-later retry below comes too late:
                 // the page is already on its way in. By here it has its
@@ -221,7 +243,7 @@ export const useAppNavigation = (user: any) => {
                 },
             );
         },
-        [],
+        [onLeaveView],
     );
 
     // A fresh stack: the view's tab as the base entry, and the view above it
@@ -242,6 +264,7 @@ export const useAppNavigation = (user: any) => {
     const jump = (view: ViewKey, direction: Direction, how: ViewMove = 'fade') => {
         const depth = navDepth();
         if (depth > 0 || isSteppingBack()) {
+            onLeaveView?.();
             pending.current = { view, direction, how };
             stepBack(depth);
         } else {
@@ -251,12 +274,14 @@ export const useAppNavigation = (user: any) => {
 
     /** Every way to another view from inside a page: a row that opens a page, a page's back arrow, a link across. */
     const handleViewChange = (view: ViewKey) => {
+        view = availableView(view);
         const from = viewRef.current;
         if (view === from || isSteppingBack()) return;
         const depth = navDepth();
         // Up to the page this one was opened from: back through history, so
         // the entry pushed on the way in goes with it, and popstate shows it.
         if (depth > 0 && parentOf(from) === view) {
+            onLeaveView?.();
             stepBack();
             return;
         }
@@ -286,6 +311,7 @@ export const useAppNavigation = (user: any) => {
      * TAB_RESELECT any level the page keeps of its own.
      */
     const handleTabSelect = (tab: ViewKey) => {
+        tab = availableView(tab);
         // A menu switches at once: no cross-fade, nothing slides.
         if (tab !== viewRef.current) {
             jump(tab, directionOf(viewRef.current, tab), 'none');
@@ -296,13 +322,35 @@ export const useAppNavigation = (user: any) => {
         window.dispatchEvent(new CustomEvent(TAB_RESELECT, { detail: { view: tab } }));
     };
 
+    const resuming = useRef(!!session?.getNavigation());
+    useEffect(() => {
+        session?.setNavigation({ view: currentView, openedUnder });
+    }, [session, currentView, openedUnder]);
+
     // --- Effects ---
+    useEffect(() => {
+        const port = getBackPort();
+        if (!port) return;
+        return connectBackNavigation(
+            port,
+            appBackOwners,
+            () => {
+                if (isSteppingBack()) return true;
+                if (navDepth() <= 0) return false;
+                onLeaveView?.();
+                stepBack();
+                return true;
+            },
+            () => console.error('Android Back handling failed'),
+        );
+    }, [onLeaveView]);
+
     // The app always opens on the Overview. A reload part-way down a stack
     // finds its pages still in history, so step back to the base entry rather
     // than leave them there for Back to replay. `pending` also keeps this from
     // stepping back twice should it ever run twice (a remount, or Strict Mode).
     useEffect(() => {
-        if (pending.current) return;
+        if (resuming.current || pending.current) return;
         const depth = navDepth();
         if (depth > 0) {
             pending.current = { view: 'home', direction: 'forward', how: 'none' };
@@ -376,21 +424,24 @@ export const useAppNavigation = (user: any) => {
         { id: 'history', label: t('nav.history'), icon: Log },
         { id: 'lab', label: t('nav.lab'), icon: Labs },
         { id: 'settings', label: t('nav.settings'), icon: Gear },
-        { id: 'account', label: t('nav.account'), icon: Account },
+        ...(getCapabilities().remoteBackend ? [{ id: 'account', label: t('nav.account'), icon: Account }] : []),
     ];
 
     // The funding vote is a page of Settings, but while ballots are open it
-    // gets a door of its own. The dot goes when the box closes with it.
-    if (voteOpen) {
+    // gets a door of its own. The dot goes when the box closes with it. A
+    // first-party build has no remote vote, so that door stays shut there.
+    if (getCapabilities().remoteBackend && voteOpen) {
         navItems.push({ id: 'settings-community', label: t('settings.community'), icon: Users, badge: true });
     }
 
-    if (user?.isAdmin) {
+    if (getCapabilities().remoteBackend && user?.isAdmin) {
         navItems.push({ id: 'admin', label: t('nav.admin'), icon: Shield });
     }
 
     return {
         currentView,
+        isViewActive: (view: ViewKey) =>
+            currentView === view && viewRef.current === view && pendingViewUpdates.current === 0 && !isSteppingBack(),
         /** The tab to light: the view's own, or the one it was opened under. */
         currentTab: openedUnder ? tabForView(openedUnder) : tabForView(currentView),
         transitionDirection,

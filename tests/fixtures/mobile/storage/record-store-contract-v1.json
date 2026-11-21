@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "backend": "offline",
+  "valid": [
+    {
+      "namespace": "preferences:v1",
+      "keys": ["app-theme", "hrt-lang", "app-show-prediction", "app-hide-site-label", "hrt-supply-lead-days"]
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"local\"]",
+      "keys": [
+        "hrt-weight",
+        "hrt-weight-at",
+        "hrt-birth-year",
+        "hrt-birth-year-at",
+        "hrt-pk-params",
+        "hrt-pk-params-at",
+        "hrt-cal-method",
+        "hrt-cal-history-mode",
+        "hrt-age-beta",
+        "hrt-model-settings-at",
+        "hrt-cpa-plan",
+        "hrt-events",
+        "hrt-lab-results",
+        "hrt-dose-templates",
+        "hrt-deletions",
+        "hrt-quick-doses",
+        "hrt-supplies",
+        "hrt-plan",
+        "hrt-plan-at",
+        "hrt-masc-events",
+        "hrt-masc-lab-results",
+        "hrt-masc-dose-templates",
+        "hrt-masc-deletions",
+        "hrt-masc-quick-doses",
+        "hrt-masc-supplies",
+        "hrt-masc-plan",
+        "hrt-masc-plan-at"
+      ]
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"alice\"]",
+      "keys": [
+        "hrt-ualice-weight",
+        "hrt-ualice-weight-at",
+        "hrt-ualice-birth-year",
+        "hrt-ualice-birth-year-at",
+        "hrt-ualice-pk-params",
+        "hrt-ualice-pk-params-at",
+        "hrt-ualice-cal-method",
+        "hrt-ualice-cal-history-mode",
+        "hrt-ualice-age-beta",
+        "hrt-ualice-model-settings-at",
+        "hrt-ualice-cpa-plan",
+        "hrt-ualice-events",
+        "hrt-ualice-lab-results",
+        "hrt-ualice-dose-templates",
+        "hrt-ualice-deletions",
+        "hrt-ualice-quick-doses",
+        "hrt-ualice-supplies",
+        "hrt-ualice-plan",
+        "hrt-ualice-plan-at",
+        "hrt-ualice-masc-events",
+        "hrt-ualice-masc-lab-results",
+        "hrt-ualice-masc-dose-templates",
+        "hrt-ualice-masc-deletions",
+        "hrt-ualice-masc-quick-doses",
+        "hrt-ualice-masc-supplies",
+        "hrt-ualice-masc-plan",
+        "hrt-ualice-masc-plan-at"
+      ]
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"quoted\\\"/backslash\\\\\\n💜\"]",
+      "keys": [
+        "hrt-uquoted\"/backslash\\\n💜-weight",
+        "hrt-uquoted\"/backslash\\\n💜-weight-at",
+        "hrt-uquoted\"/backslash\\\n💜-birth-year",
+        "hrt-uquoted\"/backslash\\\n💜-birth-year-at",
+        "hrt-uquoted\"/backslash\\\n💜-pk-params",
+        "hrt-uquoted\"/backslash\\\n💜-pk-params-at",
+        "hrt-uquoted\"/backslash\\\n💜-cal-method",
+        "hrt-uquoted\"/backslash\\\n💜-cal-history-mode",
+        "hrt-uquoted\"/backslash\\\n💜-age-beta",
+        "hrt-uquoted\"/backslash\\\n💜-model-settings-at",
+        "hrt-uquoted\"/backslash\\\n💜-cpa-plan",
+        "hrt-uquoted\"/backslash\\\n💜-events",
+        "hrt-uquoted\"/backslash\\\n💜-lab-results",
+        "hrt-uquoted\"/backslash\\\n💜-dose-templates",
+        "hrt-uquoted\"/backslash\\\n💜-deletions",
+        "hrt-uquoted\"/backslash\\\n💜-quick-doses",
+        "hrt-uquoted\"/backslash\\\n💜-supplies",
+        "hrt-uquoted\"/backslash\\\n💜-plan",
+        "hrt-uquoted\"/backslash\\\n💜-plan-at",
+        "hrt-uquoted\"/backslash\\\n💜-masc-events",
+        "hrt-uquoted\"/backslash\\\n💜-masc-lab-results",
+        "hrt-uquoted\"/backslash\\\n💜-masc-dose-templates",
+        "hrt-uquoted\"/backslash\\\n💜-masc-deletions",
+        "hrt-uquoted\"/backslash\\\n💜-masc-quick-doses",
+        "hrt-uquoted\"/backslash\\\n💜-masc-supplies",
+        "hrt-uquoted\"/backslash\\\n💜-masc-plan",
+        "hrt-uquoted\"/backslash\\\n💜-masc-plan-at"
+      ]
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"lone-\\ud800\"]",
+      "keys": [
+        "hrt-ulone-\ud800-weight",
+        "hrt-ulone-\ud800-weight-at",
+        "hrt-ulone-\ud800-birth-year",
+        "hrt-ulone-\ud800-birth-year-at",
+        "hrt-ulone-\ud800-pk-params",
+        "hrt-ulone-\ud800-pk-params-at",
+        "hrt-ulone-\ud800-cal-method",
+        "hrt-ulone-\ud800-cal-history-mode",
+        "hrt-ulone-\ud800-age-beta",
+        "hrt-ulone-\ud800-model-settings-at",
+        "hrt-ulone-\ud800-cpa-plan",
+        "hrt-ulone-\ud800-events",
+        "hrt-ulone-\ud800-lab-results",
+        "hrt-ulone-\ud800-dose-templates",
+        "hrt-ulone-\ud800-deletions",
+        "hrt-ulone-\ud800-quick-doses",
+        "hrt-ulone-\ud800-supplies",
+        "hrt-ulone-\ud800-plan",
+        "hrt-ulone-\ud800-plan-at",
+        "hrt-ulone-\ud800-masc-events",
+        "hrt-ulone-\ud800-masc-lab-results",
+        "hrt-ulone-\ud800-masc-dose-templates",
+        "hrt-ulone-\ud800-masc-deletions",
+        "hrt-ulone-\ud800-masc-quick-doses",
+        "hrt-ulone-\ud800-masc-supplies",
+        "hrt-ulone-\ud800-masc-plan",
+        "hrt-ulone-\ud800-masc-plan-at"
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "namespace": "preferences:v1",
+      "keys": ["auth-token", "hrt-events", "unknown"]
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"local\"]",
+      "keys": ["auth-token", "hrt-unknown", "hrt-ualice-weight", "hrt-cloud-key"]
+    },
+    {
+      "namespace": "records:v1:[ \"offline\", \"local\" ]",
+      "keys": []
+    },
+    {
+      "namespace": "records:v1:[\"foreign\",\"local\"]",
+      "keys": []
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"\"]",
+      "keys": []
+    },
+    {
+      "namespace": "records:v1:[\"offline\",1]",
+      "keys": []
+    },
+    {
+      "namespace": "records:v2:[\"offline\",\"local\"]",
+      "keys": []
+    },
+    {
+      "namespace": "records:v1:[\"offline\",\"local\"] trailing",
+      "keys": []
+    }
+  ]
+}

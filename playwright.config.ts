@@ -21,6 +21,7 @@ const executablePath =
 
 export default defineConfig({
     testDir: './e2e',
+    testIgnore: ['**/mobile/**', '**/storage-qualification/**'],
     // One worker: every test talks to the same isolated D1 database and the
     // local Worker has per-account rate limits.
     workers: 1,

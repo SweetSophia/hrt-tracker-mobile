@@ -1,0 +1,194 @@
+apply plugin: 'com.android.application'
+
+def mobileVersion = new groovy.json.JsonSlurper().parse(rootProject.file('../mobile/version.json'))
+def isOfflineBeta = providers.gradleProperty('offlineBeta').isPresent()
+def isPrivateBeta = providers.gradleProperty('privateBeta').isPresent()
+def offlineBetaAssets = layout.buildDirectory.dir('generated/offlineBeta/assets')
+if (isPrivateBeta && !isOfflineBeta) {
+    throw new GradleException('Select -PofflineBeta with -PprivateBeta')
+}
+if (['storageQualification', 'networkQualification', 'upgradeQualification', 'offlineBeta'].count { project.hasProperty(it) } > 1) {
+    throw new GradleException('Select only one Android build profile')
+}
+def upgradeStage = project.findProperty('upgradeQualification')?.toString()
+if (upgradeStage != null && !(upgradeStage in ['1', '2'])) {
+    throw new GradleException('Upgrade qualification stage must be 1 or 2')
+}
+
+android {
+    namespace = "org.askarys.hrttracker.spike"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId isPrivateBeta ? 'org.askarys.hrttracker' : 'org.askarys.hrttracker.spike'
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode upgradeStage == null ? mobileVersion.versionCode : upgradeStage.toInteger()
+        versionName mobileVersion.versionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets.debug.java.srcDirs += 'src/ordinary/java'
+    sourceSets.release.java.srcDirs += 'src/ordinary/java'
+    if (isOfflineBeta) {
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_21
+            targetCompatibility JavaVersion.VERSION_21
+        }
+        buildTypes {
+            offlineBeta {
+                initWith(isPrivateBeta ? release : debug)
+                if (!isPrivateBeta) {
+                    applicationIdSuffix '.offlinebeta'
+                }
+                matchingFallbacks = isPrivateBeta ? ['release'] : ['debug']
+                def label = isPrivateBeta ? 'HRT Tracker' : 'HRT Tracker Offline Beta'
+                resValue 'string', 'app_name', label
+                resValue 'string', 'title_activity_main', label
+            }
+        }
+        sourceSets.main.assets.srcDirs = []
+        sourceSets.offlineBeta.assets.srcDir offlineBetaAssets
+        sourceSets.offlineBeta.java.srcDirs = ['src/storageQualification/java']
+    }
+    if (project.hasProperty('storageQualification')) {
+        buildTypes {
+            storageQualification {
+                initWith debug
+                applicationIdSuffix '.storagequalification'
+                matchingFallbacks = ['debug']
+            }
+        }
+        testBuildType 'storageQualification'
+        sourceSets.androidTest.java.setSrcDirs(['src/storageQualificationTest/java'])
+        sourceSets.androidTest.manifest.srcFile 'src/storageQualificationTest/AndroidManifest.xml'
+        sourceSets.androidTest.assets.srcDirs = ['../../tests/fixtures/mobile/storage']
+    }
+    if (project.hasProperty('networkQualification') || upgradeStage != null) {
+        buildTypes {
+            networkQualification {
+                initWith debug
+                applicationIdSuffix '.networkqualification'
+                matchingFallbacks = ['debug']
+            }
+        }
+        sourceSets.networkQualification.java.srcDirs = ['src/ordinary/java']
+        if (upgradeStage != null) {
+            buildTypes {
+                upgradeQualification {
+                    initWith debug
+                    applicationIdSuffix '.upgradequalification'
+                    matchingFallbacks = ['debug']
+                }
+            }
+            sourceSets.upgradeQualification.java.srcDirs = ['src/ordinary/java']
+            sourceSets.upgradeQualification.assets.srcDirs = ["$buildDir/generated/upgrade/$upgradeStage/assets"]
+        }
+        testBuildType upgradeStage == null ? 'networkQualification' : 'upgradeQualification'
+        defaultConfig.testInstrumentationRunner 'org.askarys.hrttracker.network.NetworkTestRunner'
+        sourceSets.androidTest.java.setSrcDirs(['src/networkQualificationTest/java'])
+        sourceSets.androidTest.assets.srcDirs = ['src/networkQualificationTest/assets']
+    }
+}
+
+if (isOfflineBeta) {
+    androidComponents {
+        beforeVariants(selector().all()) { variant ->
+            variant.enable = variant.buildType == 'offlineBeta'
+        }
+    }
+    def webAssets = rootProject.file('../dist-mobile-offline-beta')
+    def capacitorAssets = file('src/main/assets')
+    def prepareAssets = tasks.register('prepareOfflineBetaAssets', Sync) {
+        inputs.property('privateBeta', isPrivateBeta)
+        from(webAssets) { into 'public' }
+        from(capacitorAssets) { include 'capacitor.config.json', 'capacitor.plugins.json' }
+        from(rootProject.file('../LICENSE')) { into 'licenses' }
+        into offlineBetaAssets
+        doLast {
+            if (isPrivateBeta) {
+                def configFile = new File(destinationDir, 'capacitor.config.json')
+                def config = new groovy.json.JsonSlurper().parse(configFile)
+                config.appId = 'org.askarys.hrttracker'
+                config.appName = 'HRT Tracker'
+                config.android = (config.android ?: [:]) + [webContentsDebuggingEnabled: false]
+                configFile.setText(groovy.json.JsonOutput.toJson(config), 'UTF-8')
+            }
+        }
+    }
+    tasks.named('preBuild').configure {
+        dependsOn prepareAssets
+        doFirst {
+            def assets = offlineBetaAssets.get().asFile
+            if (!new File(assets, 'public/index.html').isFile()
+                    || !new File(assets, 'capacitor.config.json').isFile()
+                    || !new File(assets, 'capacitor.plugins.json').isFile()) {
+                throw new GradleException('Prepare the beta APK with npm run android:sync and npm run build:mobile:offline-beta')
+            }
+            def json = new groovy.json.JsonSlurper()
+            def config = json.parse(new File(assets, 'capacitor.config.json'))
+            def plugins = json.parse(new File(assets, 'capacitor.plugins.json'))
+            if (config.server != [hostname: 'localhost', androidScheme: 'https', cleartext: false, allowNavigation: []]
+                    || config.loggingBehavior != 'none' || config.plugins?.CapacitorHttp?.enabled != false
+                    || (isPrivateBeta && (config.appId != 'org.askarys.hrttracker'
+                        || config.appName != 'HRT Tracker'
+                        || config.android?.webContentsDebuggingEnabled != false))
+                    || plugins*.pkg != ['@capacitor/app']) {
+                throw new GradleException('Run npm run android:sync with the ordinary mobile profile before assembling the beta')
+            }
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    if (project.hasProperty('networkQualification') || upgradeStage != null) {
+        androidTestImplementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    }
+    if (project.hasProperty('storageQualification')) {
+        storageQualificationImplementation project(':native-storage')
+        storageQualificationImplementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    }
+    if (isOfflineBeta) {
+        offlineBetaImplementation project(':capacitor-app')
+        offlineBetaImplementation project(':native-storage')
+        offlineBetaImplementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    } else {
+        implementation project(':capacitor-cordova-android-plugins')
+    }
+}
+
+if (!isOfflineBeta) {
+    apply from: 'capacitor.build.gradle'
+
+    try {
+        def servicesJSON = file('google-services.json')
+        if (servicesJSON.text) {
+            apply plugin: 'com.google.gms.google-services'
+        }
+    } catch(Exception e) {
+        logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+    }
+}

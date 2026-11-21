@@ -1,3 +1,4 @@
+import { useRecordReader } from '../contexts/RecordsContext';
 import React, { useEffect, useState } from 'react';
 import { ChevronRight } from './icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +42,7 @@ interface CommunityVotePromptProps {
  * vote, or the deadline passes.
  */
 const CommunityVotePrompt: React.FC<CommunityVotePromptProps> = ({ onVote, onSignIn }) => {
+    const recordReader = useRecordReader();
     const { t, lang } = useTranslation();
     const { user, token } = useAuth();
     const userId = user?.id;
@@ -98,7 +100,7 @@ const CommunityVotePrompt: React.FC<CommunityVotePromptProps> = ({ onVote, onSig
                 setMe(data);
                 setHrtDays(
                     data.accountCreatedAt
-                        ? countHrtDaysSince(userId, data.accountCreatedAt, Math.floor(Date.now() / 1000))
+                        ? countHrtDaysSince(userId, data.accountCreatedAt, Math.floor(Date.now() / 1000), recordReader)
                         : 0,
                 );
             } catch {
@@ -117,7 +119,7 @@ const CommunityVotePrompt: React.FC<CommunityVotePromptProps> = ({ onVote, onSig
             window.clearInterval(timer);
             window.removeEventListener('focus', onFocus);
         };
-    }, [token, userId]);
+    }, [token, userId, recordReader]);
 
     const prompt = publicVote
         ? communityVotePromptState({

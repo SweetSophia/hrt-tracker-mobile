@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "version": 2,
+    "exportedAt": "2030-01-02T00:00:00.000Z"
+  },
+  "mode": "transfem",
+  "modes": {
+    "transfem": {
+      "events": [
+        {
+          "id": "synthetic-transfem-event",
+          "route": "oral",
+          "ester": "E2",
+          "timeH": 500000,
+          "doseMG": 2,
+          "extras": {},
+          "updatedAt": 1893542399000
+        }
+      ],
+      "labResults": [
+        {
+          "id": "synthetic-transfem-lab",
+          "timeH": 500001,
+          "concValue": 120,
+          "unit": "pg/ml",
+          "updatedAt": 1893542399000
+        }
+      ],
+      "doseTemplates": [
+        {
+          "id": "synthetic-transfem-template",
+          "name": "Synthetic 💜 模板",
+          "route": "oral",
+          "ester": "E2",
+          "doseMG": 2,
+          "extras": {},
+          "createdAt": 1893542398000,
+          "updatedAt": 1893542399000
+        }
+      ],
+      "plan": [
+        {
+          "id": "synthetic-transfem-plan",
+          "route": "oral",
+          "ester": "E2",
+          "doseMG": 2,
+          "extras": {},
+          "everyDays": 2,
+          "timesPerDay": 1
+        }
+      ],
+      "deletions": {
+        "events": {
+          "synthetic-transfem-deleted-event": 1893542340000
+        },
+        "labResults": {
+          "synthetic-transfem-deleted-lab": 1893542340000
+        },
+        "doseTemplates": {
+          "synthetic-transfem-deleted-template": 1893542340000
+        }
+      }
+    },
+    "transmasc": {
+      "events": [
+        {
+          "id": "synthetic-transmasc-event",
+          "route": "injection",
+          "ester": "TE",
+          "timeH": 500000,
+          "doseMG": 40,
+          "extras": {},
+          "updatedAt": 1893542399000
+        }
+      ],
+      "labResults": [
+        {
+          "id": "synthetic-transmasc-lab",
+          "timeH": 500001,
+          "concValue": 120,
+          "unit": "ng/dl",
+          "updatedAt": 1893542399000
+        }
+      ],
+      "doseTemplates": [
+        {
+          "id": "synthetic-transmasc-template",
+          "name": "Synthetic 💜 模板",
+          "route": "injection",
+          "ester": "TE",
+          "doseMG": 40,
+          "extras": {},
+          "createdAt": 1893542398000,
+          "updatedAt": 1893542399000
+        }
+      ],
+      "plan": [
+        {
+          "id": "synthetic-transmasc-plan",
+          "route": "injection",
+          "ester": "TE",
+          "doseMG": 40,
+          "extras": {},
+          "everyDays": 2,
+          "timesPerDay": 1
+        }
+      ],
+      "deletions": {
+        "events": {
+          "synthetic-transmasc-deleted-event": 1893542340000
+        },
+        "labResults": {
+          "synthetic-transmasc-deleted-lab": 1893542340000
+        },
+        "doseTemplates": {
+          "synthetic-transmasc-deleted-template": 1893542340000
+        }
+      }
+    }
+  },
+  "weight": 72,
+  "birthYear": 1980,
+  "pkParams": null,
+  "modelSettings": {
+    "calibrationMethod": "ekf",
+    "calibrationHistoryMode": "forward",
+    "ageBeta": true
+  },
+  "modelSettingsUpdatedAt": 1893542400000
+}

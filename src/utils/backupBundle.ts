@@ -38,7 +38,7 @@ import {
     type DoseEvent,
     type LabResult,
     type PKCustomParams,
-} from '../../logic';
+} from '../domain/engine';
 import type { AppTheme } from '../constants';
 import type { Lang } from '../i18n/translations';
 import { legacyCpaItem, normalizePlanItem, type PlanItem } from './plan';

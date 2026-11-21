@@ -1,3 +1,4 @@
+import { useMounted } from '../hooks/useMounted';
 import React, { useState, useEffect } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { isPlausibleBirthYear, BIRTH_YEAR_MIN, AGE_REF_YEARS, ageModelInfo, ageNotice } from '../../logic';
@@ -7,7 +8,7 @@ import { fill } from '../utils/regimenText';
 
 interface AgeSettingsProps {
     birthYear: number | null;
-    onSave: (birthYear: number | null) => void;
+    onSave: (birthYear: number | null) => Promise<boolean>;
     onBack: () => void;
 }
 
@@ -29,6 +30,7 @@ const NOTICE_KEY = {
 // The year of birth rather than an age, so the value never goes stale and each
 // dose is modelled at the age it was taken. Optional, so it can be removed.
 const AgeSettings: React.FC<AgeSettingsProps> = ({ birthYear, onSave, onBack }) => {
+    const isMounted = useMounted();
     const { t } = useTranslation();
     const thisYear = new Date().getFullYear();
     const [yearStr, setYearStr] = useState(birthYear === null ? '' : String(birthYear));
@@ -52,19 +54,17 @@ const AgeSettings: React.FC<AgeSettingsProps> = ({ birthYear, onSave, onBack }) 
         .join(' ');
 
     // A form, so the keyboard's Done / Go key saves as well as the button.
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!valid) {
             setTried(true);
             return;
         }
-        onSave(year);
-        onBack();
+        if ((await onSave(year)) && isMounted()) onBack();
     };
 
-    const handleRemove = () => {
-        onSave(null);
-        onBack();
+    const handleRemove = async () => {
+        if ((await onSave(null)) && isMounted()) onBack();
     };
 
     const divider = 'border-b-(length:--hairline) border-[var(--border)]';

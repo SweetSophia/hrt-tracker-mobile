@@ -6,7 +6,24 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
     {
-        ignores: ['**/dist/', '**/dev-dist/', '**/.wrangler/', 'public/', 'src-tauri/', 'data/', '.claude/'],
+        ignores: [
+            '**/dist/',
+            '**/dist-mobile/',
+            '**/dist-mobile-offline-beta/',
+            '**/dev-dist/',
+            '**/.wrangler/',
+            'public/',
+            'src-tauri/',
+            'android/**/build/',
+            'android/app/src/main/assets/',
+            'android/capacitor-cordova-android-plugins/',
+            'data/',
+            '.claude/',
+            '.superpowers/',
+            'playwright-report/',
+            'test-results/',
+            'blob-report/',
+        ],
     },
     js.configs.recommended,
     tseslint.configs.recommended,
@@ -27,7 +44,7 @@ export default defineConfig(
         },
     },
     {
-        files: ['**/*.{js,cjs,mjs}', 'vite.config.ts'],
+        files: ['**/*.{js,cjs,mjs}', 'vite*.config.ts', 'capacitor.config.ts', 'scripts/mobile/*.ts'],
         languageOptions: {
             globals: globals.node,
         },

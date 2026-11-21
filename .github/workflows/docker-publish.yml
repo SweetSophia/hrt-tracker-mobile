@@ -23,6 +23,8 @@ env:
 
 jobs:
   docker:
+    # The Android repository distributes an APK. Automatic web image publication belongs to the web project.
+    if: github.event_name != 'push' || github.repository == 'xunxunProjects/Oyama-s-HRT-Tracker'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:

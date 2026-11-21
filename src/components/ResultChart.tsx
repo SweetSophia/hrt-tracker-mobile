@@ -269,6 +269,7 @@ const ResultChart = ({
     events,
     labResults = [],
     calibrationFn = (_t: number) => 1,
+    modelNowMs,
     onPointClick,
     isDarkMode = false,
     isMono = false,
@@ -286,6 +287,8 @@ const ResultChart = ({
     events: DoseEvent[];
     labResults?: LabResult[];
     calibrationFn?: (timeH: number) => number;
+    /** Exact worker-table readout time; omitted by ordinary web/share consumers. */
+    modelNowMs?: number;
     onPointClick?: (e: DoseEvent) => void;
     isDarkMode?: boolean;
     isMono?: boolean;
@@ -382,11 +385,13 @@ const ResultChart = ({
     // ~60 renders a second an animation produces, so nothing downstream of it
     // could ever settle. A minute is finer than this chart resolves, and it is
     // the cadence the readings above it already refresh on.
-    const [now, setNow] = useState(() => Date.now());
+    const [clockNow, setNow] = useState(() => Date.now());
+    const now = modelNowMs ?? clockNow;
     useEffect(() => {
+        if (modelNowMs !== undefined) return;
         const id = setInterval(() => setNow(Date.now()), 60000);
         return () => clearInterval(id);
-    }, []);
+    }, [modelNowMs]);
 
     // Resample the simulation into the (time, primary, secondary) shape we
     // plot, `f` marking samples after "now". Those come from `ahead` when

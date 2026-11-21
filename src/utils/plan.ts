@@ -1,4 +1,4 @@
-import { DoseEvent, Ester, ExtraKey, GNRH_AGONISTS, Route, isDrugCode } from '../../logic';
+import { DoseEvent, Ester, ExtraKey, GNRH_AGONISTS, Route, isDrugCode } from '../domain/engine';
 import { Regimen, hormoneOf, lapseH } from './regimen';
 
 /**

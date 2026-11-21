@@ -1,3 +1,4 @@
+import { useMounted } from '../hooks/useMounted';
 import React, { useState } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { Undo, ChevronDown, Warning, Info, Check } from '../components/icons';
@@ -7,8 +8,8 @@ import { PKCustomParams, DEFAULT_PK_PARAMS } from '../../logic';
 
 interface PKParamsPageProps {
     pkParams: PKCustomParams | null;
-    onSave: (params: PKCustomParams) => void;
-    onReset: () => void;
+    onSave: (params: PKCustomParams) => Promise<boolean>;
+    onReset: () => Promise<boolean>;
     onBack: () => void;
 }
 
@@ -91,6 +92,7 @@ const FIELDS = SECTIONS.flatMap(s => s.fields);
 const clampTo = (f: FieldDef, n: number) => Math.max(f.min, Math.min(f.max, n));
 
 const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, onBack }) => {
+    const isMounted = useMounted();
     const { t } = useTranslation();
     const { showDialog } = useDialog();
 
@@ -141,10 +143,10 @@ const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, 
     const settled = settle();
     const dirty = FIELDS.some(f => settled[f.key] !== savedParams[f.key]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (!(await onSave(settled)) || !isMounted()) return;
         setDraft(settled);
         setText({});
-        onSave(settled);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -168,10 +170,10 @@ const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, 
         showDialog(
             'confirm',
             t('pk.reset_confirm'),
-            () => {
+            async () => {
+                if (!(await onReset()) || !isMounted()) return;
                 setDraft({ ...DEFAULT_PK_PARAMS });
                 setText({});
-                onReset();
             },
             { danger: true },
         );

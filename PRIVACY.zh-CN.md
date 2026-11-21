@@ -2,6 +2,12 @@
 
 [English](./PRIVACY.md)
 
+## Android 应用
+
+HRT Tracker 的 Android 版可以离线使用。用药和检验记录保存在手机上的 SQLCipher 加密数据库中，数据库密钥由 Android Keystore 保护。导出的完整备份可直接读取，请通过 Android 系统文件选择器将备份保存在妥善的位置。
+
+## 上游网页版
+
 本页说明 HRT Recorder Web 会存储什么、存在哪里、谁能看到。以下每一条都对照过本仓库的代码
 （`worker.ts`、`migrations/`、`backupPolicy.ts`、`logic.ts`、`src/`）。无法从代码确认的内容标注为
 **未经核实**。

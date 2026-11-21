@@ -12,7 +12,7 @@ import {
     isTestosteroneEster,
     isKnownEster,
     UNMODELLED_DRUGS,
-} from '../../logic';
+} from '../domain/engine';
 
 /**
  * A regimen: one drug by one route at a steady interval. The forward-looking

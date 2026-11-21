@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { TRANSLATIONS } from '../src/i18n/translations';
 
 // A language pack may start from another one with a spread, but a spread
@@ -17,9 +18,19 @@ describe('language packs', () => {
             if (!/^\s*\.\.\./.test(line)) return [];
             let before = i - 1;
             while (before >= 0 && source[before].trim() === '') before--;
-            return source[before].trimEnd().endsWith('{') ? [] : [`line ${i + 1}: ${line.trim()}`];
+            const previous = source[before].trim();
+            return previous.endsWith('{') || previous.startsWith('...') ? [] : [`line ${i + 1}: ${line.trim()}`];
         });
         expect(late).toEqual([]);
+    });
+
+    it('exposes the mobile credit copy in every supported locale', () => {
+        for (const locale of Object.keys(MOBILE_CREDITS) as (keyof typeof MOBILE_CREDITS)[]) {
+            for (const key of MOBILE_CREDIT_KEYS) {
+                expect(TRANSLATIONS[locale][key]).toBe(MOBILE_CREDITS[locale][key]);
+                expect(TRANSLATIONS[locale][key].trim()).toBeTruthy();
+            }
+        }
     });
 
     it('keep the Turkish strings written for the F2F how-to', () => {

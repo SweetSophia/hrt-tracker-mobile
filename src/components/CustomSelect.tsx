@@ -1,3 +1,5 @@
+import { BACK_PRIORITY } from '../application/backNavigation';
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import React, { useState, useRef, useEffect, useLayoutEffect, useId } from 'react';
 import { ChevronDown } from './icons';
 import Tick from './Tick';
@@ -17,6 +19,7 @@ const onEscapeKey = (e: KeyboardEvent) => {
 };
 
 export const useEscapeLayer = (onEscape: () => void, active: boolean) => {
+    useNativeBackOwner(onEscape, active, BACK_PRIORITY.input);
     const handlerRef = useRef(onEscape);
     useLayoutEffect(() => {
         handlerRef.current = onEscape;

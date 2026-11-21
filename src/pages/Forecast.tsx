@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
     CalibrationHistoryMode,
@@ -11,6 +11,7 @@ import {
     Route,
     SL_TIER_ORDER,
     SublingualTierParams,
+    PKCustomParams,
 } from '../../logic';
 import PageHeader, { PAGE_COLUMN, headerAction, headerActionAccent } from '../components/PageHeader';
 import CustomSelect from '../components/CustomSelect';
@@ -23,15 +24,10 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useHRTMode } from '../contexts/HRTModeContext';
 import { useDialog } from '../contexts/DialogContext';
 import { DoseTemplate } from '../hooks/useAppData';
-import {
-    Regimen,
-    PlanSpec,
-    Scenario,
-    ForecastInput,
-    forecastCurrent,
-    forecastPlan,
-    adherenceOf,
-} from '../utils/regimen';
+import { Regimen, PlanSpec, Scenario, ForecastInput, adherenceOf } from '../utils/regimen';
+import type { ForecastCompute, ForecastRequest } from '../application/forecastProjection';
+import { useForecastProjection } from '../hooks/useForecastProjection';
+import type { AppModelStatus } from '../hooks/appModelTypes';
 import { regimenLabel, intervalLabel, dueLabel, fill } from '../utils/regimenText';
 
 const on = 'text-[var(--text)]';
@@ -89,12 +85,15 @@ interface ForecastProps {
     birthYear: number | null;
     labResults: LabResult[];
     calibration: CalibrationResult;
+    modelStatus?: AppModelStatus;
+    pkParams?: PKCustomParams | null;
+    runForecast?: ForecastCompute;
     calibrationMethod: CalibrationMethod;
     calibrationHistoryMode: CalibrationHistoryMode;
     regimens: Regimen[];
     nowH: number;
     isDarkMode: boolean;
-    onSaveTemplate: (template: DoseTemplate) => void;
+    onSaveTemplate: (template: DoseTemplate) => Promise<boolean>;
 }
 
 const Forecast: React.FC<ForecastProps> = ({
@@ -104,6 +103,9 @@ const Forecast: React.FC<ForecastProps> = ({
     birthYear,
     labResults,
     calibration,
+    modelStatus = 'ready',
+    pkParams = null,
+    runForecast,
     calibrationMethod,
     calibrationHistoryMode,
     regimens,
@@ -190,6 +192,7 @@ const Forecast: React.FC<ForecastProps> = ({
         };
     };
 
+    const modelReady = modelStatus === 'ready';
     const horizonH = horizonWeeks * 7 * 24;
     const input: ForecastInput = useMemo(
         () => ({
@@ -220,40 +223,15 @@ const Forecast: React.FC<ForecastProps> = ({
         ],
     );
 
-    // Each scenario is a few hundred ms of simulation. Run after paint, debounce
-    // typing, and remember every spec already run so switching plans or
-    // horizons back is free.
-    const cache = useRef(new Map<string, Scenario | null>());
-    const inputKey = `${events.length}|${weight}|${birthYear}|${labResults.length}|${calibrationMethod}|${calibrationHistoryMode}|${isTransmasc}|${hourNow}|${horizonH}`;
-    const [current, setCurrent] = useState<Scenario | null>(null);
-    const [results, setResults] = useState<Record<string, Scenario | null>>({});
-    const [busy, setBusy] = useState(true);
-    useEffect(() => {
-        const id = window.setTimeout(() => setCurrent(forecastCurrent(input, regimens)), 30);
-        return () => window.clearTimeout(id);
-    }, [input, regimens]);
-    const specs = plans.map(p => ({ id: p.id, spec: toSpec(p) }));
-    const specsKey = JSON.stringify(specs);
-    useEffect(() => {
-        setBusy(true);
-        const id = window.setTimeout(() => {
-            if (cache.current.size > 40) cache.current.clear();
-            const next: Record<string, Scenario | null> = {};
-            for (const { id, spec } of specs) {
-                if (!spec) {
-                    next[id] = null;
-                    continue;
-                }
-                const k = inputKey + JSON.stringify(spec);
-                if (!cache.current.has(k)) cache.current.set(k, forecastPlan(input, regimens, spec));
-                next[id] = cache.current.get(k)!;
-            }
-            setResults(next);
-            setBusy(false);
-        }, 280);
-        return () => window.clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [input, regimens, specsKey]);
+    // The editor stays mounted; only a complete batch for the current inputs is visible.
+    // Include contents and the captured PK profile: equal-length record edits are not equal models.
+    const inputKey = useMemo(() => JSON.stringify({ input, regimens, pkParams }), [input, regimens, pkParams]);
+    const specsKey = JSON.stringify(plans.map(p => ({ id: p.id, spec: toSpec(p) })));
+    const request = useMemo<ForecastRequest>(
+        () => ({ ...JSON.parse(inputKey), plans: JSON.parse(specsKey) }),
+        [inputKey, specsKey],
+    );
+    const { current, results, busy, failed, retry } = useForecastProjection(request, modelStatus, runForecast);
 
     const addPlan = () => {
         if (plans.length >= MAX_PLANS) return;
@@ -267,10 +245,10 @@ const Forecast: React.FC<ForecastProps> = ({
         setPlans(rest);
         setActiveId(rest[0].id);
     };
-    const saveTemplate = () => {
+    const saveTemplate = async () => {
         const spec = toSpec(active);
         if (!spec) return;
-        onSaveTemplate({
+        const saved = await onSaveTemplate({
             id: uuidv4(),
             name: `${regimenLabel(spec, t)}\n${intervalLabel(spec.intervalH, t)}`,
             route: spec.route,
@@ -279,14 +257,14 @@ const Forecast: React.FC<ForecastProps> = ({
             extras: spec.extras,
             createdAt: Date.now(),
         });
-        showDialog('alert', t('template.saved'));
+        if (saved) showDialog('alert', t('template.saved'));
     };
 
     const habits = main ? adherenceOf(main, events) : { missRate: 0, jitterSdH: 0 };
     const jitter =
         habits.jitterSdH < 1 ? `${Math.round(habits.jitterSdH * 60)} min` : `${habits.jitterSdH.toFixed(1)} h`;
     const calText = `×${calibration.scale.toFixed(2)}${Math.abs(calibration.halfLifeDeltaPct) >= 1 ? ` (t½ ${calibration.halfLifeDeltaPct > 0 ? '+' : ''}${calibration.halfLifeDeltaPct.toFixed(0)}%)` : ''}`;
-    const hasCal = !isTransmasc && labResults.length > 0 && calibration.fitErrPct !== null;
+    const hasCal = modelReady && !isTransmasc && labResults.length > 0 && calibration.fitErrPct !== null;
     const runs = (results[active.id] ?? current)?.runs ?? 48;
     const methodText = hasCal
         ? fill(t('forecast.method'), {
@@ -555,7 +533,15 @@ const Forecast: React.FC<ForecastProps> = ({
                             {fill(t('forecast.below'), { low: `${target.low} ${unit}` })}
                         </p>
                     )}
-                    <p className={`mt-4 text-xs leading-relaxed ${muted}`}>{methodText}</p>
+                    {failed && (
+                        <div role="alert" className="mt-4 text-sm text-[var(--danger)]">
+                            <p>{t('model.error')}</p>
+                            <button type="button" className="btn-secondary mt-3" onClick={retry}>
+                                {t('model.retry')}
+                            </button>
+                        </div>
+                    )}
+                    {modelReady && <p className={`mt-4 text-xs leading-relaxed ${muted}`}>{methodText}</p>}
                 </section>
             </div>
 

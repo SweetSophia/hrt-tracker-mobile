@@ -1,3 +1,5 @@
+import { NativeBackScope } from '../hooks/useNativeBackOwner';
+import { useMounted } from '../hooks/useMounted';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import PageHeader, { PAGE_COLUMN, headerActionAccent } from '../components/PageHeader';
 import { ChevronRight } from '../components/icons';
@@ -38,11 +40,12 @@ interface LabProps {
     /** The dose log and the model run, for each lab's timing and the copied details. */
     events: DoseEvent[];
     simulation: SimulationResult | null;
-    onSaveLabResult: (res: LabResult) => void;
-    onDeleteLabResult: (id: string) => void;
+    onSaveLabResult: (res: LabResult[]) => Promise<boolean>;
+    onDeleteLabResult: (id: string) => Promise<boolean>;
     onClearLabResults: () => void;
     calibrationMethod: CalibrationMethod;
     calibration: CalibrationResult;
+    modelReady?: boolean;
     onOpenCalibrationSettings: () => void;
     lang: Lang;
 }
@@ -59,9 +62,11 @@ const Lab: React.FC<LabProps> = ({
     onClearLabResults,
     calibrationMethod,
     calibration,
+    modelReady = true,
     onOpenCalibrationSettings,
     lang,
 }) => {
+    const isMounted = useMounted();
     const [editingLabId, setEditingLabId] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const { isTransmasc } = useHRTMode();
@@ -118,7 +123,7 @@ const Lab: React.FC<LabProps> = ({
         return m;
     }, [calibration.points]);
 
-    const hasCal = calibration.points.length > 0;
+    const hasCal = modelReady && calibration.points.length > 0;
     const hormoneAdvisory = useMemo(() => getHormoneLevelAdvisory(labResults), [labResults]);
 
     // One-line summary of the active calibration for the settings entry row.
@@ -156,20 +161,23 @@ const Lab: React.FC<LabProps> = ({
             <div className="disclosure" data-open={isQuickAddLabOpen} {...inertWhen(!isQuickAddLabOpen)}>
                 <div className="disclosure-inner">
                     <div className={`${PAGE_COLUMN} mb-6`}>
-                        <LabResultForm
-                            // Force remount on open so the values clear and the date resets to "now" (this row never unmounts, only collapses via CSS).
-                            key={isQuickAddLabOpen ? 'open' : 'closed'}
-                            resultToEdit={null}
-                            defaultE2Unit={lastE2Unit}
-                            defaultTUnit={lastTUnit}
-                            defaultAssay={lastAssay}
-                            onSave={res => {
-                                onSaveLabResult(res);
-                                setIsQuickAddLabOpen(false);
-                            }}
-                            onCancel={() => setIsQuickAddLabOpen(false)}
-                            onDelete={() => {}}
-                        />
+                        <NativeBackScope active={isQuickAddLabOpen}>
+                            <LabResultForm
+                                // Force remount on open so the values clear and the date resets to "now" (this row never unmounts, only collapses via CSS).
+                                key={isQuickAddLabOpen ? 'open' : 'closed'}
+                                resultToEdit={null}
+                                defaultE2Unit={lastE2Unit}
+                                defaultTUnit={lastTUnit}
+                                defaultAssay={lastAssay}
+                                onSave={async res => {
+                                    if (!(await onSaveLabResult(res)) || !isMounted()) return false;
+                                    setIsQuickAddLabOpen(false);
+                                    return true;
+                                }}
+                                onCancel={() => setIsQuickAddLabOpen(false)}
+                                onDelete={async () => false}
+                            />
+                        </NativeBackScope>
                     </div>
                 </div>
             </div>
@@ -188,7 +196,7 @@ const Lab: React.FC<LabProps> = ({
                 >
                     <div className="min-w-0">
                         <p className={`text-sm ${on}`}>{t('cal.settings')}</p>
-                        <p className={`text-xs ${muted} mt-0.5 tabular-nums`}>{calSummary}</p>
+                        {modelReady && <p className={`text-xs ${muted} mt-0.5 tabular-nums`}>{calSummary}</p>}
                     </div>
                     <ChevronRight size={16} className={`${muted} shrink-0`} />
                 </button>
@@ -232,7 +240,7 @@ const Lab: React.FC<LabProps> = ({
                                 // Testosterone labs are not explained here: in transmasc
                                 // mode nearly every lab is one, and a note on each would
                                 // be noise.
-                                const unused = !pt && !isT;
+                                const unused = modelReady && !pt && !isT;
                                 // Estradiol compares through calibration's own points;
                                 // testosterone, which nothing calibrates, against the
                                 // model directly, so a transmasc lab reads the same way.
@@ -325,18 +333,24 @@ const Lab: React.FC<LabProps> = ({
                                         >
                                             <div className="overflow-hidden">
                                                 <div className="pb-4 pt-1">
-                                                    <LabResultForm
-                                                        resultToEdit={res}
-                                                        onSave={updated => {
-                                                            onSaveLabResult(updated);
-                                                            setEditingLabId(null);
-                                                        }}
-                                                        onCancel={() => setEditingLabId(null)}
-                                                        onDelete={id => {
-                                                            onDeleteLabResult(id);
-                                                            setEditingLabId(null);
-                                                        }}
-                                                    />
+                                                    <NativeBackScope active={isEditing}>
+                                                        <LabResultForm
+                                                            resultToEdit={res}
+                                                            onSave={async updated => {
+                                                                if (!(await onSaveLabResult(updated)) || !isMounted())
+                                                                    return false;
+                                                                setEditingLabId(null);
+                                                                return true;
+                                                            }}
+                                                            onCancel={() => setEditingLabId(null)}
+                                                            onDelete={async id => {
+                                                                if (!(await onDeleteLabResult(id)) || !isMounted())
+                                                                    return false;
+                                                                setEditingLabId(null);
+                                                                return true;
+                                                            }}
+                                                        />
+                                                    </NativeBackScope>
                                                 </div>
                                             </div>
                                         </div>

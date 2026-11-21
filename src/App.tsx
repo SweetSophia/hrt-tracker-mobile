@@ -1,4 +1,12 @@
-import { Suspense, useState, useEffect, useMemo, useRef } from 'react';
+import { UiSession } from './hooks/uiSession';
+import {
+    RecordBoundary,
+    StorageStatus,
+    usePortablePreference,
+    useDevicePreference,
+    useApplicationRuntime,
+} from './contexts/RecordsContext';
+import { Suspense, useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from 'react';
 import { useTranslation, LanguageProvider } from './contexts/LanguageContext';
 import { useDialog, DialogProvider } from './contexts/DialogContext';
 import { HRTModeProvider, useHRTMode } from './contexts/HRTModeContext';
@@ -16,7 +24,6 @@ import {
     completeBackupPreviewFingerprint,
     type CompleteBackupMergeResult,
     type CompleteBackupPreview,
-    type PortablePreferences,
 } from './utils/backupBundle';
 import {
     describeCompleteBackupExportWarning,
@@ -29,6 +36,7 @@ import {
     isPartialReplaceFailure,
 } from './utils/backupWarnings';
 import { useAppData } from './hooks/useAppData';
+import { ModelStatus } from './components/ModelStatus';
 import { useAppNavigation, tabForView, ViewKey } from './hooks/useAppNavigation';
 import { useLiveShareSync } from './hooks/useLiveShareSync';
 import { describeSyncError, useCloudSync } from './hooks/useCloudSync';
@@ -85,26 +93,22 @@ import {
     ShareSettings,
 } from './routes/lazyPages';
 import SiteNoticeBanner from './components/SiteNotice';
+import { getBuildTarget, getCapabilities } from './platform/runtime';
 import JsDependencyNotice from './components/JsDependencyNotice';
 import UpdatePrompt from './components/UpdatePrompt';
 import { copyText } from './utils/clipboard';
 
-const AppContent = () => {
+const AppContent = ({ session }: { session: UiSession }) => {
     const { t, lang, setLang } = useTranslation();
     const { showDialog } = useDialog();
     const { mode } = useHRTMode();
     const { user, token, logout } = useAuth();
     const [twoFAEnabled, setTwoFAEnabled] = useState(false);
-
     // --- Prediction curve: the Overview chart carried on past "now", dashed,
     // on the plan's doses. Off unless switched on in Settings; a display
     // preference, so it stays on the device. ---
-    const [showPrediction, setShowPrediction] = useState<boolean>(
-        () => localStorage.getItem('app-show-prediction') === 'true',
-    );
-    useEffect(() => {
-        localStorage.setItem('app-show-prediction', String(showPrediction));
-    }, [showPrediction]);
+    const runtime = useApplicationRuntime();
+    const [showPrediction, setShowPrediction] = usePortablePreference('app-show-prediction', raw => raw === 'true');
 
     // Use Custom Hooks
     const {
@@ -117,6 +121,12 @@ const AppContent = () => {
         labResults,
         doseTemplates,
         simulation,
+        modelStatus,
+        retryModel,
+        runForecast,
+        runDemo,
+        modelNowMs,
+        modelSnapshot,
         calibrationFn,
         calibrationMethod,
         setCalibrationMethod,
@@ -141,8 +151,7 @@ const AppContent = () => {
         deleteEvent,
         deleteEvents,
         clearAllEvents,
-        addLabResult,
-        updateLabResult,
+        saveLabResults,
         deleteLabResult,
         clearLabResults,
         addTemplate,
@@ -153,7 +162,7 @@ const AppContent = () => {
         pkParams,
         setPkParams,
         clearPkParams,
-        processImportedData,
+        prepareImportedData,
         mergeImportedData,
         buildExportPayload,
         buildCompleteBackupBundle,
@@ -171,13 +180,7 @@ const AppContent = () => {
     } = useAppData(showDialog, { withPrediction: showPrediction });
     const nowH = currentTime.getTime() / 3600000;
     // How far ahead a supply counts as running low. A preference, so it stays on the device.
-    const [supplyLeadDays, setSupplyLeadDaysState] = useState(
-        () => Number(localStorage.getItem('hrt-supply-lead-days')) || 14,
-    );
-    const setSupplyLeadDays = (d: number) => {
-        setSupplyLeadDaysState(d);
-        localStorage.setItem('hrt-supply-lead-days', String(d));
-    };
+    const [supplyLeadDays, setSupplyLeadDays] = usePortablePreference('hrt-supply-lead-days', raw => Number(raw) || 14);
 
     useLiveShareSync({
         authToken: token,
@@ -187,8 +190,15 @@ const AppContent = () => {
         calibrationFn,
     });
 
-    const { currentView, currentTab, move, handleViewChange, handleTabSelect, mainScrollRef, navItems } =
-        useAppNavigation(user);
+    const browserExport = useRef<AbortController | null>(null);
+    const cancelBrowserExport = useCallback(() => {
+        browserExport.current?.abort();
+    }, []);
+    const { currentView, currentTab, move, handleViewChange, handleTabSelect, mainScrollRef, navItems, isViewActive } =
+        useAppNavigation(user, session, cancelBrowserExport);
+    // Cancel work tied to the outgoing screen when a view update commits or
+    // record scope changes unmount this component.
+    useLayoutEffect(() => cancelBrowserExport, [cancelBrowserExport, currentView]);
 
     // --- Local UI state ---
     // A dose on the Overview's chart sent here to be changed: History opens
@@ -201,7 +211,14 @@ const AppContent = () => {
     // that needs an account (Share) sends people there and says why, and once
     // they're in, carries on to where they were going instead of leaving them
     // to find the button they had already pressed.
-    const [afterSignIn, setAfterSignIn] = useState<ViewKey | null>(null);
+    const [afterSignIn, setAfterSignInState] = useState<ViewKey | null>(() => session.getAfterSignIn());
+    const setAfterSignIn = useCallback(
+        (view: ViewKey | null) => {
+            session.setAfterSignIn(view);
+            setAfterSignInState(view);
+        },
+        [session],
+    );
     const [signInReason, setSignInReason] = useState<'share' | 'vote' | undefined>(undefined);
     // The vote page can be opened from Settings or from the Overview nudge;
     // its Back button returns to wherever it was opened from.
@@ -242,22 +259,19 @@ const AppContent = () => {
         accountVisited.current = false;
         setAfterSignIn(null);
         setSignInReason(undefined);
-    }, [currentView]);
+    }, [currentView, setAfterSignIn]);
     const [pendingImportText, setPendingImportText] = useState<string | null>(null);
 
     // --- Auto-sync preference ---
     // Storage key kept from when this only ever uploaded, so an existing
     // preference carries over rather than silently resetting to on.
-    const [autoSync, setAutoSync] = useState<boolean>(() => localStorage.getItem('app-auto-backup') !== 'false');
+    const [autoSync, setAutoSync] = useDevicePreference('app-auto-backup', raw => raw !== 'false');
 
     // --- First run ---
-    const [showOnboarding, setShowOnboarding] = useState(shouldShowOnboarding);
+    const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding(runtime));
 
     // --- Developer mode (unlocks the milk tea easter egg) ---
-    const [devMode, setDevMode] = useState<boolean>(() => localStorage.getItem('app-dev-mode') === 'true');
-    useEffect(() => {
-        localStorage.setItem('app-dev-mode', String(devMode));
-    }, [devMode]);
+    const [devMode, setDevMode] = useDevicePreference('app-dev-mode', raw => raw === 'true');
 
     // A page whose guard below has gone false (signed out, developer mode
     // off) renders nothing, leaving a blank screen. The browser's Forward can
@@ -268,7 +282,12 @@ const AppContent = () => {
             (currentView === 'share' ||
                 currentView === 'sessions' ||
                 currentView === 'two-factor' ||
-                currentView === 'edit-avatar')) ||
+                currentView === 'edit-avatar' ||
+                currentView === 'edit-profile' ||
+                currentView === 'change-password' ||
+                currentView === 'delete-account' ||
+                currentView === 'hrt-security' ||
+                currentView === 'f2f')) ||
         (!devMode &&
             (currentView === 'settings-milk-tea' ||
                 currentView === 'settings-cat-states' ||
@@ -280,27 +299,8 @@ const AppContent = () => {
 
     // --- Site label: the host name strip above the mobile view. Switched off
     // from Settings while developer mode is on, and kept off after that. ---
-    const [hideSiteLabel, setHideSiteLabel] = useState<boolean>(
-        () => localStorage.getItem('app-hide-site-label') === 'true',
-    );
-    useEffect(() => {
-        localStorage.setItem('app-hide-site-label', String(hideSiteLabel));
-    }, [hideSiteLabel]);
-
-    const [theme, setTheme] = useState<AppTheme>(() => {
-        const saved = localStorage.getItem('app-theme');
-        return (saved as AppTheme) || 'system';
-    });
-
-    // Imported complete bundles carry only the confirmed preference keys. The
-    // data layer returns them; the app owns the React state and storage effects.
-    const applyPortablePreferences = (prefs: PortablePreferences) => {
-        if (prefs['app-theme'] !== undefined) setTheme(prefs['app-theme']);
-        if (prefs['hrt-lang'] !== undefined) setLang(prefs['hrt-lang']);
-        if (prefs['app-show-prediction'] !== undefined) setShowPrediction(prefs['app-show-prediction']);
-        if (prefs['app-hide-site-label'] !== undefined) setHideSiteLabel(prefs['app-hide-site-label']);
-        if (prefs['hrt-supply-lead-days'] !== undefined) setSupplyLeadDays(prefs['hrt-supply-lead-days']);
-    };
+    const [hideSiteLabel, setHideSiteLabel] = usePortablePreference('app-hide-site-label', raw => raw === 'true');
+    const [theme, setTheme] = usePortablePreference<AppTheme>('app-theme', raw => (raw as AppTheme) || 'system');
 
     // Dialogs stay open across renders, so their callbacks must not keep the
     // arrays/functions captured when the dialog opened. Every confirm path
@@ -323,10 +323,6 @@ const AppContent = () => {
     const isDarkMode =
         theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    useEffect(() => {
-        localStorage.setItem('app-auto-backup', String(autoSync));
-    }, [autoSync]);
-
     // Two-way sync with the cloud backup: pull, reconcile, push. Replaces both
     // the upload-only auto-backup and the startup "your data differs" prompt —
     // the prompt could only add records the cloud had and this device lacked, so
@@ -334,7 +330,7 @@ const AppContent = () => {
     const syncState = useCloudSync({
         token,
         userId: user?.id ?? null,
-        enabled: autoSync,
+        enabled: getCapabilities().remoteBackend && autoSync,
         // Never touch the cloud while the data layer is mid-switch between
         // accounts or modes: the payload would mix one account's in-memory
         // records with another's storage keys.
@@ -353,7 +349,6 @@ const AppContent = () => {
 
     // --- Theme Effect ---
     useEffect(() => {
-        localStorage.setItem('app-theme', theme);
         const root = window.document.documentElement;
 
         const applyTheme = (isDark: boolean) => {
@@ -407,12 +402,13 @@ const AppContent = () => {
     // import went through, so the paste box keeps its text after a Cancel.
     const confirmImport = (parsed: unknown): Promise<boolean> =>
         new Promise(resolve => {
-            if (!processImportedData(parsed, { check: true })) {
+            const apply = prepareImportedData(parsed);
+            if (!apply) {
                 showDialog('alert', t('drawer.import_error'));
                 resolve(false);
                 return;
             }
-            const run = () => resolve(processImportedData(parsed));
+            const run = () => resolve(apply());
             const { modes } = buildExportPayload();
             if (Object.values(modes).every(m => !m.events.length && !m.labResults.length && !m.doseTemplates.length)) {
                 run();
@@ -451,10 +447,14 @@ const AppContent = () => {
                 console.warn('Complete backup preview:', { issues: preview.issues, conflicts: preview.conflicts });
             }
 
-            const run = () => {
-                let result: CompleteBackupMergeResult;
+            const run = async () => {
+                let result: CompleteBackupMergeResult | null;
                 try {
-                    result = completeBackupRef.current.apply(parsed);
+                    result = await completeBackupRef.current.apply(parsed);
+                    if (!result) {
+                        resolve(false);
+                        return;
+                    }
                 } catch (err) {
                     console.error(err);
                     showDialog('alert', describeCompleteBackupFailure(err, t));
@@ -462,7 +462,6 @@ const AppContent = () => {
                     return;
                 }
                 const outcome = classifyCompleteBackupOutcome(result);
-                applyPortablePreferences(result.preferences);
                 showDialog('alert', describeCompleteBackupResult(result, outcome, t));
                 resolve(outcome !== 'nothing');
             };
@@ -552,10 +551,13 @@ const AppContent = () => {
                 return;
             }
 
-            const run = () => {
+            const run = async () => {
                 try {
-                    const result = completeBackupRef.current.replace(parsed);
-                    applyPortablePreferences(result.preferences);
+                    const result = await completeBackupRef.current.replace(parsed);
+                    if (!result) {
+                        resolve(false);
+                        return;
+                    }
                     showDialog('alert', t('import.replace_complete_success'));
                     resolve(true);
                 } catch (err) {
@@ -689,15 +691,15 @@ const AppContent = () => {
     // way is kept, newest last, so the taps can be taken back one at a time:
     // three doses in a day are three taps and three undos.
     const [planLogs, setPlanLogs] = useState<{ itemId: string; eventId: string }[]>([]);
-    const handleLogPlanItem = (item: PlanItem) => {
+    const handleLogPlanItem = async (item: PlanItem) => {
         const eventId = uuidv4();
-        addEvent(planEvent(item, eventId, Date.now()));
+        if (!(await addEvent(planEvent(item, eventId, Date.now())))) return;
         setPlanLogs(logs => [...logs, { itemId: item.id, eventId }]);
     };
-    const handleUndoPlanLog = (itemId: string) => {
+    const handleUndoPlanLog = async (itemId: string) => {
         const last = [...planLogs].reverse().find(l => l.itemId === itemId && events.some(e => e.id === l.eventId));
         if (!last) return;
-        deleteEvent(last.eventId);
+        if (!(await deleteEvent(last.eventId))) return;
         setPlanLogs(logs => logs.filter(l => l !== last));
     };
     // Items with a tap still on record to take back. A dose deleted elsewhere is gone from here too.
@@ -722,30 +724,40 @@ const AppContent = () => {
         }
     };
 
-    const downloadFile = (data: string, filename: string) => {
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        link.click();
-        URL.revokeObjectURL(url);
-    };
+    const saveJson = (text: string, filename: string) =>
+        runtime.files.save({
+            name: filename,
+            mimeType: 'application/json',
+            bytes: new TextEncoder().encode(text),
+        });
 
     const handleExportConfirm = async (encrypt: boolean, customPassword?: string): Promise<string | null> => {
-        const exportData = buildExportPayload();
-        const json = JSON.stringify(exportData, null, 2);
-
-        if (encrypt) {
-            const { data, password } = await encryptData(json, customPassword);
-            downloadFile(data, `hrt-dosages-encrypted-${new Date().toISOString().split('T')[0]}.json`);
-            if (!customPassword) {
-                return password;
+        const isBrowserExport = encrypt && runtime.backend !== 'offline';
+        if (isBrowserExport && !isViewActive('settings-export')) return null;
+        const controller = isBrowserExport ? new AbortController() : null;
+        if (controller) browserExport.current = controller;
+        const signal = controller?.signal;
+        try {
+            const json = JSON.stringify(buildExportPayload(), null, 2);
+            const date = new Date().toISOString().split('T')[0];
+            if (!encrypt) {
+                await saveJson(json, `hrt-dosages-${date}.json`);
+                return null;
             }
-        } else {
-            downloadFile(json, `hrt-dosages-${new Date().toISOString().split('T')[0]}.json`);
+            const { data, password } = await encryptData(json, customPassword);
+            // Keep the password UI available when the browser dispatches the file.
+            // Navigation can already be in progress while Export is on screen.
+            if (signal?.aborted) return null;
+            const result = await saveJson(data, `hrt-dosages-encrypted-${date}.json`);
+            return !signal?.aborted && !customPassword && (result === 'saved' || result === 'download-requested')
+                ? password
+                : null;
+        } catch {
+            if (!signal?.aborted) showDialog('alert', t('export.file_failed'));
+            return null;
+        } finally {
+            if (browserExport.current === controller) browserExport.current = null;
         }
-        return null;
     };
 
     /**
@@ -760,24 +772,36 @@ const AppContent = () => {
             'confirm',
             warning.message,
             () => {
-                try {
-                    // Build at confirm time, not when the dialog opened: the
-                    // arrays may have changed while the warning was on screen.
-                    const report = completeBackupRef.current.build();
-                    downloadFile(
-                        JSON.stringify(report.bundle, null, 2),
-                        `hrt-complete-backup-${new Date().toISOString().split('T')[0]}.json`,
-                    );
-                    // Collapsed duplicates and expired deletion marks are
-                    // housekeeping; only records left out are worth a word.
-                    if (report.issues.length) console.warn('Complete backup export:', report.issues);
-                    if (report.invalidRecords > 0) {
-                        showDialog('alert', t('export.complete_skipped').replace('{n}', String(report.invalidRecords)));
+                void (async () => {
+                    let report: ReturnType<typeof buildCompleteBackupBundle>;
+                    try {
+                        // Build at confirm time, not when the dialog opened: the
+                        // arrays may have changed while the warning was on screen.
+                        report = completeBackupRef.current.build();
+                    } catch (err) {
+                        console.error(err);
+                        showDialog('alert', t('export.complete_failed'));
+                        return;
                     }
-                } catch (err) {
-                    console.error(err);
-                    showDialog('alert', t('export.complete_failed'));
-                }
+                    try {
+                        const result = await saveJson(
+                            JSON.stringify(report.bundle, null, 2),
+                            `hrt-complete-backup-${new Date().toISOString().split('T')[0]}.json`,
+                        );
+                        if (result === 'cancelled') return;
+                        // Collapsed duplicates and expired deletion marks are
+                        // housekeeping; only records left out are worth a word.
+                        if (report.issues.length) console.warn('Complete backup export:', report.issues);
+                        if (report.invalidRecords > 0) {
+                            showDialog(
+                                'alert',
+                                t('export.complete_skipped').replace('{n}', String(report.invalidRecords)),
+                            );
+                        }
+                    } catch {
+                        showDialog('alert', t('export.file_failed'));
+                    }
+                })();
             },
             {
                 danger: true,
@@ -846,11 +870,16 @@ const AppContent = () => {
                 showDialog('alert', t('account.cloud_load_failed'));
                 return;
             }
+            const apply = prepareImportedData(parsed);
+            if (!apply) {
+                showDialog('alert', t('account.cloud_load_failed'));
+                return;
+            }
             showDialog(
                 'confirm',
                 (t('account.load_confirm') as string).replace('{time}', new Date(timestamp * 1000).toLocaleString()),
                 () => {
-                    processImportedData(parsed);
+                    void apply();
                 },
                 { danger: true },
             );
@@ -882,18 +911,23 @@ const AppContent = () => {
     // would let someone tab away with both still on their defaults.
     if (showOnboarding) {
         return (
-            <Onboarding
-                languageOptions={languageOptions}
-                weight={weight}
-                onWeightChange={setWeight}
-                plan={plan}
-                onAddPlanItem={savePlanItem}
-                onDeletePlanItem={deletePlanItem}
-                onDone={() => {
-                    markOnboardingSeen();
-                    setShowOnboarding(false);
-                }}
-            />
+            <>
+                <StorageStatus />
+                <Onboarding
+                    runDemo={runDemo}
+                    session={session}
+                    languageOptions={languageOptions}
+                    weight={weight}
+                    onWeightChange={setWeight}
+                    plan={plan}
+                    onAddPlanItem={savePlanItem}
+                    onDeletePlanItem={deletePlanItem}
+                    onDone={() => {
+                        markOnboardingSeen(runtime);
+                        if (runtime.getState().device['app-onboarded'] === 'true') setShowOnboarding(false);
+                    }}
+                />
+            </>
         );
     }
 
@@ -907,28 +941,29 @@ const AppContent = () => {
                         : currentTab
                 }
                 onViewChange={view => {
-                    // Opened from the sidebar rather than a row, Back returns
-                    // to whatever page was showing when the door was used.
                     if (view === 'settings-community' && currentView !== 'settings-community') {
                         setCommunityVoteReturn(currentView);
                     }
                     handleTabSelect(view);
                 }}
+                modelReady={modelStatus === 'ready'}
             />
             <div className="flex-1 flex flex-col overflow-hidden w-full bg-[var(--bg)] relative">
-                {/* Mobile site label — reflects the current deployment host. Hidden,
-                    it still keeps its top padding, which is what holds the content
-                    clear of a notch or status bar. */}
-                <div
-                    className={`md:hidden shrink-0 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] ${hideSiteLabel ? '' : 'pb-1 text-center text-xs font-medium tracking-wide text-muted select-none'}`}
-                >
-                    {!hideSiteLabel && window.location.hostname}
-                </div>
+                {getBuildTarget() === 'mobile' ? (
+                    <div aria-hidden="true" className="shrink-0 pt-[env(safe-area-inset-top,0px)]" />
+                ) : (
+                    <div
+                        className={`md:hidden shrink-0 pt-[calc(0.5rem+env(safe-area-inset-top,0px))] ${hideSiteLabel ? '' : 'pb-1 text-center text-xs font-medium tracking-wide text-muted select-none'}`}
+                    >
+                        {!hideSiteLabel && window.location.hostname}
+                    </div>
+                )}
 
                 {/* Operator banner. Outside the scroller and keyed off nothing in
                     this component, so it stays put across view changes. */}
+                <StorageStatus />
                 <JsDependencyNotice />
-                <SiteNoticeBanner />
+                {getCapabilities().remoteBackend && <SiteNoticeBanner />}
                 <UpdatePrompt />
                 {/* Where a prompt goes when nothing on the page was pressed to
                     put it under (contexts/DialogContext.tsx). */}
@@ -943,6 +978,9 @@ const AppContent = () => {
                     key={currentView}
                     className={`main-view flex-1 flex flex-col overflow-y-auto scrollbar-hide scroll-pb-nav bg-[var(--bg)] ${supportsViewTransitions || (move !== 'push' && move !== 'pop') ? '' : `view-in-${move}`}`}
                 >
+                    {['home', 'lab', 'lab-calibration', 'forecast'].includes(currentView) && (
+                        <ModelStatus status={modelStatus} onRetry={retryModel} />
+                    )}
                     <Suspense fallback={<PageLoading />}>
                         {currentView === 'home' && (
                             <Home
@@ -958,6 +996,9 @@ const AppContent = () => {
                                 labResults={labResults}
                                 onEditEvent={handleEditEvent}
                                 calibrationFn={calibrationFn}
+                                modelNowMs={modelNowMs}
+                                modelStatus={modelStatus}
+                                modelSnapshot={modelSnapshot}
                                 theme={theme}
                                 onNavigateToHistory={() => {
                                     setIsQuickAddOpen(true);
@@ -1004,6 +1045,9 @@ const AppContent = () => {
                                 birthYear={modelBirthYear}
                                 labResults={labResults}
                                 calibration={calibration}
+                                modelStatus={modelStatus}
+                                pkParams={pkParams}
+                                runForecast={runForecast}
                                 calibrationMethod={calibrationMethod}
                                 calibrationHistoryMode={calibrationHistoryMode}
                                 regimens={regimens}
@@ -1031,8 +1075,7 @@ const AppContent = () => {
                                 setIsQuickAddOpen={setIsQuickAddOpen}
                                 doseTemplates={doseTemplates}
                                 onSaveEvent={e => {
-                                    if (events.find(p => p.id === e.id)) updateEvent(e);
-                                    else addEvent(e);
+                                    return events.find(p => p.id === e.id) ? updateEvent(e) : addEvent(e);
                                 }}
                                 onDeleteEvent={deleteEvent}
                                 onAddEvents={addEvents}
@@ -1057,12 +1100,10 @@ const AppContent = () => {
                                 labResults={labResults}
                                 events={events}
                                 simulation={simulation}
-                                onSaveLabResult={r => {
-                                    if (labResults.find(prev => prev.id === r.id)) updateLabResult(r);
-                                    else addLabResult(r);
-                                }}
+                                onSaveLabResult={saveLabResults}
                                 onDeleteLabResult={deleteLabResult}
                                 onClearLabResults={clearLabResults}
+                                modelReady={modelStatus === 'ready'}
                                 calibrationMethod={calibrationMethod}
                                 calibration={calibration}
                                 onOpenCalibrationSettings={() => handleViewChange('lab-calibration')}
@@ -1083,7 +1124,11 @@ const AppContent = () => {
                         )}
 
                         {currentView === 'lab-calibration-guide' && (
-                            <CalibrationGuide weight={weight} onBack={() => handleViewChange('lab-calibration')} />
+                            <CalibrationGuide
+                                runDemo={runDemo}
+                                weight={weight}
+                                onBack={() => handleViewChange('lab-calibration')}
+                            />
                         )}
 
                         {currentView === 'settings' && (
@@ -1097,7 +1142,10 @@ const AppContent = () => {
                                 showDialog={showDialog}
                                 onNavigateToDisclaimer={() => handleViewChange('settings-disclaimer')}
                                 onNavigateToOpSec={() => handleViewChange('settings-opsec')}
-                                onShowIntro={() => setShowOnboarding(true)}
+                                onShowIntro={() => {
+                                    session.setOnboardingStep(0);
+                                    setShowOnboarding(true);
+                                }}
                                 onNavigateToTransparency={() => handleViewChange('settings-transparency')}
                                 onNavigateToCredits={() => handleViewChange('settings-credits')}
                                 onNavigateToCommunity={() => openCommunityVote('settings')}
@@ -1178,6 +1226,7 @@ const AppContent = () => {
                                 labResults={labResults}
                                 weight={weight}
                                 onExport={handleExportConfirm}
+                                exportSession={runtime.backend === 'offline' ? session.offlineExport : undefined}
                                 onQuickExport={handleQuickExport}
                                 onExportCompleteBackup={handleCompleteBackupExport}
                                 onBack={() => handleViewChange('settings')}
@@ -1234,15 +1283,15 @@ const AppContent = () => {
                             />
                         )}
 
-                        {currentView === 'change-password' && (
+                        {currentView === 'change-password' && token && (
                             <ChangePasswordPage onBack={() => handleViewChange('account')} />
                         )}
 
-                        {currentView === 'delete-account' && (
+                        {currentView === 'delete-account' && token && (
                             <DeleteAccountPage onBack={() => handleViewChange('account')} />
                         )}
 
-                        {currentView === 'edit-profile' && (
+                        {currentView === 'edit-profile' && token && (
                             <EditProfilePage onBack={() => handleViewChange('account')} />
                         )}
 
@@ -1269,10 +1318,12 @@ const AppContent = () => {
 
                         {currentView === 'settings-opsec' && <OpSec onBack={() => handleViewChange('settings')} />}
 
-                        {currentView === 'settings-pk-viz' && <PKDemos onBack={() => handleViewChange('settings')} />}
+                        {currentView === 'settings-pk-viz' && (
+                            <PKDemos runDemo={runDemo} onBack={() => handleViewChange('settings')} />
+                        )}
 
                         {currentView === 'settings-model' && (
-                            <ModelGuide weight={weight} onBack={() => handleViewChange('settings')} />
+                            <ModelGuide runDemo={runDemo} weight={weight} onBack={() => handleViewChange('settings')} />
                         )}
 
                         {currentView === 'settings-disclaimer' && (
@@ -1347,7 +1398,7 @@ const AppContent = () => {
 };
 
 const getShareRoute = (): { isShareRoute: boolean; token: string | null; shareKey: string | null } => {
-    if (!/^\/share\/?$/.test(window.location.pathname)) {
+    if (!getCapabilities().remoteBackend || !/^\/share\/?$/.test(window.location.pathname)) {
         return { isShareRoute: false, token: null, shareKey: null };
     }
 
@@ -1361,6 +1412,7 @@ const getShareRoute = (): { isShareRoute: boolean; token: string | null; shareKe
 };
 
 const App = () => {
+    const [session] = useState(() => new UiSession());
     const [shareRoute, setShareRoute] = useState(getShareRoute);
     useEffect(() => {
         const updateRoute = () => setShareRoute(getShareRoute());
@@ -1383,7 +1435,9 @@ const App = () => {
                         <AuthProvider>
                             <PixelCatProvider>
                                 <ErrorBoundary>
-                                    <AppContent />
+                                    <RecordBoundary>
+                                        <AppContent session={session} />
+                                    </RecordBoundary>
                                 </ErrorBoundary>
                             </PixelCatProvider>
                         </AuthProvider>

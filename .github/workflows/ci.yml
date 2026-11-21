@@ -51,9 +51,19 @@ jobs:
         # Covers the web app and worker.ts alike.
         run: npx tsc --noEmit
 
+      - name: Mobile harness typecheck
+        run: npx tsc --noEmit -p tsconfig.mobile-tests.json
+
       - name: Unit tests
         # Dose and concentration math in logic.ts; see tests/.
         run: npm test
+
+      - name: Renderer attribution replay
+        # Opt-in CLI replay; Git and Python 3 are already on this runner.
+        run: npm run test:mobile:renderer-replay
+
+      - name: Upstream report policy
+        run: npm run test:mobile:upstream-policy
 
       - name: Build
         run: npm run build

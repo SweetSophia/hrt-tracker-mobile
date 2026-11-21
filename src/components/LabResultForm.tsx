@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useId } from 'react';
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useDialog } from '../contexts/DialogContext';
 import { LabResult, LabAssay, LAB_ASSAYS, isT_LabUnit, convertToPgMl, convertToNgDl } from '../../logic';
@@ -14,9 +15,9 @@ type LabUnit = LabResult['unit'];
 
 interface LabResultFormProps {
     resultToEdit?: LabResult | null;
-    onSave: (result: LabResult) => void;
+    onSave: (results: LabResult[]) => Promise<boolean>;
     onCancel: () => void;
-    onDelete?: (id: string) => void;
+    onDelete?: (id: string) => Promise<boolean>;
     /** Units a new entry starts in: the ones the person's last lab of each
      *  hormone used, so a clinic that reports pg/mL isn't met with pmol/L on
      *  every entry. Without a past lab, pmol/L and ng/dL. */
@@ -160,20 +161,33 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
     // dropping this one.
     const addFieldsOk = (e2Value.trim() === '' || e2Num !== null) && (tValue.trim() === '' || tNum !== null);
 
-    const handleSave = () => {
-        if (!dateStr) return;
-        const timeH = new Date(dateStr).getTime() / 3600000;
-        if (isNaN(timeH)) return;
+    const saving = useRef(false);
+    useNativeBackOwner(() => {
+        if (!saving.current) onCancel();
+    });
+    const handleSave = async () => {
+        if (saving.current) return;
+        saving.current = true;
+        try {
+            if (!dateStr) return;
+            const timeH = new Date(dateStr).getTime() / 3600000;
+            if (isNaN(timeH)) return;
 
-        if (resultToEdit) {
-            if (editNum === null) return;
-            onSave({ id: resultToEdit.id, timeH, concValue: editNum, unit: editUnit, ...withAssay(assay) });
-            return;
+            if (resultToEdit) {
+                if (editNum === null) return;
+                await onSave([{ id: resultToEdit.id, timeH, concValue: editNum, unit: editUnit, ...withAssay(assay) }]);
+                return;
+            }
+
+            if (!addFieldsOk || (e2Num === null && tNum === null)) return;
+            const results: LabResult[] = [];
+            if (e2Num !== null)
+                results.push({ id: uuidv4(), timeH, concValue: e2Num, unit: e2Unit, ...withAssay(assay) });
+            if (tNum !== null) results.push({ id: uuidv4(), timeH, concValue: tNum, unit: tUnit, ...withAssay(assay) });
+            await onSave(results);
+        } finally {
+            saving.current = false;
         }
-
-        if (!addFieldsOk || (e2Num === null && tNum === null)) return;
-        if (e2Num !== null) onSave({ id: uuidv4(), timeH, concValue: e2Num, unit: e2Unit, ...withAssay(assay) });
-        if (tNum !== null) onSave({ id: uuidv4(), timeH, concValue: tNum, unit: tUnit, ...withAssay(assay) });
     };
 
     const canSave = resultToEdit ? editNum !== null : addFieldsOk && (e2Num !== null || tNum !== null);
@@ -280,8 +294,8 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                                 showDialog(
                                     'confirm',
                                     `${resultToEdit.concValue} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
-                                    () => {
-                                        onDelete(resultToEdit.id);
+                                    async () => {
+                                        if (!(await onDelete(resultToEdit.id))) return;
                                         onCancel();
                                     },
                                     { danger: true, title: t('lab.delete_confirm'), confirmLabel: t('btn.delete') },

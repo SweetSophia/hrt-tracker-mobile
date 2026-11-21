@@ -5,17 +5,21 @@ import Doodle from '../components/Doodle';
 // Bundled with the app, so the page still loads nothing from other sites.
 import laozhongAvatar from '../assets/laozhong-avatar.webp';
 import llmGirls from '../assets/llm-girls.webp';
+import sweetsophiaAvatar from '../assets/sweetsophia-avatar.webp';
 import { DEVELOPERS, type Developer } from '../data/developers';
+import {
+    MOBILE_PROJECT_REPOSITORY,
+    MOBILE_PROJECT_SLUG,
+    WEB_PROJECT_REPOSITORY as REPO,
+} from '../data/projectRepositories';
 import { PK_REFERENCE_COUNT, PK_REFERENCE_GROUPS } from '../data/pkReferences';
 import { inertWhen } from '../utils/inert';
+import { useTranslation } from '../contexts/LanguageContext';
+import { getBuildTarget } from '../platform/runtime';
 
 // Everyone this app is built on. Kept as a plain static list on purpose: the
 // page loads nothing from GitHub or anywhere else, so opening it tells no
-// third party who is looking. The page is in English in every language, as
-// credits pages usually are, so names and project titles read the same for
-// everyone.
-
-const REPO = 'https://github.com/xunxunProjects/Oyama-s-HRT-Tracker';
+// third party who is looking. The upstream profiles retain their English copy.
 
 interface Entry {
     name: string;
@@ -186,7 +190,25 @@ const PkReferences: React.FC = () => {
 
 const muted = 'text-[var(--text-muted)]';
 const metaLabel = 'text-xs font-medium text-[var(--text-muted)]';
-const DeveloperRow: React.FC<{ developer: Developer }> = ({ developer }) => {
+const GitHubCreditLink: React.FC<{ href: string; label: string; detail: string }> = ({ href, label, detail }) => (
+    <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border-(length:--hairline) border-[var(--border)] px-3.5 py-3 text-sm text-[var(--text)] hover:bg-[var(--surface-hover)]"
+    >
+        <span className="min-w-0">
+            <span className="block font-medium">{label}</span>
+            <span className={`mt-0.5 block break-all text-xs ${muted}`}>{detail}</span>
+        </span>
+        <ArrowUpRight size={16} strokeWidth={1.75} className={`shrink-0 ${muted}`} />
+    </a>
+);
+
+const DeveloperRow: React.FC<{ developer: Developer; labels?: { focus: string; languages: string } }> = ({
+    developer,
+    labels = { focus: 'Focus', languages: 'Languages' },
+}) => {
     const [open, setOpen] = React.useState(false);
     const panelId = `developer-${developer.login}`;
     const name = developer.name ?? developer.login;
@@ -200,13 +222,15 @@ const DeveloperRow: React.FC<{ developer: Developer }> = ({ developer }) => {
                 aria-controls={panelId}
                 className="group flex w-full items-center gap-4 py-3.5 text-start"
             >
-                <img
-                    src={developer.avatar}
-                    alt=""
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-[var(--border)]"
-                />
+                {developer.avatar && (
+                    <img
+                        src={developer.avatar}
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-[var(--border)]"
+                    />
+                )}
                 <span className="min-w-0 flex-1">
                     <span className="block break-words text-sm text-[var(--text)]">{name}</span>
                     <span className={`mt-0.5 block text-xs ${muted}`}>{developer.role}</span>
@@ -226,13 +250,13 @@ const DeveloperRow: React.FC<{ developer: Developer }> = ({ developer }) => {
                             <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
                                 {developer.focus?.length ? (
                                     <div>
-                                        <p className={metaLabel}>Focus</p>
+                                        <p className={metaLabel}>{labels.focus}</p>
                                         <p className="mt-1 text-sm text-[var(--text)]">{developer.focus.join(', ')}</p>
                                     </div>
                                 ) : null}
                                 {developer.languages?.length ? (
                                     <div>
-                                        <p className={metaLabel}>Languages</p>
+                                        <p className={metaLabel}>{labels.languages}</p>
                                         <p className="mt-1 text-sm text-[var(--text)]">
                                             {developer.languages.join(', ')}
                                         </p>
@@ -255,21 +279,61 @@ const DeveloperRow: React.FC<{ developer: Developer }> = ({ developer }) => {
                             </div>
                         )}
 
-                        <a
-                            href={`https://github.com/${developer.login}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-4 flex items-center justify-between gap-3 rounded-[var(--radius-md)] border-(length:--hairline) border-[var(--border)] px-3.5 py-3 text-sm text-[var(--text)] hover:bg-[var(--surface-hover)]"
-                        >
-                            <span className="min-w-0">
-                                <span className="block font-medium">GitHub</span>
-                                <span className={`mt-0.5 block break-all text-xs ${muted}`}>@{developer.login}</span>
-                            </span>
-                            <ArrowUpRight size={16} strokeWidth={1.75} className={`shrink-0 ${muted}`} />
-                        </a>
+                        <div className="mt-4 space-y-2">
+                            <GitHubCreditLink
+                                href={`https://github.com/${developer.login}`}
+                                label="GitHub"
+                                detail={`@${developer.login}`}
+                            />
+                            {developer.repository && (
+                                <GitHubCreditLink
+                                    href={developer.repository.href}
+                                    label={developer.repository.label}
+                                    detail={developer.repository.name}
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const MobileContributions: React.FC = () => {
+    const { lang, t } = useTranslation();
+    return (
+        <div lang={lang}>
+            <h2 className={heading}>{t('mobileCredits.join')}</h2>
+            {[
+                { kind: 'web', repo: REPO },
+                { kind: 'mobile', repo: MOBILE_PROJECT_REPOSITORY },
+            ].map(({ kind, repo }) => (
+                <section key={kind} aria-labelledby={`credits-join-${kind}`}>
+                    <h3 id={`credits-join-${kind}`} className={`mt-3 text-sm font-medium text-[var(--text)]`}>
+                        {t(`mobileCredits.${kind}_project`)}
+                    </h3>
+                    <p className={`mt-1 text-sm ${muted}`}>{t(`mobileCredits.${kind}_invite`)}</p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                        <a
+                            href={`${repo}/blob/main/CONTRIBUTING.md`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={inlineLink}
+                        >
+                            {t('mobileCredits.guide')}
+                        </a>
+                        <a
+                            href={`${repo}/issues/new/choose`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={inlineLink}
+                        >
+                            {t('mobileCredits.issue')}
+                        </a>
+                    </div>
+                </section>
+            ))}
         </div>
     );
 };
@@ -279,9 +343,14 @@ interface CreditsProps {
 }
 
 const Credits: React.FC<CreditsProps> = ({ onBack }) => {
+    const { lang, t } = useTranslation();
+    const isMobile = getBuildTarget() === 'mobile';
     return (
         <div lang="en" dir="ltr" className="md:pb-32">
-            <PageHeader onBack={onBack} title="Credits" />
+            <PageHeader
+                onBack={onBack}
+                title={isMobile ? <span lang={lang}>{t('mobileCredits.title')}</span> : 'Credits'}
+            />
 
             <div className={PAGE_COLUMN}>
                 <p className="text-sm text-[var(--text-muted)]">
@@ -299,13 +368,51 @@ const Credits: React.FC<CreditsProps> = ({ onBack }) => {
                     ))}
                 </div>
 
-                <h2 className={heading}>Developers</h2>
+                <h2 className={heading} lang={isMobile ? lang : 'en'}>
+                    {isMobile ? t('mobileCredits.upstream_developers') : 'Developers'}
+                </h2>
                 <p className="text-xs text-[var(--text-muted)]">The people behind the app. Open a row to read more.</p>
                 <div>
                     {DEVELOPERS.map(developer => (
                         <DeveloperRow key={developer.login} developer={developer} />
                     ))}
                 </div>
+                {isMobile && (
+                    <section lang={lang} aria-labelledby="credits-mobile-developers">
+                        <h2 id="credits-mobile-developers" className={heading}>
+                            {t('mobileCredits.mobile_developers')}
+                        </h2>
+                        <DeveloperRow
+                            developer={{
+                                login: 'SweetSophia',
+                                avatar: sweetsophiaAvatar,
+                                role: t('mobileCredits.maintainer'),
+                                bio: t('mobileCredits.bio'),
+                                focus: [t('mobileCredits.focus')],
+                                languages: [
+                                    'TypeScript',
+                                    'JavaScript',
+                                    'Java',
+                                    'CSS',
+                                    'HTML',
+                                    'SQL',
+                                    'Shell',
+                                    'Groovy',
+                                    'Python',
+                                    'Rust',
+                                    'Dockerfile',
+                                    'YAML',
+                                ],
+                                repository: {
+                                    href: MOBILE_PROJECT_REPOSITORY,
+                                    label: t('mobileCredits.repository'),
+                                    name: MOBILE_PROJECT_SLUG,
+                                },
+                            }}
+                            labels={{ focus: t('mobileCredits.focus_label'), languages: t('mobileCredits.languages') }}
+                        />
+                    </section>
+                )}
                 <h2 className={heading}>Contributors</h2>
                 <p className="flex flex-wrap gap-x-4 gap-y-2 pt-2 pb-3.5 border-b-(length:--hairline) border-[var(--border)] text-sm">
                     {CONTRIBUTORS.map(login => (
@@ -362,8 +469,9 @@ const Credits: React.FC<CreditsProps> = ({ onBack }) => {
 
                 <h2 className={heading}>How it was written</h2>
                 <p className="text-xs text-[var(--text-muted)]">
-                    100% of the code in this project was generated by large language models, namely Google Gemini,
-                    ChatGPT, Claude, and DeepSeek, used in that order over the course of development.
+                    100% of the code in {isMobile ? "Oyama's HRT Tracker" : 'this project'} was generated by large
+                    language models, namely Google Gemini, ChatGPT, Claude, and DeepSeek, used in that order over the
+                    course of development.
                 </p>
                 {/* The picture's white ground drops away (multiply), so the doodles read
                     as drawn on the page. In dark it all sits on a white tile and keeps the
@@ -384,45 +492,53 @@ const Credits: React.FC<CreditsProps> = ({ onBack }) => {
                     This picture was generated by Nano Banana 2.0
                 </p>
 
-                <h2 className={heading}>Join us</h2>
-                <p className="text-sm text-[var(--text-muted)]">
-                    Oyama's HRT Tracker is built by a small group of maintainers, and we welcome new developers and
-                    maintainers. You do not need to be a programmer to help: bug reports, translations, design,
-                    documentation, and testing all count.
-                </p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                    The developer wall is for people who have made a long-term commitment to the project. Maintainers,
-                    owners, and the original author qualify automatically. Everyone else qualifies after at least 50
-                    merged pull requests and 200 commits on <span className="text-[var(--text)]">main</span>. A pull
-                    request that only changes translations, design, documentation, or tests, or that mixes those changes
-                    with code, counts as one commit no matter how many commits it contains.
-                </p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                    Activity is reviewed over a rolling six-month window. A developer with no commits, pull requests, or
-                    issue activity in that period is removed from the wall. To return, they need 150 new commits and 25
-                    new merged pull requests, counted under the same rule. This applies to every card on the wall.
-                </p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                    Want to help? Read the{' '}
-                    <a
-                        href={`${REPO}/blob/main/CONTRIBUTING.md`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={inlineLink}
-                    >
-                        contributing guide
-                    </a>{' '}
-                    or{' '}
-                    <a
-                        href={`${REPO}/issues/new/choose`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={inlineLink}
-                    >
-                        open an issue
-                    </a>
-                    .
-                </p>
+                {isMobile ? (
+                    <MobileContributions />
+                ) : (
+                    <>
+                        <h2 className={heading}>Join us</h2>
+                        <p className="text-sm text-[var(--text-muted)]">
+                            Oyama's HRT Tracker is built by a small group of maintainers, and we welcome new developers
+                            and maintainers. You do not need to be a programmer to help: bug reports, translations,
+                            design, documentation, and testing all count.
+                        </p>
+                        <p className="mt-2 text-sm text-[var(--text-muted)]">
+                            The developer wall is for people who have made a long-term commitment to the project.
+                            Maintainers, owners, and the original author qualify automatically. Everyone else qualifies
+                            after at least 50 merged pull requests and 200 commits on{' '}
+                            <span className="text-[var(--text)]">main</span>. A pull request that only changes
+                            translations, design, documentation, or tests, or that mixes those changes with code, counts
+                            as one commit no matter how many commits it contains.
+                        </p>
+                        <p className="mt-2 text-sm text-[var(--text-muted)]">
+                            Activity is reviewed over a rolling six-month window. A developer with no commits, pull
+                            requests, or issue activity in that period is removed from the wall. To return, they need
+                            150 new commits and 25 new merged pull requests, counted under the same rule. This applies
+                            to every card on the wall.
+                        </p>
+                        <p className="mt-2 text-sm text-[var(--text-muted)]">
+                            Want to help? Read the{' '}
+                            <a
+                                href={`${REPO}/blob/main/CONTRIBUTING.md`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={inlineLink}
+                            >
+                                contributing guide
+                            </a>{' '}
+                            or{' '}
+                            <a
+                                href={`${REPO}/issues/new/choose`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={inlineLink}
+                            >
+                                open an issue
+                            </a>
+                            .
+                        </p>
+                    </>
+                )}
 
                 <p className="mt-8 text-sm text-[var(--text-muted)]">
                     And thank you to everyone who uses this app, reports problems and shares ideas.

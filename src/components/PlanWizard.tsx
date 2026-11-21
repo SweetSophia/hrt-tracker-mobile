@@ -1,3 +1,4 @@
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import React, { useEffect, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Ester, GEL_SITE_ORDER, GNRH_AGONISTS, Route, SL_TIER_ORDER, SublingualTierParams } from '../../logic';
@@ -70,7 +71,7 @@ const Row: React.FC<RowProps> = ({ on, onClick, title, desc, note, mark }) => (
 
 interface PlanWizardProps {
     plan: PlanItem[];
-    onAdd: (item: PlanItem) => void;
+    onAdd: (item: PlanItem) => Promise<boolean>;
     onCancel: () => void;
     /** Its bar of buttons sits above the phone's bottom bar, as on the Plan
      *  page. The intro has none, so there it goes down to the screen's edge. */
@@ -142,14 +143,27 @@ const PlanWizard: React.FC<PlanWizardProps> = ({ plan, onAdd, onCancel, aboveNav
         setDirection(next > at ? 'forward' : 'backward');
         setAt(next);
     };
-    const forward = () => {
-        if (!ready) return;
+    const saving = useRef(false);
+    useNativeBackOwner(() => {
+        if (saving.current) return;
+        if (at > 0) go(at - 1);
+        else onCancel();
+    });
+    const forward = async () => {
+        if (!ready || saving.current) return;
         if (!isLast) {
             go(at + 1);
             return;
         }
         const done = draft && draftToItem(draft, uuidv4());
-        if (done) onAdd(done);
+        if (done) {
+            saving.current = true;
+            try {
+                await onAdd(done);
+            } finally {
+                saving.current = false;
+            }
+        }
     };
 
     const pickRoute = (route: Route) => {

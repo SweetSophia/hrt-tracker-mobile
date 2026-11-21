@@ -1,3 +1,4 @@
+import { useDevicePreference } from '../contexts/RecordsContext';
 import React, { useEffect, useState } from 'react';
 
 const DISMISS_KEY = 'js-dependency-notice-dismissed';
@@ -19,24 +20,17 @@ function isTorBrowser(): boolean {
  */
 const JsDependencyNotice: React.FC = () => {
     const [show, setShow] = useState(false);
+    const [dismissed, setDismissed] = useDevicePreference(DISMISS_KEY, raw => raw ?? '0');
 
     useEffect(() => {
-        try {
-            if (localStorage.getItem(DISMISS_KEY) === '1') return;
-        } catch {
-            /* private mode */
-        }
+        if (dismissed === '1') return;
         if (isTorBrowser()) setShow(true);
-    }, []);
+    }, [dismissed]);
 
     if (!show) return null;
 
     const dismiss = () => {
-        try {
-            localStorage.setItem(DISMISS_KEY, '1');
-        } catch {
-            /* private mode */
-        }
+        setDismissed('1');
         setShow(false);
     };
 

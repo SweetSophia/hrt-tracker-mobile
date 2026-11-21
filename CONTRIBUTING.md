@@ -1,10 +1,10 @@
 # Contributing 贡献指南
 
-Thank you for helping with **HRT Recorder Web**. Bug reports, translations,
+Thank you for helping with **HRT Tracker Mobile**. Bug reports, translations,
 documentation and code are all welcome, and you do not need to be a programmer
 to help.
 
-感谢你愿意为 **HRT Recorder Web** 出一份力。无论是报告问题、翻译、完善文档还是写代码，
+感谢你愿意为 **HRT Tracker Mobile** 出一份力。无论是报告问题、翻译、完善文档还是写代码，
 我们都非常欢迎；不会写代码也一样可以参与。
 
 By taking part you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
@@ -18,6 +18,14 @@ By taking part you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
 - **Report a bug**: open an issue with the _Bug report_ template.
 
   **报告问题**：使用 _Bug report_ 模板提交 issue。
+
+- **Test the Android app**: install the
+  [latest APK](https://github.com/SweetSophia/hrt-tracker-mobile/releases/latest)
+  and report problems with the _Bug report_ template, including your device
+  and Android version.
+
+  **测试安卓应用**：安装[最新 APK](https://github.com/SweetSophia/hrt-tracker-mobile/releases/latest)，
+  使用 _Bug report_ 模板报告问题，注明设备与 Android 版本。
 
 - **Ask about an estimate**: if the modelled concentration looks far from your
   lab result, use the _Question about a concentration estimate_ template. These
@@ -52,11 +60,43 @@ You need **Node.js 22** (the version CI uses) and npm.
 
 你需要 **Node.js 22**（与 CI 相同的版本）以及 npm。
 
+### Android app 安卓应用
+
+The Android app bundles the shared web interface with Capacitor. You need the
+Node version in [`.node-version`](./.node-version), JDK 21, and Android SDK
+Platform 36, with `JAVA_HOME` and `ANDROID_HOME` set for your shell.
+
+安卓应用通过 Capacitor 打包共享的网页界面。需要 [`.node-version`](./.node-version) 中的
+Node 版本、JDK 21 和 Android SDK Platform 36，并在 shell 中设置 `JAVA_HOME` 与
+`ANDROID_HOME`。
+
+```bash
+git clone https://github.com/SweetSophia/hrt-tracker-mobile.git
+cd hrt-tracker-mobile
+npm ci
+npm run mobile:doctor   # checks the Android toolchain 检查 Android 工具链
+npm run android:sync
+npm run build:mobile:offline-beta
+./android/gradlew -p android -PofflineBeta :app:assembleOfflineBeta
+```
+
+This builds the debug-signed offline beta preview, which installs as
+`org.askarys.hrttracker.spike.offlinebeta` from
+`android/app/build/outputs/apk/offlineBeta/app-offlineBeta.apk`. The release
+target (`org.askarys.hrttracker`) and its signing steps are in
+[docs/mobile/15-offline-beta-preview.md](./docs/mobile/15-offline-beta-preview.md).
+
+这条命令构建调试签名的离线预览版，输出位于
+`android/app/build/outputs/apk/offlineBeta/app-offlineBeta.apk`，安装包名为
+`org.askarys.hrttracker.spike.offlinebeta`。正式版目标（`org.askarys.hrttracker`）
+及其签名步骤见
+[docs/mobile/15-offline-beta-preview.md](./docs/mobile/15-offline-beta-preview.md)。
+
 ### Frontend only 仅前端
 
 ```bash
-git clone https://github.com/xunxunProjects/Oyama-s-HRT-Tracker.git
-cd Oyama-s-HRT-Tracker
+git clone https://github.com/SweetSophia/hrt-tracker-mobile.git
+cd hrt-tracker-mobile
 npm install
 npm run dev
 ```
@@ -139,6 +179,7 @@ npm run tauri:dev
 | `migrations/`                           | D1 schema. Add a new numbered file; never edit one that has shipped. D1 数据库结构。新增带编号的文件，不要修改已发布的迁移。                                                       |
 | `wrangler.toml`                         | Worker configuration and bindings. Worker 配置与绑定。                                                                                                                             |
 | `src-tauri/`                            | Tauri desktop app (Rust). Tauri 桌面应用（Rust）。                                                                                                                                 |
+| `android/`, `mobile/`                   | Android host: Gradle project, Capacitor sync, native record store, and platform adapters. Android 主工程：Gradle、Capacitor 同步、原生记录存储与平台适配。                         |
 | `Dockerfile`, `docker/`, `compose.yaml` | Self-hosted image. 自托管镜像。                                                                                                                                                    |
 | `scripts/set_version.py`                | Keeps every version field in step. 保持各文件版本号一致。                                                                                                                          |
 | `.github/workflows/`                    | CI, CodeQL, Docker publishing and releases. CI、CodeQL、Docker 发布与版本发布。                                                                                                    |
@@ -176,6 +217,12 @@ npm run tauri:dev
    npm run build                       # production build 生产构建
    python3 scripts/set_version.py --check
    ```
+
+   For Android or shared-interface changes, also build one APK target from the
+   Android section above and run `npm run test:e2e:mobile`.
+
+   如果修改涉及安卓或共享界面，请再按上方安卓一节构建一个 APK 目标，并运行
+   `npm run test:e2e:mobile`。
 
 5. **Write a clear commit message.** Say what changed and why in plain words,
    for example `Keep the patch on the chart until it is removed`.
@@ -335,6 +382,14 @@ release notes tell users how to allow it once.
 macOS 只会直接打开使用 Apple Developer ID 签名并经过公证的应用。添加上述仓库
 Secrets 后，发布版本会自动签名并公证；未添加时应用仅做临时（ad-hoc）签名，
 发布说明中会附上首次打开的方法。
+
+Android releases are versioned separately in `mobile/version.json`. Maintainers
+build, sign, and attach the APK to a GitHub release; the steps are in
+[docs/mobile/15-offline-beta-preview.md](./docs/mobile/15-offline-beta-preview.md).
+
+安卓版本在 `mobile/version.json` 中单独维护。正式版 APK 由维护者构建、签名并附加到
+GitHub 发布页，步骤见
+[docs/mobile/15-offline-beta-preview.md](./docs/mobile/15-offline-beta-preview.md)。
 
 ---
 

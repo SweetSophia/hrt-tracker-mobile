@@ -1,9 +1,12 @@
+import type { DemoCompute } from '../application/demoProtocol';
+import { useDemoProjection } from '../hooks/useDemoProjection';
+import { ModelStatus } from '../components/ModelStatus';
 import React, { useMemo, useState } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import CustomSelect from '../components/CustomSelect';
 import { useTranslation } from '../contexts/LanguageContext';
-import { GEL_SITE_ORDER, PK_SANDBOX_MODELS, computePkSandbox } from '../../logic';
+import { GEL_SITE_ORDER, PK_SANDBOX_MODELS } from '../../logic';
 import { fill } from '../utils/regimenText';
 
 const num = (v: string): number => {
@@ -49,7 +52,7 @@ const NumberField: React.FC<{
 );
 
 /** The single dose working, as one tab of the model demos page. */
-const PKCalculationSandbox: React.FC = () => {
+const PKCalculationSandbox: React.FC<{ runDemo?: DemoCompute }> = ({ runDemo }) => {
     const { t } = useTranslation();
     const [modelId, setModelId] = useState<string>(PK_SANDBOX_MODELS[0].id);
     const model = PK_SANDBOX_MODELS.find(m => m.id === modelId)!;
@@ -76,9 +79,15 @@ const PKCalculationSandbox: React.FC = () => {
         setWearH(next.defaultInputs.wearH ?? 84);
     };
 
-    const result = useMemo(
-        () =>
-            computePkSandbox(model.id, {
+    const {
+        value: result,
+        status,
+        retry,
+    } = useDemoProjection<'sandbox'>(
+        {
+            kind: 'sandbox',
+            modelId: model.id,
+            inputs: {
                 doseMG,
                 bodyWeightKG,
                 birthYear,
@@ -86,8 +95,9 @@ const PKCalculationSandbox: React.FC = () => {
                 gelSite,
                 releaseRateUGPerDay: releaseRate,
                 wearH,
-            }),
-        [model.id, doseMG, bodyWeightKG, birthYear, holdMin, gelSite, releaseRate, wearH],
+            },
+        },
+        runDemo,
     );
 
     // Picking another medication keeps the route when that medication has it.
@@ -103,17 +113,20 @@ const PKCalculationSandbox: React.FC = () => {
 
     const hours = (h: number | null) =>
         h === null ? t('pk_calc.never') : fill(t('pk_calc.hours'), { n: h.toFixed(1) });
-    const results: [string, string][] = [
-        [t('pk_calc.peak'), `${result.peak.value.toFixed(1)} pg/mL`],
-        [t('pk_calc.peak_time'), hours(result.peak.timeH)],
-        [t('pk_calc.below_200'), hours(result.timeBelow200H)],
-        [t('pk_calc.below_100'), hours(result.timeBelow100H)],
-    ];
+    const results: [string, string][] = result
+        ? [
+              [t('pk_calc.peak'), `${result.peak.value.toFixed(1)} pg/mL`],
+              [t('pk_calc.peak_time'), hours(result.peak.timeH)],
+              [t('pk_calc.below_200'), hours(result.timeBelow200H)],
+              [t('pk_calc.below_100'), hours(result.timeBelow100H)],
+          ]
+        : [];
 
     return (
         <div>
             <div>
                 <p className="text-sm text-[var(--text-muted)]">{t('pk_calc.subtitle')}</p>
+                <ModelStatus status={status} onRetry={retry} />
 
                 <div className="mt-6 space-y-5">
                     <CustomSelect
@@ -201,7 +214,7 @@ const PKCalculationSandbox: React.FC = () => {
 
                 <h2 className="group-heading mt-10">{t('pk_calc.derivation')}</h2>
                 <ol className="mt-3 space-y-4">
-                    {result.derivation.map(step => (
+                    {result?.derivation.map(step => (
                         <li key={step.key}>
                             <p className="text-sm text-[var(--text)]">{t(`pk_calc.step.${step.key}`)}</p>
                             <div className="mt-1 text-[var(--text)]">

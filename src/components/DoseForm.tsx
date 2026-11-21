@@ -1,3 +1,4 @@
+import { useNativeBackOwner } from '../hooks/useNativeBackOwner';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -78,17 +79,17 @@ const formatGuideNumber = (val: number) => {
 
 interface DoseFormProps {
     eventToEdit: DoseEvent | null;
-    onSave: (event: DoseEvent) => void;
+    onSave: (event: DoseEvent) => Promise<boolean>;
     onCancel: () => void;
-    onDelete: (id: string) => void;
+    onDelete: (id: string) => Promise<boolean>;
     templates: DoseTemplate[];
-    onSaveTemplate: (template: DoseTemplate) => void;
-    onDeleteTemplate: (id: string) => void;
+    onSaveTemplate: (template: DoseTemplate) => Promise<boolean>;
+    onDeleteTemplate: (id: string) => Promise<boolean>;
     isInline?: boolean;
     hideHeader?: boolean;
     quickDoses?: QuickDose[];
-    onAddQuickDose?: (dose: QuickDose) => void;
-    onDeleteQuickDose?: (id: string) => void;
+    onAddQuickDose?: (dose: QuickDose) => Promise<boolean>;
+    onDeleteQuickDose?: (id: string) => Promise<boolean>;
     /** Existing doses: a new dose starts on the route and drug of the last
      *  one, and recent use shows whether it is already running high. */
     events?: DoseEvent[];
@@ -435,6 +436,9 @@ const DoseForm: React.FC<DoseFormProps> = ({
 
     const [isSaving, setIsSaving] = useState(false);
     const isSavingRef = useRef(false);
+    useNativeBackOwner(() => {
+        if (!isSavingRef.current) onCancel();
+    });
 
     // Why the last Save was refused, said under the dose fields instead of in
     // a dialog that hid them. It stands until any of the values it was about
@@ -463,7 +467,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
         return () => window.clearTimeout(timer);
     }, [templateTick]);
 
-    const handleSaveAsTemplate = () => {
+    const handleSaveAsTemplate = async () => {
         if (!templateName.trim()) {
             showDialog('alert', t('template.name_required'));
             return;
@@ -495,7 +499,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
             }
         }
 
-        onSaveTemplate(template);
+        if (!(await onSaveTemplate(template))) return;
         setShowSaveTemplateInput(false);
         setTemplateName('');
         setTemplateTick('saved');
@@ -507,7 +511,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
         setTemplateTick('loaded');
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         // Ref latch, not state: setIsSaving(true/false) within one synchronous
         // handler nets out to no visible change, so the disabled prop never
         // engaged and a double-click/double-tap could add the dose twice
@@ -607,7 +611,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
             extras,
         };
 
-        onSave(newEvent);
+        await onSave(newEvent);
         // Every current mount point unmounts this form after a successful save;
         // the delayed re-arm is a safety net for any future persistent mount,
         // while still swallowing the double-click window.
@@ -1350,8 +1354,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                 showDialog(
                                     'confirm',
                                     describeDose(eventToEdit),
-                                    () => {
-                                        onDelete(eventToEdit.id);
+                                    async () => {
+                                        if (!(await onDelete(eventToEdit.id))) return;
                                         onCancel();
                                     },
                                     {

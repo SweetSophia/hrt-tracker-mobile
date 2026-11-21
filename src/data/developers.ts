@@ -8,7 +8,7 @@ export interface Developer {
     /** Shown instead of the login when set. */
     name?: string;
     /** Bundled with the app, like the other Credits pictures. */
-    avatar: string;
+    avatar?: string;
     role: string;
     /** A short introduction, in English like the rest of this page. */
     bio: string;
@@ -17,6 +17,7 @@ export interface Developer {
     /** Languages they usually write. */
     languages?: string[];
     website?: { label: string; href: string };
+    repository?: { label: string; href: string; name: string };
 }
 
 /**

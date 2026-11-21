@@ -56,6 +56,24 @@ describe('worker module', () => {
         );
         expect(values.map(([name]) => name)).toEqual([]);
     });
+
+    it('allows the admin reauthentication header in a desktop preflight', async () => {
+        const response = await worker.fetch(
+            new Request('https://tracker.example/api/admin/donation-addresses', {
+                method: 'OPTIONS',
+                headers: {
+                    Origin: 'https://desktop.example',
+                    'Access-Control-Request-Method': 'PUT',
+                    'Access-Control-Request-Headers': 'authorization, content-type, x-admin-reauth',
+                },
+            }),
+            env,
+            ctx,
+        );
+        expect(response.ok).toBe(true);
+        const headers = response.headers.get('Access-Control-Allow-Headers')?.toLowerCase().split(/,\s*/);
+        expect(headers).toEqual(expect.arrayContaining(['authorization', 'content-type', 'x-admin-reauth']));
+    });
 });
 
 describe('getClientIP', () => {

@@ -1,3 +1,4 @@
+import { MOBILE_CREDITS } from './mobileCredits';
 import { RU } from './ru';
 import { UK } from './uk';
 
@@ -5,6 +6,19 @@ export type Lang = 'zh' | 'zh-TW' | 'yue' | 'en' | 'ja' | 'ko' | 'tr' | 'ru' | '
 
 export const TRANSLATIONS_BASE = {
     zh: {
+        'model.loading': '正在更新估算…',
+        'model.error': '无法计算估算值。记录仍可使用。',
+        'model.retry': '重新计算',
+        'storage.loading': '正在读取本机记录…',
+        'storage.open_failed': '无法读取本机记录。请重试。',
+        'storage.startup_title': '无法打开本机记录',
+        'storage.startup_retry': '重新加载',
+        'storage.startup_detail':
+            'Android 无法打开加密记录。请勿卸载此 App 或清除其存储空间。请保留已导出的备份。重启并解锁手机后，重新加载再试。',
+        'storage.startup_backup':
+            '如果仍无法打开记录，且你有已导出的备份，请另外安装此 App 的兼容版本，并确认该安装没有任何现有数据。恢复备份和核对记录期间，请保持离线且不要登录。',
+        'storage.save_failed': '更改未能保存。已保留上次确认的记录；请刷新记录后重试。',
+        'storage.retry': '刷新记录',
         'settings.section.model': '估算依据',
         'settings.section.supplies': '库存',
         'settings.section.display': '语言与显示',
@@ -26,6 +40,7 @@ export const TRANSLATIONS_BASE = {
         'plan.calendar_desc': '存成日历文件，日历 App 会按时提醒你，文件不会发送到任何地方',
         'plan.calendar_note': '来自 Oyama Tracker 里的用药方案。用药后记得在应用里记录一下。',
         'plan.calendar_done': '打开刚存下的文件就能加进日历，改了方案再存一次即可',
+        'plan.calendar_download_requested': '已请求下载日历文件。下载完成后，打开文件即可添加日程。',
         'dose.line_what': '{drug} {dose}',
         'dose.line_when': '{when}，{route}',
         'btn.keep': '保留',
@@ -332,6 +347,8 @@ export const TRANSLATIONS_BASE = {
         'drawer.import': '导入剂量 JSON',
         'drawer.github': 'GitHub 仓库',
         'drawer.empty_export': '当前没有可导出的剂量记录。',
+        'import.file_too_large': '文件超过 16 MiB 限制。请选择较小的备份文件。',
+        'import.file_read_failed': '无法读取文件。请重新选择文件。',
         'drawer.import_error': '导入失败，请确认文件内容有效。',
         'drawer.import_success': '导入成功，已更新剂量记录。',
 
@@ -363,6 +380,7 @@ export const TRANSLATIONS_BASE = {
 
         'export.encrypt_ask_desc': '加密后将生成随机密码，导入时必须输入该密码',
         'export.password_title': '文件加密密码',
+        'export.password_ready': '加密密码已生成。',
         'export.password_desc': '请妥善保存此密码，导入该文件时需要使用。',
         'import.password_title': '输入密码',
         'import.password_desc': '检测到加密数据，请输入密码进行解密。',
@@ -394,7 +412,8 @@ export const TRANSLATIONS_BASE = {
         'export.complete_confirm_message':
             '这个文件没有加密，拿到它的人都能看到你的用药和检查记录。请把它放在只有你能打开的地方。',
         'export.complete_confirm_btn': '下载',
-        'export.complete_skipped': '备份已下载，有 {n} 条记录读不出来，没有放进去。',
+        'export.complete_skipped': '这份备份没有放入 {n} 条读不出来的记录。',
+        'export.file_failed': '未能导出文件，请重试。',
         'export.complete_failed': '没能生成完整备份，什么都没有下载。',
         'import.complete_note': '完整备份例外，它会和这里的记录合并。',
         'import.bundle_preview_title': '合并这份备份？',
@@ -944,7 +963,8 @@ export const TRANSLATIONS_BASE = {
         'account.delete_server_signin': '通行密钥、备份码和已登录的设备',
         'account.delete_device_title': '这台设备上',
         'account.delete_device_desc':
-            '你在这里的记录随此账户保存。账户删除后，这台设备将不再显示它们。如需保留，请先在「{path}」中导出。',
+            '删除账户也会清除这台设备上与该账户关联的记录。如需保留，请先在「{path}」中导出。',
+        'account.delete_cleanup_failed': '账户已删除，但无法清除这台设备上与该账户关联的记录。',
         'account.delete_done': '账户已删除，你已退出登录。',
         'account.enter_password_confirm': '输入密码以确认',
         'account.new_username': '新用户名',
@@ -1382,6 +1402,20 @@ export const TRANSLATIONS_BASE = {
     },
 
     en: {
+        'model.loading': 'Updating estimates…',
+        'model.error': 'Estimates could not be calculated. Your records are still available.',
+        'model.retry': 'Retry estimates',
+        'storage.loading': 'Opening local records…',
+        'storage.open_failed': 'Local records could not be opened. Please try again.',
+        'storage.startup_title': 'Could not open local records',
+        'storage.startup_retry': 'Reload',
+        'storage.startup_detail':
+            'Android could not open the encrypted records. Do not uninstall this app or clear its storage. Keep any backups you exported. Restart and unlock your phone, then try reloading.',
+        'storage.startup_backup':
+            'If your records still won’t open and you have an exported backup, use a separate, empty installation of a compatible version of this app. Stay offline and signed out while you restore and verify the records.',
+        'storage.save_failed':
+            'Changes could not be saved. The last confirmed records are still shown. Refresh records and try again.',
+        'storage.retry': 'Refresh records',
         'settings.section.model': 'What the estimates use',
         'settings.section.supplies': 'On hand',
         'settings.section.display': 'Language and display',
@@ -1405,6 +1439,8 @@ export const TRANSLATIONS_BASE = {
         'plan.calendar_note': "From your plan in Oyama Tracker. Log the dose in the app once you've taken it.",
         'plan.calendar_done':
             'Open the file you just saved to add it to your calendar, and save again whenever the plan changes',
+        'plan.calendar_download_requested':
+            'Calendar download requested. Once it finishes, open the file to add the events.',
         'dose.line_what': '{dose} of {drug}',
         'dose.line_when': '{route} on {when}',
         'btn.keep': 'Keep it',
@@ -1717,6 +1753,8 @@ export const TRANSLATIONS_BASE = {
         'drawer.import': 'Import doses (JSON)',
         'drawer.github': 'GitHub repository',
         'drawer.empty_export': 'There are no doses to export yet.',
+        'import.file_too_large': 'The file exceeds the 16 MiB limit. Choose a smaller backup.',
+        'import.file_read_failed': 'Could not read the file. Please choose it again.',
         'drawer.import_error': 'Import failed. Please check that the file is valid.',
         'drawer.import_success': 'Imported doses successfully.',
 
@@ -1752,6 +1790,7 @@ export const TRANSLATIONS_BASE = {
 
         'export.encrypt_ask_desc': 'A random password will be generated and required for import',
         'export.password_title': 'Encryption password',
+        'export.password_ready': 'Your encryption password is ready.',
         'export.password_desc': 'Save this password securely. It is required to import this file.',
         'import.password_title': 'Enter password',
         'import.password_desc': 'Encrypted data detected. Enter the password to decrypt.',
@@ -1784,7 +1823,8 @@ export const TRANSLATIONS_BASE = {
         'export.complete_confirm_message':
             'This file is not encrypted. Anyone who gets it can read your doses and lab results, so keep it somewhere only you can open.',
         'export.complete_confirm_btn': 'Download',
-        'export.complete_skipped': 'Backup downloaded. {n} records could not be read and were left out.',
+        'export.complete_skipped': 'The backup leaves out {n} records that could not be read.',
+        'export.file_failed': 'Could not export the file. Please try again.',
         'export.complete_failed': 'Could not build the complete backup. Nothing was downloaded.',
         'import.complete_note': 'A complete backup is the exception: it merges with what is here.',
         'import.bundle_preview_title': 'Merge this backup?',
@@ -2356,7 +2396,9 @@ export const TRANSLATIONS_BASE = {
         'account.delete_server_signin': 'Passkeys, backup codes and signed-in devices',
         'account.delete_device_title': 'On this device',
         'account.delete_device_desc':
-            "Your records here are kept with this account. Once it's deleted, this device stops showing them, so export them first in {path} if you want a copy.",
+            'Deleting your account also removes its records from this device. Export them first in {path} if you want a copy.',
+        'account.delete_cleanup_failed':
+            'Your account was deleted. This device could not clear the records associated with it.',
         'account.delete_done': "Your account has been deleted, and you're signed out.",
         'account.enter_password_confirm': 'Enter password to confirm',
         'account.new_username': 'New username',
@@ -2839,6 +2881,15 @@ export const TRANSLATIONS_BASE = {
  * So anything missing here now leaks into two languages rather than one.
  */
 const ZH_TW = {
+    'storage.startup_title': '無法開啟本機記錄',
+    'storage.startup_retry': '重新載入',
+    'storage.startup_detail':
+        'Android 無法開啟加密記錄。請勿移除此 App 或清除它的儲存空間。請保留已匯出的備份。重新啟動並解鎖手機後，再試著重新載入。',
+    'storage.startup_backup':
+        '如果仍無法開啟記錄，且有已匯出的備份，請另外安裝此 App 的相容版本，並確認該安裝沒有任何既有資料。還原備份並核對記錄期間，請保持離線且不要登入。',
+    'model.loading': '正在更新估算…',
+    'model.error': '無法計算估算值。記錄仍可使用。',
+    'model.retry': '重新計算',
     'settings.section.model': '估算依據',
     'settings.section.supplies': '庫存',
     'settings.section.display': '語言與顯示',
@@ -3063,6 +3114,7 @@ const ZH_TW = {
 
     'export.encrypt_ask_desc': '加密後會產生一組隨機密碼，匯入時必須輸入該密碼',
     'export.password_title': '匯出密碼',
+    'export.password_ready': '匯出密碼已產生。',
     'export.password_desc': '請妥善保管此密碼，匯入加密檔案時需要使用。',
 
     'import.password_title': '輸入密碼',
@@ -3442,8 +3494,8 @@ const ZH_TW = {
     'account.delete_server_avatar': '頭像',
     'account.delete_server_signin': '通行密鑰、備份碼和已登入的裝置',
     'account.delete_device_title': '這台裝置上',
-    'account.delete_device_desc':
-        '你在這裡的紀錄隨此帳戶儲存。帳戶刪除後，這台裝置將不再顯示它們。如需保留，請先在「{path}」中匯出。',
+    'account.delete_device_desc': '刪除帳戶也會清除這台裝置上與該帳戶關聯的紀錄。如需保留，請先在「{path}」中匯出。',
+    'account.delete_cleanup_failed': '帳戶已刪除，但無法清除這台裝置上與該帳戶關聯的紀錄。',
     'account.delete_done': '帳戶已刪除，你已登出。',
     'account.enter_password_confirm': '輸入密碼以確認',
     'account.new_username': '新使用者名稱',
@@ -4127,12 +4179,28 @@ const ZH_TW = {
 };
 
 export const TRANSLATIONS = {
-    zh: TRANSLATIONS_BASE.zh,
+    zh: {
+        ...TRANSLATIONS_BASE.zh,
+        ...MOBILE_CREDITS.zh,
+    },
 
-    'zh-TW': ZH_TW,
+    'zh-TW': {
+        ...ZH_TW,
+        ...MOBILE_CREDITS['zh-TW'],
+    },
 
     yue: {
         ...ZH_TW,
+        ...MOBILE_CREDITS.yue,
+        'storage.startup_title': '開唔到本機記錄',
+        'storage.startup_retry': '重新載入',
+        'storage.startup_detail':
+            'Android 開唔到加密記錄。唔好移除呢個 App 或者清除佢嘅儲存空間。請保留之前匯出嘅備份。重新開機同解鎖之後，再試下重新載入。',
+        'storage.startup_backup':
+            '如果仲係開唔到記錄，而你有之前匯出嘅備份，請另外安裝呢個 App 嘅相容版本，並確認新裝嗰份 App 入面冇任何現有資料。還原備份同核對記錄嗰陣，請保持離線，亦唔好登入。',
+        'model.loading': '更新緊估算…',
+        'model.error': '未能計算估算值，記錄仍然可以用。',
+        'model.retry': '重新計算',
         'list.sep': '、',
         'settings.section.model': '估算依據',
         'settings.section.supplies': '存貨',
@@ -4393,6 +4461,7 @@ export const TRANSLATIONS = {
 
         'export.encrypt_ask_desc': '加密之後會生成隨機密碼，匯入嗰陣要用',
         'export.password_title': '文件加密密碼',
+        'export.password_ready': '文件加密密碼已經準備好。',
         'export.password_desc': '請好好保存，匯入檔案要用呢個密碼。',
         'import.password_title': '輸入密碼',
         'import.password_desc': '偵測到加密數據，請輸入密碼。',
@@ -4769,7 +4838,8 @@ export const TRANSLATIONS = {
         'account.delete_server_signin': '通行密鑰、備份碼同已登入嘅裝置',
         'account.delete_device_title': '呢部裝置上',
         'account.delete_device_desc':
-            '你喺度嘅記錄係跟呢個帳戶儲存嘅。帳戶刪除之後，呢部裝置就唔會再顯示佢哋。想留低一份嘅話，請先喺「{path}」度匯出。',
+            '刪除帳戶亦會清除呢部裝置上屬於呢個帳戶嘅記錄。想留低一份嘅話，請先喺「{path}」度匯出。',
+        'account.delete_cleanup_failed': '帳戶已經刪除，但係呢部裝置清除唔到屬於呢個帳戶嘅記錄。',
         'account.delete_done': '帳戶已經刪除，你已經登出咗。',
         'account.change_password_backups_note':
             '改密碼之前嘅備份淨係用舊密碼先開到，下次同步會用新密碼儲存一份新嘅。其他裝置會被登出。',
@@ -4926,9 +4996,20 @@ export const TRANSLATIONS = {
 
     en: {
         ...TRANSLATIONS_BASE.en,
+        ...MOBILE_CREDITS.en,
         'app.title': 'HRT Tracker',
     },
     ja: {
+        ...MOBILE_CREDITS.ja,
+        'storage.startup_title': '端末内の記録を開けませんでした',
+        'storage.startup_retry': '再読み込み',
+        'storage.startup_detail':
+            'Android で暗号化された記録を開けませんでした。このアプリをアンインストールしたり、アプリのストレージを消去したりしないでください。エクスポート済みのバックアップは保管してください。端末を再起動してロックを解除し、再読み込みしてください。',
+        'storage.startup_backup':
+            '記録を開けず、エクスポート済みのバックアップがある場合は、互換性のあるバージョンを新規にインストールした別の環境で復元してください。復元と記録の確認が終わるまでは、オフラインのままログインせずに作業してください。',
+        'model.loading': '推定値を更新中…',
+        'model.error': '推定値を計算できませんでした。記録は引き続き利用できます。',
+        'model.retry': '再計算',
         'list.sep': '、',
         'settings.section.model': '推定に使う情報',
         'settings.section.supplies': '手持ち',
@@ -5175,6 +5256,7 @@ export const TRANSLATIONS = {
         'export.encrypt_ask_desc':
             '暗号化するとランダムなパスワードが生成され、インポート時にそのパスワードが必要になります',
         'export.password_title': 'ファイル暗号化パスワード',
+        'export.password_ready': '暗号化パスワードが生成されました。',
         'export.password_desc': 'このパスワードは大切に保管してください。ファイルをインポートする際に必要になります。',
         'import.password_title': 'パスワードを入力',
         'import.password_desc': '暗号化されたデータが検出されました。復号のためパスワードを入力してください。',
@@ -5565,7 +5647,9 @@ export const TRANSLATIONS = {
         'account.delete_server_signin': 'パスキー、バックアップコード、サインイン中の端末',
         'account.delete_device_title': 'この端末では',
         'account.delete_device_desc':
-            'この端末の記録はこのアカウントに紐づいて保存されています。削除するとこの端末には表示されなくなるため、残したい場合は先に「{path}」からエクスポートしてください。',
+            'アカウントを削除すると、この端末に保存されているそのアカウントの記録も削除されます。残したい場合は、先に「{path}」からエクスポートしてください。',
+        'account.delete_cleanup_failed':
+            'アカウントは削除されましたが、この端末に保存されている記録を削除できませんでした。',
         'account.delete_done': 'アカウントを削除し、サインアウトしました。',
         'account.enter_password_confirm': '確認のためパスワードを入力',
         'account.new_username': '新しいユーザー名',
@@ -6115,6 +6199,16 @@ export const TRANSLATIONS = {
     },
 
     ko: {
+        ...MOBILE_CREDITS.ko,
+        'storage.startup_title': '기기에 저장된 기록을 열 수 없습니다',
+        'storage.startup_retry': '새로고침',
+        'storage.startup_detail':
+            'Android에서 암호화된 기록을 열 수 없습니다. 이 앱을 삭제하거나 앱 저장공간을 지우지 마세요. 내보낸 백업은 보관하세요. 휴대전화를 다시 시작하고 잠금을 해제한 뒤 새로고침을 시도하세요.',
+        'storage.startup_backup':
+            '기록을 여전히 열 수 없고 내보낸 백업이 있다면, 호환되는 버전의 앱을 새로 설치한 별도의 환경에서 복원하세요. 백업을 복원하고 기록을 확인하는 동안 오프라인 상태를 유지하고 로그인하지 마세요.',
+        'model.loading': '추정값 업데이트 중…',
+        'model.error': '추정값을 계산하지 못했습니다. 기록은 계속 이용할 수 있습니다.',
+        'model.retry': '다시 계산',
         'list.sep': ', ',
         'settings.section.model': '추정에 쓰이는 정보',
         'settings.section.supplies': '보유량',
@@ -6438,6 +6532,7 @@ export const TRANSLATIONS = {
 
         'export.encrypt_ask_desc': '무작위 비밀번호가 생성되며 가져오기 시 필요합니다',
         'export.password_title': '암호화 비밀번호',
+        'export.password_ready': '암호화 비밀번호가 준비되었습니다.',
         'export.password_desc': '이 비밀번호를 안전하게 보관하세요. 파일을 가져오는 데 필요합니다.',
         'import.password_title': '비밀번호 입력',
         'import.password_desc': '암호화된 데이터가 감지되었습니다. 복호화하려면 비밀번호를 입력하세요.',
@@ -6816,7 +6911,8 @@ export const TRANSLATIONS = {
         'account.delete_server_signin': '패스키, 백업 코드, 로그인된 기기',
         'account.delete_device_title': '이 기기에서는',
         'account.delete_device_desc':
-            '이 기기의 기록은 이 계정에 묶여 저장됩니다. 계정을 삭제하면 이 기기에 더 이상 표시되지 않으니, 보관하려면 먼저 {path}에서 내보내세요.',
+            '계정을 삭제하면 이 기기에 저장된 해당 계정의 기록도 삭제됩니다. 보관하려면 먼저 {path}에서 내보내세요.',
+        'account.delete_cleanup_failed': '계정이 삭제되었지만 이 기기에 저장된 해당 계정의 기록을 지우지 못했습니다.',
         'account.delete_done': '계정이 삭제되었고 로그아웃되었습니다.',
         'account.enter_password_confirm': '확인을 위해 비밀번호를 입력하세요',
         'account.new_username': '새 사용자 이름',
@@ -7287,6 +7383,16 @@ export const TRANSLATIONS = {
     },
     tr: {
         ...TRANSLATIONS_BASE.en,
+        ...MOBILE_CREDITS.tr,
+        'storage.startup_title': 'Yerel kayıtlar açılamadı',
+        'storage.startup_retry': 'Yeniden yükle',
+        'storage.startup_detail':
+            'Android şifrelenmiş kayıtları açamadı. Bu uygulamayı kaldırmayın veya depolama alanını temizlemeyin. Dışa aktardığınız yedekleri saklayın. Telefonunuzu yeniden başlatıp kilidini açtıktan sonra yeniden yüklemeyi deneyin.',
+        'storage.startup_backup':
+            'Kayıtlar hâlâ açılmıyorsa ve dışa aktarılmış bir yedeğiniz varsa, uygulamanın uyumlu bir sürümünü ayrı ve boş bir kurulumda kullanın. Yedeği geri yüklerken ve kayıtları doğrularken çevrimdışı kalın ve oturum açmayın.',
+        'model.loading': 'Tahminler güncelleniyor…',
+        'model.error': 'Tahminler hesaplanamadı. Kayıtlarınıza hâlâ erişebilirsiniz.',
+        'model.retry': 'Yeniden hesapla',
         'list.sep': ', ',
         'settings.section.model': 'Tahminlerin dayandığı bilgiler',
         'settings.section.supplies': 'Elinizdekiler',
@@ -7633,6 +7739,7 @@ export const TRANSLATIONS = {
 
         'export.encrypt_ask_desc': 'İçe aktarma için gerekli rastgele bir şifre oluşturulacak',
         'export.password_title': 'Şifreleme parolası',
+        'export.password_ready': 'Şifreleme parolanız hazır.',
         'export.password_desc': 'Bu parolayı güvenli bir şekilde saklayın. Bu dosyayı içe aktarmak için gereklidir.',
         'import.password_title': 'Parola girin',
         'import.password_desc': 'Şifrelenmiş veri algılandı. Şifre çözmek için parolayı girin.',
@@ -8026,7 +8133,8 @@ export const TRANSLATIONS = {
         'account.delete_server_signin': 'Geçiş anahtarları, yedek kodlar ve giriş yapılmış cihazlar',
         'account.delete_device_title': 'Bu cihazda',
         'account.delete_device_desc':
-            'Buradaki kayıtların bu hesapla birlikte saklanır. Hesap silinince bu cihaz onları artık göstermez; bir kopya istiyorsan önce {path} bölümünden dışa aktar.',
+            'Hesabını silmek bu cihazdaki hesabına ait kayıtları da siler. Bir kopya saklamak istiyorsan önce {path} bölümünden dışa aktar.',
+        'account.delete_cleanup_failed': 'Hesabın silindi. Bu cihaz hesaba ait kayıtları silemedi.',
         'account.delete_done': 'Hesabın silindi ve çıkış yaptın.',
         'account.enter_password_confirm': 'Onaylamak için parolayı girin',
         'account.new_username': 'Yeni kullanıcı adı',
@@ -8476,6 +8584,12 @@ export const TRANSLATIONS = {
         'session.sign_out_device': 'Cihazın oturumunu kapat',
         'account.passkey': 'Geçiş anahtarı',
     },
-    ru: RU,
-    uk: UK,
+    ru: {
+        ...RU,
+        ...MOBILE_CREDITS.ru,
+    },
+    uk: {
+        ...UK,
+        ...MOBILE_CREDITS.uk,
+    },
 } as const;

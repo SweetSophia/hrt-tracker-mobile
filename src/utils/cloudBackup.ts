@@ -156,14 +156,13 @@ export async function parseCloudBackup(rawData: string | unknown): Promise<any |
 }
 
 /** Flatten v1/v2 backup payloads into counts usable by the account UI. */
-export function normalizeBackupPayload(parsed: any): BackupSummary {
+export function normalizeBackupPayload(parsed: any, preferredMode: 'transfem' | 'transmasc'): BackupSummary {
     if (!parsed || typeof parsed !== 'object') {
         return { events: [], labResults: [], doseTemplates: [] };
     }
 
     if (parsed.modes && typeof parsed.modes === 'object') {
         const modesBlock = parsed.modes as Record<string, any>;
-        const preferredMode = localStorage.getItem('hrt-mode') === 'transmasc' ? 'transmasc' : 'transfem';
         const preferredBlock = modesBlock[preferredMode];
 
         if (preferredBlock && typeof preferredBlock === 'object') {
