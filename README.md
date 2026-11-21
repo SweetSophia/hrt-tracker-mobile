@@ -13,7 +13,7 @@ English · [简体中文](./README.zh-CN.md)
 
 ## Download for Android
 
-[Download the signed Android APK (1.0.0)](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.0/hrt-tracker-1.0.0.apk) · [Release notes in English and Traditional Chinese](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.0.0)
+[Download the signed Android APK (1.0.0)](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.0/hrt-tracker-1.0.0.apk) · [Release notes in English and Simplified Chinese](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.0.0)
 
 HRT Tracker runs on Android 7.0 or newer. The signed APK updates the private **HRT Tracker** beta in place. The Android package ID is `org.askarys.hrttracker`. An iPhone version is planned.
 

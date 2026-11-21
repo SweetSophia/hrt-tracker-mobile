@@ -9,19 +9,19 @@ HRT Tracker 1.0.0 is the first Android release of the mobile port, maintained by
 
 We’d love to hear how it works on your phone. If something goes wrong, tell us your phone model, Android version, and what you did before it happened. Please use sample records in screenshots. [Send feedback](https://github.com/SweetSophia/hrt-tracker-mobile/issues/new/choose)
 
-## 繁體中文
+## 简体中文
 
-HRT Tracker Android 版 1.0.0 正式推出了。這款 App 移植自 Oyama 的 HRT Tracker 網頁版，由 SweetSophia 維護。安裝後第一次開啟就能離線使用，不必註冊帳號、自架伺服器或設定 Tailscale。[原版網頁專案](https://github.com/xunxunProjects/Oyama-s-HRT-Tracker)
+HRT Tracker 首个安卓正式版 1.0.0 来了！这款应用移植自 Oyama 的 HRT Tracker 网页版，由 SweetSophia 维护。装好后第一次打开就能离线用，不用注册账号，也不用自己搭服务器或配置 Tailscale。[原版网页项目](https://github.com/xunxunProjects/Oyama-s-HRT-Tracker)
 
-- 記錄用藥劑量與檢驗結果，隨時回顧過去的紀錄，也能在圖表上對照荷爾蒙濃度的估算曲線與實際檢驗值。
-- 用藥紀錄和檢驗結果會儲存在你的手機上。在「設定」裡可以匯出或還原完整備份，兩種追蹤模式的資料都會包含在內。匯出的備份檔內含可直接讀取的健康紀錄，請妥善保管。
+- 随手记下用药剂量和化验结果，想回顾时翻翻历史记录就行。你还可以把自己的化验结果和图上的激素水平估算曲线对照着看。
+- 用药和化验记录都存在手机里。在“设置”里可以把两种模式的记录一起导出成一份完整备份，以后也能从这份备份恢复。备份文件里的健康记录可以直接读取，记得把文件放在只有你能访问的地方。
 
-**安裝方式（適用於 Android 7.0 以上版本）**
+**怎么安装（安卓 7.0 及以上版本）**
 
-下載並開啟 `hrt-tracker-1.0.0.apk`。若 Android 跳出安裝權限提示，請允許目前使用的瀏覽器或檔案管理工具安裝 App。
+下载并打开 `hrt-tracker-1.0.0.apk`。如果系统弹出权限提示，允许你正在用的浏览器或文件管理器安装应用就行。
 
-之前安裝的是我們提供的 **HRT Tracker** 測試版的話，選「更新」就能保留原有紀錄。舊版名稱若是 **HRT Tracker Offline Beta**，請先在舊版匯出完整備份，再到 **HRT Tracker** 還原。[下載已簽署的 APK](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.0/hrt-tracker-1.0.0.apk)
+如果你用的是我们发布的 **HRT Tracker** 签名测试版，点“更新”就能保留原来的记录。如果旧应用叫 **HRT Tracker Offline Beta**，先在旧应用里导出完整备份，再到 **HRT Tracker** 里恢复。[下载已签名的 APK](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.0/hrt-tracker-1.0.0.apk)
 
-歡迎分享使用心得。如果遇到問題，請告訴我們手機型號、Android 版本，以及問題發生前的操作步驟。若要附上截圖，請使用範例資料。[意見回饋](https://github.com/SweetSophia/hrt-tracker-mobile/issues/new/choose)
+欢迎来聊聊用得怎么样！如果碰到问题，告诉我们你的手机型号、安卓版本，还有出问题之前做了什么。发截图时记得用示例数据。[给我们留言](https://github.com/SweetSophia/hrt-tracker-mobile/issues/new/choose)
 
 **APK SHA-256** `3a6c9516b6f407e14c044210d63693892cdc040b51ee6497f3a464fd69030b5c`
