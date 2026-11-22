@@ -6,7 +6,7 @@ import type { UiSession } from '../hooks/uiSession';
 import type { ApplicationRuntime } from '../application/runtime';
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Close } from '../components/icons';
-import { BODY_WEIGHT_KG_MAX, BODY_WEIGHT_KG_MIN, ExtraKey, HRTMode, Route, isPlausibleBodyWeightKG } from '../../logic';
+import { BODY_WEIGHT_KG_MAX, BODY_WEIGHT_KG_MIN, ExtraKey, Route, isPlausibleBodyWeightKG } from '../../logic';
 import Tick from '../components/Tick';
 import PixelCat from '../components/PixelCat';
 import Doodle, { DoodleName } from '../components/Doodle';
@@ -17,6 +17,7 @@ import PageHeader from '../components/PageHeader';
 import OnboardingCurve, { useOnboardingCurve, BEATS, type Beat, type CurveData } from '../components/OnboardingCurve';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useHRTMode } from '../contexts/HRTModeContext';
+import { useApplicationRuntime } from '../contexts/RecordsContext';
 import { useDialog } from '../contexts/DialogContext';
 import { Lang, TRANSLATIONS } from '../i18n/translations';
 import { PlanItem, PLAN_DRUGS } from '../utils/plan';
@@ -235,6 +236,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
     const isMounted = useMounted();
     const { t, lang, setLang } = useTranslation();
     const { mode, setMode, isTransmasc } = useHRTMode();
+    const runtime = useApplicationRuntime();
     const { showDialog } = useDialog();
     const { value: curve, status: curveStatus, retry: retryCurve } = useOnboardingCurve(isTransmasc, runDemo);
 
@@ -250,24 +252,6 @@ const Onboarding: React.FC<OnboardingProps> = ({
         // Unchanged is left alone: setWeight stamps the value for sync, and
         // passing through the intro again is not an edit.
         if (isPlausibleBodyWeightKG(kg) && kg !== weight) pendingWeight.current = onWeightChange(kg);
-    };
-
-    // A mode choice must reach storage before the intro can end: Next past
-    // the mode step and Skip anywhere wait for the latest attempt, while
-    // Next elsewhere stays free, so a failure can't fence off the retry
-    // button one step back.
-    const pendingMode = useRef<Promise<boolean>>(Promise.resolve(true));
-    const pickMode = (m: HRTMode) => {
-        pendingMode.current = Promise.resolve(setMode(m));
-    };
-    // Settles once no newer tap lands mid-await; the runtime serializes
-    // writes, so the newest attempt covers every earlier one.
-    const settledModeSave = async (): Promise<boolean> => {
-        for (;;) {
-            const attempt = pendingMode.current;
-            const saved = await attempt;
-            if (pendingMode.current === attempt) return saved;
-        }
     };
 
     // Adding to the plan from the intro: the Plan page's own questions (below).
@@ -411,7 +395,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                 {modeOptions.map(({ value, labelKey, descKey }) => (
                     <button
                         key={value}
-                        onClick={() => pickMode(value)}
+                        onClick={() => setMode(value)}
                         className={`flex w-full items-center justify-between gap-4 py-4 text-start ${divider} last:border-b-0`}
                     >
                         <span>
@@ -554,7 +538,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
     };
     async function forward() {
         if (!ready) return;
-        if (current === 'mode' && !(await settledModeSave())) return;
+        if (current === 'mode' && !(await runtime.waitForModeSave())) return;
         if (!(await pendingWeight.current) || !isMounted()) return;
         if (isLast) onDone();
         else go(step + 1);
@@ -595,7 +579,8 @@ const Onboarding: React.FC<OnboardingProps> = ({
             <div className="flex shrink-0 justify-end px-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] short:pt-[calc(0.5rem+env(safe-area-inset-top,0px))]">
                 <button
                     onClick={async () => {
-                        if (!(await settledModeSave()) || !(await pendingWeight.current) || !isMounted()) return;
+                        if (!(await runtime.waitForModeSave()) || !(await pendingWeight.current) || !isMounted())
+                            return;
                         onDone();
                     }}
                     className={`rounded-lg px-2 py-1.5 text-xs text-muted hover:bg-[var(--surface-hover)] ${isLast ? 'invisible' : ''}`}

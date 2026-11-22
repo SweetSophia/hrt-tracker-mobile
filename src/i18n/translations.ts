@@ -18,6 +18,8 @@ export const TRANSLATIONS_BASE = {
         'storage.startup_backup':
             '如果仍无法打开记录，且你有已导出的备份，请另外安装此 App 的兼容版本，并确认该安装没有任何现有数据。恢复备份和核对记录期间，请保持离线且不要登录。',
         'storage.save_failed': '更改未能保存。已保留上次确认的记录；请刷新记录后重试。',
+        'storage.device_save_failed': '这个设置没能保存。现在还在用你之前的设置。',
+        'storage.retry_save': '重试',
         'storage.retry': '刷新记录',
         'settings.section.model': '估算依据',
         'settings.section.supplies': '库存',
@@ -1415,6 +1417,8 @@ export const TRANSLATIONS_BASE = {
             'If your records still won’t open and you have an exported backup, use a separate, empty installation of a compatible version of this app. Stay offline and signed out while you restore and verify the records.',
         'storage.save_failed':
             'Changes could not be saved. The last confirmed records are still shown. Refresh records and try again.',
+        'storage.device_save_failed': 'Couldn’t save this setting. Your previous setting is still in use.',
+        'storage.retry_save': 'Retry',
         'storage.retry': 'Refresh records',
         'settings.section.model': 'What the estimates use',
         'settings.section.supplies': 'On hand',
@@ -2887,6 +2891,8 @@ const ZH_TW = {
         'Android 無法開啟加密記錄。請勿移除此 App 或清除它的儲存空間。請保留已匯出的備份。重新啟動並解鎖手機後，再試著重新載入。',
     'storage.startup_backup':
         '如果仍無法開啟記錄，且有已匯出的備份，請另外安裝此 App 的相容版本，並確認該安裝沒有任何既有資料。還原備份並核對記錄期間，請保持離線且不要登入。',
+    'storage.device_save_failed': '無法儲存這個設定。目前仍使用你之前的設定。',
+    'storage.retry_save': '重試',
     'model.loading': '正在更新估算…',
     'model.error': '無法計算估算值。記錄仍可使用。',
     'model.retry': '重新計算',
@@ -4198,6 +4204,8 @@ export const TRANSLATIONS = {
             'Android 開唔到加密記錄。唔好移除呢個 App 或者清除佢嘅儲存空間。請保留之前匯出嘅備份。重新開機同解鎖之後，再試下重新載入。',
         'storage.startup_backup':
             '如果仲係開唔到記錄，而你有之前匯出嘅備份，請另外安裝呢個 App 嘅相容版本，並確認新裝嗰份 App 入面冇任何現有資料。還原備份同核對記錄嗰陣，請保持離線，亦唔好登入。',
+        'storage.device_save_failed': '呢個設定儲存唔到。仲用緊你之前嗰個設定。',
+        'storage.retry_save': '再試一次',
         'model.loading': '更新緊估算…',
         'model.error': '未能計算估算值，記錄仍然可以用。',
         'model.retry': '重新計算',
@@ -5007,6 +5015,8 @@ export const TRANSLATIONS = {
             'Android で暗号化された記録を開けませんでした。このアプリをアンインストールしたり、アプリのストレージを消去したりしないでください。エクスポート済みのバックアップは保管してください。端末を再起動してロックを解除し、再読み込みしてください。',
         'storage.startup_backup':
             '記録を開けず、エクスポート済みのバックアップがある場合は、互換性のあるバージョンを新規にインストールした別の環境で復元してください。復元と記録の確認が終わるまでは、オフラインのままログインせずに作業してください。',
+        'storage.device_save_failed': 'この設定を保存できませんでした。以前の設定がそのまま使われます。',
+        'storage.retry_save': '再試行',
         'model.loading': '推定値を更新中…',
         'model.error': '推定値を計算できませんでした。記録は引き続き利用できます。',
         'model.retry': '再計算',
@@ -6206,6 +6216,8 @@ export const TRANSLATIONS = {
             'Android에서 암호화된 기록을 열 수 없습니다. 이 앱을 삭제하거나 앱 저장공간을 지우지 마세요. 내보낸 백업은 보관하세요. 휴대전화를 다시 시작하고 잠금을 해제한 뒤 새로고침을 시도하세요.',
         'storage.startup_backup':
             '기록을 여전히 열 수 없고 내보낸 백업이 있다면, 호환되는 버전의 앱을 새로 설치한 별도의 환경에서 복원하세요. 백업을 복원하고 기록을 확인하는 동안 오프라인 상태를 유지하고 로그인하지 마세요.',
+        'storage.device_save_failed': '이 설정을 저장하지 못했습니다. 이전 설정이 그대로 사용됩니다.',
+        'storage.retry_save': '다시 시도',
         'model.loading': '추정값 업데이트 중…',
         'model.error': '추정값을 계산하지 못했습니다. 기록은 계속 이용할 수 있습니다.',
         'model.retry': '다시 계산',
@@ -7390,6 +7402,8 @@ export const TRANSLATIONS = {
             'Android şifrelenmiş kayıtları açamadı. Bu uygulamayı kaldırmayın veya depolama alanını temizlemeyin. Dışa aktardığınız yedekleri saklayın. Telefonunuzu yeniden başlatıp kilidini açtıktan sonra yeniden yüklemeyi deneyin.',
         'storage.startup_backup':
             'Kayıtlar hâlâ açılmıyorsa ve dışa aktarılmış bir yedeğiniz varsa, uygulamanın uyumlu bir sürümünü ayrı ve boş bir kurulumda kullanın. Yedeği geri yüklerken ve kayıtları doğrularken çevrimdışı kalın ve oturum açmayın.',
+        'storage.device_save_failed': 'Bu ayar kaydedilemedi. Önceki ayarınız hâlâ geçerli.',
+        'storage.retry_save': 'Yeniden dene',
         'model.loading': 'Tahminler güncelleniyor…',
         'model.error': 'Tahminler hesaplanamadı. Kayıtlarınıza hâlâ erişebilirsiniz.',
         'model.retry': 'Yeniden hesapla',

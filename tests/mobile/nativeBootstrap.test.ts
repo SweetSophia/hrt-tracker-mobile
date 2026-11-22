@@ -105,8 +105,19 @@ it('publishes rapid mode choices in order only after durable writes, and can ret
     expect(await runtime.setDevice('hrt-mode', 'transmasc')).toBe(false);
     expect(runtime.getState().device['hrt-mode']).toBe('transfem');
     expect(runtime.getState().error).toBeInstanceOf(Error);
-    expect(await runtime.setDevice('hrt-mode', 'transmasc')).toBe(true);
+    expect(await runtime.waitForModeSave()).toBe(false);
+    expect(runtime.setDevice('app-pixel-cats', 'true')).toBe(true);
+    expect(await runtime.retryDeviceWrite()).toBe(true);
+    expect(await runtime.waitForModeSave()).toBe(true);
     expect(runtime.getState().error).toBeUndefined();
+    expect(savedMode()).toBe('transmasc');
+
+    commit.mockRejectedValueOnce(new Error('superseded choice failed'));
+    const superseded = runtime.setDevice('hrt-mode', 'transfem');
+    const leaving = runtime.waitForModeSave();
+    const recent = runtime.setDevice('hrt-mode', 'transmasc');
+    expect(await Promise.all([superseded, recent, leaving])).toEqual([false, true, true]);
+    expect(await runtime.retryDeviceWrite()).toBe(false);
     expect(savedMode()).toBe('transmasc');
 });
 

@@ -67,14 +67,15 @@ export function StorageStatus() {
     if (!(state.status === 'ready' && state.error) && !device.error) return null;
     return (
         <div role="alert" className="p-4 text-[var(--danger)] border-b border-[var(--border)]">
-            <p>{t('storage.save_failed')}</p>
+            <p>{t(device.failedDeviceWrite ? 'storage.device_save_failed' : 'storage.save_failed')}</p>
             <button
                 className="btn-secondary mt-2"
                 onClick={() => {
-                    void controller.refresh().catch(() => undefined);
+                    if (device.failedDeviceWrite) void runtime.retryDeviceWrite();
+                    else void controller.refresh().catch(() => undefined);
                 }}
             >
-                {t('storage.retry')}
+                {t(device.failedDeviceWrite ? 'storage.retry_save' : 'storage.retry')}
             </button>
         </div>
     );

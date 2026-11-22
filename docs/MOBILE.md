@@ -101,7 +101,11 @@ node scripts/mobile/check-webview-durability.mjs --serial DEVICE --output /tmp/n
 The debug prototype's WebView storage can lose a recent write on force-stop
 on the tested API 36 and API 37 emulators. Android 1.0.1 saves the selected
 HRT mode in the encrypted native database before showing the new selection.
-On upgrade it adopts the mode previously saved by 1.0.0.
+On upgrade it adopts the mode previously saved by 1.0.0. If Android cannot
+confirm that first write, the startup screen offers **Reload** to read the
+native state again. A later failed mode change leaves the last saved choice
+visible and offers **Retry** for that selection.
+
 The WebView smoke runner seeds synthetic records and is restricted to a dedicated
 emulator, with or without `--offline`. Before seeding, it refuses existing
 credentials or nonempty record arrays without its fixture marker. Exact empty

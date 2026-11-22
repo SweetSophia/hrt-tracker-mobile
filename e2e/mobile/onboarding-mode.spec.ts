@@ -46,7 +46,9 @@ test('a failed mode write holds the exit until retried, and Back keeps the retry
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'What are you tracking?' })).toBeVisible();
 
-    await page.getByRole('button', { name: /Masculinizing HRT/ }).click();
+    const alert = page.getByRole('alert');
+    await alert.getByRole('button', { name: 'Retry', exact: true }).click();
+    await expect(alert).toHaveCount(0);
     await expect.poll(() => page.evaluate(() => localStorage.getItem('hrt-mode'))).toBe('transmasc');
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'How it works' })).toBeVisible();

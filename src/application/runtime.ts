@@ -23,10 +23,12 @@ export type PortableKey = (typeof PORTABLE_PREFERENCE_KEYS)[number];
 /** Initialized once before React (including StrictMode) is mounted. */
 export class ApplicationRuntime {
     private listeners = new Set<() => void>();
+    private modeSave?: { result: boolean | Promise<boolean> };
     private view: {
         preferences: Readonly<Record<string, string>>;
         device: Readonly<Record<string, string>>;
         error?: unknown;
+        failedDeviceWrite?: { key: DeviceKey; value: string };
     };
     constructor(
         readonly controller: RecordController,
@@ -59,28 +61,51 @@ export class ApplicationRuntime {
         };
     };
     getState = () => this.view;
+    async waitForModeSave(): Promise<boolean> {
+        for (;;) {
+            const attempt = this.modeSave;
+            const saved = await (attempt?.result ?? true);
+            if (attempt === this.modeSave) return saved;
+        }
+    }
+    retryDeviceWrite(): boolean | Promise<boolean> {
+        const failed = this.view.failedDeviceWrite;
+        return failed ? this.setDevice(failed.key, failed.value) : false;
+    }
     setDevice(key: Exclude<DeviceKey, 'hrt-mode'>, value: string): boolean;
     setDevice(key: DeviceKey, value: string): boolean | Promise<boolean>;
     setDevice(key: DeviceKey, value: string): boolean | Promise<boolean> {
         if (!DEVICE_KEYS.includes(key)) throw new Error('Unknown device preference');
+        const attempt: { result: boolean | Promise<boolean> } = { result: true };
+        if (key === 'hrt-mode') this.modeSave = attempt;
+        if (this.view.failedDeviceWrite?.key === key) {
+            this.view = { ...this.view, error: undefined, failedDeviceWrite: undefined };
+            this.emit();
+        }
         const publish = () => {
-            this.view = { ...this.view, device: { ...this.view.device, [key]: value }, error: undefined };
+            this.view = { ...this.view, device: { ...this.view.device, [key]: value } };
             this.emit();
             return true;
         };
         const reportFailure = (error: unknown) => {
-            this.view = { ...this.view, error };
-            this.emit();
+            // A retry must never replay a mode that a later tap has superseded.
+            if (key !== 'hrt-mode' || attempt === this.modeSave) {
+                this.view = { ...this.view, error, failedDeviceWrite: { key, value } };
+                this.emit();
+            }
             return false;
         };
         try {
-            if (key === 'hrt-mode' && this.saveNativeMode)
-                return this.saveNativeMode(value).then(publish, reportFailure);
-            this.storage.setItem(key, value);
-            return publish();
+            if (key === 'hrt-mode' && this.saveNativeMode) {
+                attempt.result = this.saveNativeMode(value).then(publish, reportFailure);
+            } else {
+                this.storage.setItem(key, value);
+                attempt.result = publish();
+            }
         } catch (error) {
-            return reportFailure(error);
+            attempt.result = reportFailure(error);
         }
+        return attempt.result;
     }
     async setPreference(key: PortableKey, value: string): Promise<boolean> {
         if (!PORTABLE_PREFERENCE_KEYS.includes(key)) throw new Error('Unknown portable preference');
