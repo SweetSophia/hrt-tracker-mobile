@@ -17,6 +17,13 @@ export interface PlanItem {
     everyDays: number;
     /** Doses on a dose day. Only meaningful when `everyDays` is 1. */
     timesPerDay: number;
+    /**
+     * Logging this plan's dose also retires the patch before it; the paired
+     * saving of the two records belongs to the caller. Strictly `true`, and
+     * only on a patchApply item: anything else, including its absence on plans
+     * saved before the preference existed, is off.
+     */
+    replacePreviousPatch?: boolean;
 }
 
 export interface Frequency {
@@ -138,6 +145,8 @@ export interface PlanDraft {
     slTier: number;
     /** Index into GEL_SITE_ORDER. */
     gelSite: number;
+    /** Patch only: whether logging the dose replaces the patch before it. */
+    replacePreviousPatch?: boolean;
 }
 
 export const freshDraft = (route: Route, ester: Ester): PlanDraft => ({
@@ -151,7 +160,26 @@ export const freshDraft = (route: Route, ester: Ester): PlanDraft => ({
 /** Whether the amount typed is one a plan can hold. */
 export const draftDoseOk = (d: Pick<PlanDraft, 'dose'>) => parseFloat(d.dose) > 0;
 
-export const draftToItem = (d: PlanDraft, id: string): PlanItem | null => {
+/**
+ * A patch plan saved by an import or an older version can carry its own
+ * wear — a custom length in hours, or none, worn until separately removed —
+ * and extras this version doesn't know. Editing the plan keeps all of that
+ * while the dose and rhythm are still the ones it was saved with; change
+ * either and the wear is derived from the rhythm again.
+ */
+const preservedPatchExtras = (
+    rebuilt: PlanItem['extras'],
+    everyDays: number,
+    timesPerDay: number,
+    original?: PlanItem,
+): PlanItem['extras'] => {
+    if (!original || original.route !== Route.patchApply) return rebuilt;
+    if (rebuilt[ExtraKey.releaseRateUGPerDay] !== original.extras[ExtraKey.releaseRateUGPerDay]) return rebuilt;
+    if (everyDays !== original.everyDays || timesPerDay !== original.timesPerDay) return rebuilt;
+    return { ...original.extras };
+};
+
+export const draftToItem = (d: PlanDraft, id: string, original?: PlanItem): PlanItem | null => {
     const dose = parseFloat(d.dose);
     const f = parseFrequency(d.freq);
     if (!(dose > 0) || !f) return null;
@@ -168,9 +196,10 @@ export const draftToItem = (d: PlanDraft, id: string): PlanItem | null => {
         route: d.route,
         ester: d.ester,
         doseMG: isPatch ? 0 : dose,
-        extras,
+        extras: preservedPatchExtras(extras, f.everyDays, f.timesPerDay, original),
         everyDays: f.everyDays,
         timesPerDay: f.timesPerDay,
+        ...(isPatch && d.replacePreviousPatch === true ? { replacePreviousPatch: true } : {}),
     };
 };
 
@@ -183,6 +212,7 @@ export const itemToDraft = (i: PlanItem): PlanDraft => ({
     freq: frequencyKey(i),
     slTier: i.extras[ExtraKey.sublingualTier] ?? 2,
     gelSite: i.extras[ExtraKey.gelSite] ?? 0,
+    ...(i.replacePreviousPatch === true ? { replacePreviousPatch: true } : {}),
 });
 
 export const normalizePlanItem = (raw: any): PlanItem | null => {
@@ -211,6 +241,7 @@ export const normalizePlanItem = (raw: any): PlanItem | null => {
         extras: raw.extras && typeof raw.extras === 'object' ? raw.extras : {},
         everyDays,
         timesPerDay: everyDays > 1 ? 1 : timesPerDay,
+        ...(raw.route === Route.patchApply && raw.replacePreviousPatch === true ? { replacePreviousPatch: true } : {}),
     };
 };
 

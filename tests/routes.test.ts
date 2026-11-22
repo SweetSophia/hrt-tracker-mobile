@@ -13,6 +13,7 @@ import {
     runSimulation,
     SimulationResult,
 } from '../logic';
+import { patchEntriesWithReplacements } from '../src/domain/shared/patch';
 import { BW, NOW_H, VD_E2_ML, VD_T_ML, dose, regimen, relErr, scan, trapz } from './helpers';
 import { UpstreamCompound, upstreamE2Amount } from './reference/pkcoreUpstream';
 
@@ -260,6 +261,24 @@ describe('gel', () => {
 
 describe('patch', () => {
     const rate = (ugPerDay: number) => ({ [ExtraKey.releaseRateUGPerDay]: ugPerDay });
+
+    it('shows one patch level after each three-day replacement and adds levels for patches worn together', () => {
+        const patches = regimen(Route.patchApply, Ester.E2, 0, 72, 3, NOW_H - 24, rate(200));
+        const replaced = patchEntriesWithReplacements(
+            [],
+            patches,
+            patches.map(p => 'remove-' + p.id),
+        );
+        const rotated = runSimulation(replaced, BW)!;
+        const overlapping = runSimulation(patches, BW)!;
+        const singlePatchLevel = E2(overlapping, patches[0].timeH + 24)!;
+        expect(singlePatchLevel).toBeCloseTo(145.2, 0);
+        for (const [i, patch] of patches.entries()) {
+            const nextDay = patch.timeH + 24;
+            expect(E2(rotated, nextDay)).toBeCloseTo(singlePatchLevel, 0);
+            expect(E2(overlapping, nextDay)).toBeCloseTo((i + 1) * singlePatchLevel, 0);
+        }
+    });
 
     it('zero-order release approaches rate/k3 while worn', () => {
         const sim = runSimulation([dose(Route.patchApply, Ester.E2, 0, NOW_H - 200, rate(50))], BW)!;

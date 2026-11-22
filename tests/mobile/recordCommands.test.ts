@@ -5,6 +5,7 @@ import { WebRecordStore } from '../../src/platform/web/recordStore';
 import {
     exportRecordState,
     planEdit,
+    planPatchReplacement,
     planLegacyImport,
     prepareLegacyImport,
     readRecordState,
@@ -143,4 +144,28 @@ it('exports empty and account snapshots without reading the retired global age f
         await controller.activate({ ...scope, owner });
         expect(exportRecordState(context())).toMatchObject({ events: [], weight: 70 });
     }
+});
+
+it('commits each patch change as one operation and returns exactly the records to undo', async () => {
+    const { controller, context } = await start();
+    const patch = { ...event, route: Route.patchApply, doseMG: 0, extras: { releaseRateUGPerDay: 100 } };
+    const next = { ...patch, id: 'next-patch', timeH: patch.timeH + 72 };
+    const [first, replacement] = await Promise.all([
+        controller.dispatch(c => planPatchReplacement(c, [patch], ['unused'], now)),
+        controller.dispatch(c => planPatchReplacement(c, [next], ['removed-first'], now + 1)),
+    ]);
+    expect(first.result).toEqual([patch.id]);
+    expect(replacement.result).toEqual(['removed-first', next.id]);
+    expect(context().snapshots[recordNamespace(scope)].revision).toBe(2);
+    expect(readRecordState(context()).events).toMatchObject([
+        { id: patch.id, updatedAt: now },
+        { id: 'removed-first', route: Route.patchRemove, timeH: next.timeH, updatedAt: now + 1 },
+        { id: next.id, route: Route.patchApply, timeH: next.timeH, updatedAt: now + 1 },
+    ]);
+
+    const replay = await controller.dispatch(c => planPatchReplacement(c, [next], ['removed-first'], now + 2));
+    expect(replay.result).toEqual([]);
+    expect(readRecordState(context()).events).toHaveLength(3);
+    await controller.dispatch(c => planEdit(c, { kind: 'events', action: 'delete', ids: replacement.result }, now + 3));
+    expect(readRecordState(context()).events.map(e => e.id)).toEqual([patch.id]);
 });

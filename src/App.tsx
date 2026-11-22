@@ -145,7 +145,6 @@ const AppContent = ({ session }: { session: UiSession }) => {
         currentStatus,
         simulationAhead,
         groupedEvents,
-        addEvent,
         addEvents,
         updateEvent,
         deleteEvent,
@@ -690,16 +689,23 @@ const AppContent = ({ session }: { session: UiSession }) => {
     // One tap on the Overview logs a plan item's dose. Every dose logged this
     // way is kept, newest last, so the taps can be taken back one at a time:
     // three doses in a day are three taps and three undos.
-    const [planLogs, setPlanLogs] = useState<{ itemId: string; eventId: string }[]>([]);
+    const [planLogs, setPlanLogs] = useState<{ itemId: string; eventId: string; addedIds: string[] }[]>([]);
+    const pendingPlanItems = useRef(new Set<string>());
     const handleLogPlanItem = async (item: PlanItem) => {
-        const eventId = uuidv4();
-        if (!(await addEvent(planEvent(item, eventId, Date.now())))) return;
-        setPlanLogs(logs => [...logs, { itemId: item.id, eventId }]);
+        if (pendingPlanItems.current.has(item.id)) return;
+        pendingPlanItems.current.add(item.id);
+        try {
+            const event = planEvent(item, uuidv4(), Date.now());
+            const addedIds = await addEvents([event], item.replacePreviousPatch);
+            if (addedIds?.length) setPlanLogs(logs => [...logs, { itemId: item.id, eventId: event.id, addedIds }]);
+        } finally {
+            pendingPlanItems.current.delete(item.id);
+        }
     };
     const handleUndoPlanLog = async (itemId: string) => {
         const last = [...planLogs].reverse().find(l => l.itemId === itemId && events.some(e => e.id === l.eventId));
         if (!last) return;
-        if (!(await deleteEvent(last.eventId))) return;
+        if (!(await deleteEvents(last.addedIds))) return;
         setPlanLogs(logs => logs.filter(l => l !== last));
     };
     // Items with a tap still on record to take back. A dose deleted elsewhere is gone from here too.
@@ -1074,11 +1080,11 @@ const AppContent = ({ session }: { session: UiSession }) => {
                                 isQuickAddOpen={isQuickAddOpen}
                                 setIsQuickAddOpen={setIsQuickAddOpen}
                                 doseTemplates={doseTemplates}
-                                onSaveEvent={e => {
-                                    return events.find(p => p.id === e.id) ? updateEvent(e) : addEvent(e);
-                                }}
+                                onUpdateEvent={updateEvent}
                                 onDeleteEvent={deleteEvent}
-                                onAddEvents={addEvents}
+                                onAddEvents={async (records, replacePreviousPatch) =>
+                                    (await addEvents(records, replacePreviousPatch)) !== null
+                                }
                                 onDeleteEvents={deleteEvents}
                                 onSaveTemplate={addTemplate}
                                 onDeleteTemplate={deleteTemplate}

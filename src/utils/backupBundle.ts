@@ -427,6 +427,11 @@ const validateEvent = (raw: unknown, path: string, now?: number): Validation<Dos
         ester: raw.ester,
         extras: extras as DoseEvent['extras'],
     };
+    if (raw.patchApplicationId !== undefined) {
+        if (raw.route !== Route.patchRemove || !isRecordId(raw.patchApplicationId))
+            return { error: `${path}: invalid patchApplicationId` };
+        value.patchApplicationId = raw.patchApplicationId;
+    }
     if (stamp.value !== undefined) value.updatedAt = stamp.value;
     return { value };
 };
@@ -572,6 +577,12 @@ const validatePlan = (raw: unknown, path: string): Validation<PlanItem> => {
             extras: extras as PlanItem['extras'],
             everyDays,
             timesPerDay: everyDays > 1 ? 1 : timesPerDay,
+            // A patch plan may carry the opt-in to retire the previous patch
+            // when its dose is logged; anything else, on any other route, is
+            // read as off and dropped.
+            ...(raw.route === Route.patchApply && raw.replacePreviousPatch === true
+                ? { replacePreviousPatch: true }
+                : {}),
         },
     };
 };

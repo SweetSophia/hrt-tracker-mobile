@@ -255,6 +255,9 @@ export const sanitizeImportedEvents = (raw: any): DoseEvent[] => {
             if (!item || typeof item !== 'object') return null;
             const { route, timeH, doseMG, ester, extras } = item;
             if (!Object.values(Route).includes(route)) return null;
+            const target = route === Route.patchRemove ? item.patchApplicationId : undefined;
+            // Dropping only a broken link would let this removal close an unrelated patch.
+            if (target !== undefined && (typeof target !== 'string' || !target)) return null;
             const timeNum = Number(timeH);
             // Out-of-range timestamps are dropped rather than clamped: moving a
             // record to a date the user never chose is worse than losing it.
@@ -269,6 +272,7 @@ export const sanitizeImportedEvents = (raw: any): DoseEvent[] => {
                 doseMG: Number.isFinite(doseNum) ? cleanDoseMG(Math.min(DOSE_MG_MAX, Math.max(0, doseNum))) : 0,
                 ester: validEster,
                 extras: sanitizedExtras,
+                ...(target !== undefined ? { patchApplicationId: target } : {}),
                 updatedAt: keepStamp(item),
             } as DoseEvent;
         })

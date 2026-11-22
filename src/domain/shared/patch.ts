@@ -9,7 +9,12 @@ const PATCH_REMOVAL_GRACE_H = 24;
 // label: 1.56 mg), and 84 h of planned wear plus this stays inside that.
 const PATCH_MAX_OVERWEAR_H = 240;
 
-const patchRemovalCache = new WeakMap<DoseEvent[], Map<DoseEvent, number>>();
+interface PatchPairs {
+    times: Map<DoseEvent, number>;
+    applications: Map<DoseEvent, DoseEvent>;
+}
+
+const patchRemovalCache = new WeakMap<DoseEvent[], PatchPairs>();
 
 function _patchHormone(e: DoseEvent): 'e2' | 't' | null {
     if (isTestosteroneEster(e.ester)) return 't';
@@ -22,70 +27,178 @@ export function _plannedWearH(e: DoseEvent): number | null {
     return typeof planned === 'number' && Number.isFinite(planned) && planned > 0 ? planned : null;
 }
 
-export function patchRemovalTimes(allEvents: DoseEvent[]): Map<DoseEvent, number> {
-    const cached = patchRemovalCache.get(allEvents);
-    if (cached) return cached;
-    const pairs = new Map<DoseEvent, number>();
-
-    const byTimeThenContent = (a: DoseEvent, b: DoseEvent) =>
-        a.timeH - b.timeH ||
-        (_plannedWearH(a) ?? Infinity) - (_plannedWearH(b) ?? Infinity) ||
-        a.doseMG - b.doseMG ||
-        (Number(a.extras?.[ExtraKey.releaseRateUGPerDay]) || 0) -
-            (Number(b.extras?.[ExtraKey.releaseRateUGPerDay]) || 0) ||
-        String(a.ester).localeCompare(String(b.ester)) ||
-        String(a.id).localeCompare(String(b.id));
-    const applies = allEvents.filter(e => e.route === Route.patchApply).sort(byTimeThenContent);
-    // A removal of either hormone goes before one that names neither, which
-    // can take a patch of any hormone.
+/** Replay both recorded and proposed removals in time order. */
+function matchPatches(
+    recorded: DoseEvent[],
+    requests: { application: DoseEvent; removal: DoseEvent }[] = [],
+): PatchPairs {
+    const times = new Map<DoseEvent, number>();
+    const applications = new Map<DoseEvent, DoseEvent>();
+    const proposed = new Set(requests.map(request => request.removal));
+    const recordedApplies = recorded.filter(e => e.route === Route.patchApply);
+    const applies = recordedApplies
+        .concat(requests.map(request => request.application))
+        .sort(
+            (a, b) =>
+                a.timeH - b.timeH ||
+                (_plannedWearH(a) ?? Infinity) - (_plannedWearH(b) ?? Infinity) ||
+                a.doseMG - b.doseMG ||
+                (Number(a.extras?.[ExtraKey.releaseRateUGPerDay]) || 0) -
+                    (Number(b.extras?.[ExtraKey.releaseRateUGPerDay]) || 0) ||
+                String(a.ester).localeCompare(String(b.ester)) ||
+                String(a.id).localeCompare(String(b.id)),
+        );
+    // Some legacy imports repeat IDs. Untargeted removals still use the original time/content ordering.
+    const byId = new Map<string, DoseEvent | null>();
+    for (const apply of applies) byId.set(apply.id, byId.has(apply.id) ? null : apply);
     const hormoneRank = (e: DoseEvent) => {
         const h = _patchHormone(e);
         return h === 'e2' ? 0 : h === 't' ? 1 : 2;
     };
-    const removals = allEvents
+    const removals = recorded
         .filter(e => e.route === Route.patchRemove)
-        .sort((a, b) => a.timeH - b.timeH || hormoneRank(a) - hormoneRank(b));
+        .concat([...proposed])
+        .sort(
+            (a, b) =>
+                a.timeH - b.timeH ||
+                Number(proposed.has(a)) - Number(proposed.has(b)) ||
+                Number(b.patchApplicationId !== undefined) - Number(a.patchApplicationId !== undefined) ||
+                hormoneRank(a) - hormoneRank(b),
+        );
 
-    let open: DoseEvent[] = []; // unpaired applications, oldest first
+    let open: DoseEvent[] = [];
     let next = 0;
-    for (const r of removals) {
-        while (next < applies.length && applies[next].timeH <= r.timeH - PATCH_MIN_WEAR_H) open.push(applies[next++]);
-        // Removals arrive in time order, so a patch whose planned wear ended
-        // more than the grace period ago is never matched by plan again (only
-        // by the fallback below).
-        open = open.filter(a => {
-            const wear = _plannedWearH(a);
-            return wear === null || a.timeH + wear + PATCH_REMOVAL_GRACE_H >= r.timeH;
-        });
-        const hormone = _patchHormone(r);
-        const idx = open.findIndex(a => hormone === null || _patchHormone(a) === hormone);
-        if (idx >= 0) {
-            pairs.set(open[idx], r.timeH);
-            open.splice(idx, 1);
-            continue;
-        }
-        // No patch fits by its plan. An explicit removal still ends a patch
-        // worn past it (see ExtraKey.patchWearH), so it goes to the newest
-        // patch of that hormone put on before it, if that one is unpaired and
-        // within PATCH_MAX_OVERWEAR_H of its plan. An older patch is never
-        // taken: a newer one replaced it. Patches put on at the same moment are
-        // tried in the order the plan match above uses.
-        const fits = (a: DoseEvent) => hormone === null || _patchHormone(a) === hormone;
-        let last = next - 1;
-        while (last >= 0 && !fits(applies[last])) last--;
-        if (last < 0) continue;
-        let first = last;
-        while (first > 0 && applies[first - 1].timeH === applies[last].timeH) first--;
-        for (let i = first; i <= last; i++) {
-            const a = applies[i];
-            if (!fits(a) || pairs.has(a)) continue;
-            if (r.timeH > a.timeH + (_plannedWearH(a) ?? 0) + PATCH_MAX_OVERWEAR_H) continue;
-            pairs.set(a, r.timeH);
-            break;
+    // A removal already logged at the change time can cover one new application.
+    // Discount applications already logged with those removals, including an earlier save in the same minute.
+    const moment = (timeH: number, hormone: ReturnType<typeof _patchHormone>) => timeH + '/' + hormone;
+    const spareRemovals = new Map<string, number>();
+    for (const removal of proposed) spareRemovals.set(moment(removal.timeH, _patchHormone(removal)), 0);
+    if (proposed.size) {
+        for (const apply of recordedApplies) {
+            const key = moment(apply.timeH, _patchHormone(apply));
+            const balance = spareRemovals.get(key);
+            if (balance !== undefined) spareRemovals.set(key, balance - 1);
         }
     }
-    patchRemovalCache.set(allEvents, pairs);
-    return pairs;
+    for (const removal of removals) {
+        const hormone = _patchHormone(removal);
+        const replacing = proposed.has(removal);
+        if (replacing) {
+            if (!hormone) continue;
+            const key = moment(removal.timeH, hormone);
+            const balance = spareRemovals.get(key) ?? 0;
+            if (balance > 0) {
+                spareRemovals.set(key, balance - 1);
+                continue;
+            }
+        }
+        let matched: DoseEvent | undefined;
+        if (removal.patchApplicationId !== undefined) {
+            // An edited or deleted target must never redirect an explicit removal to another patch.
+            const target = byId.get(removal.patchApplicationId);
+            if (
+                target &&
+                hormone &&
+                _patchHormone(target) === hormone &&
+                target.timeH < removal.timeH &&
+                !times.has(target)
+            )
+                matched = target;
+        } else {
+            while (next < applies.length && applies[next].timeH < removal.timeH) open.push(applies[next++]);
+            open = open.filter(a => {
+                const wear = _plannedWearH(a);
+                return !times.has(a) && (wear === null || a.timeH + wear + PATCH_REMOVAL_GRACE_H >= removal.timeH);
+            });
+            // A person explicitly replacing a patch can take it off within the first hour.
+            // Keep the original one-hour inference rule for an unlinked manual removal.
+            const fits = (a: DoseEvent) =>
+                (hormone === null || _patchHormone(a) === hormone) &&
+                (replacing || a.timeH <= removal.timeH - PATCH_MIN_WEAR_H);
+            matched = open.find(fits);
+            if (!matched) {
+                // Outside the normal grace window only the newest prior application can qualify for late removal.
+                let last = next - 1;
+                while (last >= 0 && !fits(applies[last])) last--;
+                if (last < 0) continue;
+                let first = last;
+                while (first > 0 && applies[first - 1].timeH === applies[last].timeH) first--;
+                for (let i = first; i <= last; i++) {
+                    const a = applies[i];
+                    if (
+                        fits(a) &&
+                        !times.has(a) &&
+                        removal.timeH <= a.timeH + (_plannedWearH(a) ?? 0) + PATCH_MAX_OVERWEAR_H
+                    ) {
+                        matched = a;
+                        break;
+                    }
+                }
+            }
+        }
+        if (matched) {
+            // An ambiguous legacy ID cannot identify this patch. Never substitute a different worn patch.
+            if (replacing && (typeof matched.id !== 'string' || !matched.id || byId.get(matched.id) !== matched))
+                continue;
+            times.set(matched, removal.timeH);
+            applications.set(removal, matched);
+            if (!replacing && proposed.size) {
+                const key = moment(removal.timeH, _patchHormone(matched));
+                const balance = spareRemovals.get(key);
+                if (balance !== undefined) spareRemovals.set(key, balance + 1);
+            }
+        }
+    }
+    return { times, applications };
+}
+
+function recordedPairs(events: DoseEvent[]): PatchPairs {
+    let cached = patchRemovalCache.get(events);
+    if (!cached) {
+        cached = matchPatches(events);
+        patchRemovalCache.set(events, cached);
+    }
+    return cached;
+}
+
+export function patchRemovalTimes(events: DoseEvent[]): Map<DoseEvent, number> {
+    return recordedPairs(events).times;
+}
+
+/** Removal record to the application it actually closed, for History. */
+export function patchRemovalPairs(events: DoseEvent[]): ReadonlyMap<DoseEvent, DoseEvent> {
+    return recordedPairs(events).applications;
+}
+
+/** The additional records for an opted-in save, including earlier changes in the same batch. */
+export function patchEntriesWithReplacements(
+    existing: DoseEvent[],
+    applications: readonly DoseEvent[],
+    removalIds: readonly string[],
+): DoseEvent[] {
+    const requests = applications
+        .map((application, i) => {
+            if (application.route !== Route.patchApply || !removalIds[i])
+                throw new Error('Expected a patch application and removal ID');
+            const removal: DoseEvent = {
+                id: removalIds[i],
+                route: Route.patchRemove,
+                ester: application.ester,
+                timeH: application.timeH,
+                doseMG: 0,
+                extras: {},
+            };
+            return { application, removal };
+        })
+        .sort((a, b) => a.application.timeH - b.application.timeH);
+    const pairs = matchPatches(existing, requests).applications;
+    const records: DoseEvent[] = [];
+    for (const { application, removal } of requests) {
+        const target = pairs.get(removal);
+        if (target) records.push({ ...removal, patchApplicationId: target.id });
+        records.push(application);
+    }
+    return records;
 }
 
 /**

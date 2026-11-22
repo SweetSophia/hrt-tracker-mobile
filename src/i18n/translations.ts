@@ -551,6 +551,11 @@ export const TRANSLATIONS_BASE = {
         'field.patch_wear_placeholder': '如 3.5、7',
         'field.patch_wear_hint': '可选。超过该天数后视为已揭下；留空则保持贴着，直到你记录一次移除。',
         'field.patch_until_removed': '手动移除',
+        'patch.replace_previous': '更换上一片贴片',
+        'patch.replace_manual_hint':
+            '贴上新贴片时，同时记下揭掉旧贴片的时间。如果贴着多片同种激素的贴片，先换最早贴的那片。',
+        'patch.replace_plan_hint':
+            '在总览里点「贴了」时，同时记下揭掉旧贴片的时间。如果贴着多片同种激素的贴片，先换最早贴的那片。',
         'patch.wear.twice_week': '每周两次',
         'patch.wear.weekly': '每周一次',
         'unit.day_short': '天',
@@ -1969,6 +1974,11 @@ export const TRANSLATIONS_BASE = {
         'field.patch_wear_hint':
             'Optional. After this many days the patch is treated as removed. Leave empty to keep it on until you log a removal.',
         'field.patch_until_removed': 'Until removed',
+        'patch.replace_previous': 'Replace previous patch',
+        'patch.replace_manual_hint':
+            'Record the old patch coming off when you apply this one. If you wear several patches of the same hormone, the oldest comes off first.',
+        'patch.replace_plan_hint':
+            'Tapping Done also records taking off the old patch at that time. If you wear several patches of the same hormone, the oldest comes off first.',
         'patch.wear.twice_week': '2×/week',
         'patch.wear.weekly': '1×/week',
         'unit.day_short': 'd',
@@ -3228,6 +3238,11 @@ const ZH_TW = {
     'field.patch_wear_placeholder': '如 3.5、7',
     'field.patch_wear_hint': '選填。超過該天數後視為已撕下；留空則保持貼著，直到你記錄一次移除。',
     'field.patch_until_removed': '手動移除',
+    'patch.replace_previous': '更換上一片貼片',
+    'patch.replace_manual_hint':
+        '貼上新貼片時，同時記下揭掉舊貼片的時間。如果貼著多片同種激素的貼片，先換最早貼的那片。',
+    'patch.replace_plan_hint':
+        '在總覽裡點「貼了」時，同時記下揭掉舊貼片的時間。如果貼著多片同種激素的貼片，先換最早貼的那片。',
     'patch.wear.twice_week': '每週兩次',
     'patch.wear.weekly': '每週一次',
     'unit.day_short': '天',
@@ -4558,6 +4573,11 @@ export const TRANSLATIONS = {
         'field.patch_wear_placeholder': '例如 3.5、7',
         'field.patch_wear_hint': '選填。過咗呢個日數就當撕咗；留空就會一直貼住，直到你記低一次移除。',
         'field.patch_until_removed': '手動移除',
+        'patch.replace_previous': '換走之前嗰塊貼片',
+        'patch.replace_manual_hint':
+            '貼上新貼片嗰陣，同時記低揭走舊貼片嘅時間。如果貼住幾塊同種激素嘅貼片，先換最早貼嗰塊。',
+        'patch.replace_plan_hint':
+            '喺總覽撳「貼咗」嗰陣，同時記低揭走舊貼片嘅時間。如果貼住幾塊同種激素嘅貼片，先換最早貼嗰塊。',
         'patch.wear.twice_week': '一星期兩次',
         'patch.wear.weekly': '一星期一次',
         'unit.day_short': '日',
@@ -5366,6 +5386,11 @@ export const TRANSLATIONS = {
         'field.patch_wear_hint':
             '任意。この日数を過ぎると除去したものとして扱います。空欄の場合は除去を記録するまで貼付したままになります。',
         'field.patch_until_removed': '除去まで',
+        'patch.replace_previous': '前のパッチを交換する',
+        'patch.replace_manual_hint':
+            '新しいパッチを貼るときに、前のパッチをはがした時刻も記録します。同じホルモンのパッチを複数貼っている場合は、最初に貼ったものから交換します。',
+        'patch.replace_plan_hint':
+            '概要で「貼った」をタップすると、その時刻で前のパッチをはがしたことも記録されます。同じホルモンのパッチを複数貼っている場合は、最初に貼ったものから交換します。',
         'patch.wear.twice_week': '週2回',
         'patch.wear.weekly': '週1回',
         'unit.day_short': '日',
@@ -6643,6 +6668,11 @@ export const TRANSLATIONS = {
         'field.patch_wear_hint':
             '선택 사항. 이 일수가 지나면 제거된 것으로 처리됩니다. 비워 두면 제거를 기록할 때까지 부착 상태로 유지됩니다.',
         'field.patch_until_removed': '제거 시까지',
+        'patch.replace_previous': '이전 패치 교체',
+        'patch.replace_manual_hint':
+            '새 패치를 붙일 때 이전 패치를 뗀 시각도 함께 기록됩니다. 같은 호르몬 패치를 여러 개 붙이고 있다면 가장 먼저 붙인 패치부터 뗍니다.',
+        'patch.replace_plan_hint':
+            '개요에서 ‘완료’를 누르면 그 시각에 이전 패치를 뗀 것도 함께 기록됩니다. 같은 호르몬 패치를 여러 개 붙이고 있다면 가장 먼저 붙인 패치부터 뗍니다.',
         'patch.wear.twice_week': '주 2회',
         'patch.wear.weekly': '주 1회',
         'unit.day_short': '일',
@@ -7853,6 +7883,11 @@ export const TRANSLATIONS = {
         'field.patch_wear_hint':
             'İsteğe bağlı. Bu kadar gün sonra yama çıkarılmış sayılır. Boş bırakırsanız bir çıkarma kaydedene kadar takılı kalır.',
         'field.patch_until_removed': 'Çıkarılana kadar',
+        'patch.replace_previous': 'Önceki bandı değiştir',
+        'patch.replace_manual_hint':
+            'Yeni bandı taktığınızda eski bandın çıkarıldığı saat de kaydedilir. Aynı hormonlu birden fazla bant takılıysa en önce takılan bant çıkar.',
+        'patch.replace_plan_hint':
+            'Genel bakışta "Tamam"a dokunmak da eski bandın o anda çıkarıldığını kaydeder. Aynı hormonlu birden fazla bant takılıysa en önce takılan bant çıkar.',
         'patch.wear.twice_week': 'Haftada 2',
         'patch.wear.weekly': 'Haftada 1',
         'unit.day_short': 'g',

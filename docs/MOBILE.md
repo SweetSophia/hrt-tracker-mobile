@@ -11,6 +11,24 @@ Keep the app modular so improvements from the web project remain practical
 to review and port. The app is a bundled Capacitor build with shared React UI
 and native adapters at the platform boundary.
 
+## Logging a patch change
+
+In **History → Add dose → Patch apply**, turn on **Replace previous patch** to
+record taking off the previous patch at the time you enter for the new one.
+The first patch creates a single application. If several patches of the same
+hormone are eligible, the oldest comes off and the others stay on. Leave the
+switch off when adding another patch alongside them. **Batch add** applies
+your choice at each interval in the batch.
+
+To use this every time you tap **Done**, enable the switch on the patch in
+**Medication plan**. The removal is recorded when you tap **Done**. **Undo**
+on Overview takes back both entries from that tap.
+
+To keep the link between a removal and its patch when restoring a backup,
+open it with a version that supports patch replacement.
+
+![The Replace previous patch switch below Wear duration on Android](images/patch-replacement-android.webp)
+
 ## Repository baseline
 
 The public history starts directly from upstream commit

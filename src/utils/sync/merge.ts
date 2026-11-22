@@ -4,7 +4,7 @@ import { asTimestamp, mergeTombstoneMaps } from './tombstones';
 import { cleanDoseMG } from '../cleanDose';
 
 const CONTENT_FIELDS: Record<RecordKind, readonly string[]> = {
-    events: ['route', 'ester', 'doseMG', 'timeH', 'extras'],
+    events: ['route', 'ester', 'doseMG', 'timeH', 'extras', 'patchApplicationId'],
     labResults: ['unit', 'concValue', 'timeH', 'assay'],
     doseTemplates: ['name', 'route', 'ester', 'doseMG', 'extras'],
 };
@@ -29,6 +29,8 @@ function contentFingerprint(kind: RecordKind, record: any): string {
     return CONTENT_FIELDS[kind]
         .map(f => {
             const value = record?.[f];
+            // A patch reference is an opaque record ID, including when it looks like a number.
+            if (f === 'patchApplicationId') return JSON.stringify(value ?? null);
             // Imports tidy float tails off doses (cleanDoseMG), so a tidied copy
             // and an untidied one of the same record must still read as equal.
             return stableString(f === 'doseMG' && typeof value === 'number' ? cleanDoseMG(value) : value);

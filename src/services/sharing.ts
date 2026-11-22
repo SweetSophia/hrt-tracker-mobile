@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { anonymizeShareEvents } from './shareSnapshot';
 import { DoseEvent, HRTMode, SimulationResult } from '../../logic';
 import { EncryptedShareSnapshot, sanitizeShareSnapshot } from '../../shareSnapshotSchema';
 import { apiEndpoint, apiFetch } from './apiClient';
@@ -111,7 +111,7 @@ export async function sealSnapshotForLink(
 ): Promise<EncryptedShareSnapshot> {
     const sanitized = sanitizeShareSnapshot({
         ...snapshot,
-        events: snapshot.events.map(event => ({ ...event, id: uuidv4() })),
+        events: anonymizeShareEvents(snapshot.events),
     });
     if (!sanitized.snapshot) throw new ShareApiError(400, 'INVALID_SNAPSHOT', sanitized.error ?? 'Invalid snapshot');
     return encryptShareSnapshot(sanitized.snapshot, key);

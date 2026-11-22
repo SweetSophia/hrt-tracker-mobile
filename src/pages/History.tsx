@@ -9,6 +9,7 @@ import Switch from '../components/Switch';
 import Doodle from '../components/Doodle';
 import { v4 as uuidv4 } from 'uuid';
 import { DoseEvent, Route, Ester, ExtraKey, getToE2Factor, isEstradiolEster, isTestosteroneEster } from '../../logic';
+import { patchRemovalPairs } from '../domain/shared/patch';
 import { formatTime, formatWearDays } from '../utils/helpers';
 import { drugLabel } from '../utils/regimenText';
 import { useDialog } from '../contexts/DialogContext';
@@ -96,9 +97,9 @@ interface HistoryProps {
     isQuickAddOpen: boolean;
     setIsQuickAddOpen: (isOpen: boolean) => void;
     doseTemplates: DoseTemplate[];
-    onSaveEvent: (e: DoseEvent) => Promise<boolean>;
+    onUpdateEvent: (e: DoseEvent) => Promise<boolean>;
     onDeleteEvent: (id: string) => Promise<boolean>;
-    onAddEvents: (events: DoseEvent[]) => Promise<boolean>;
+    onAddEvents: (events: DoseEvent[], replacePreviousPatch?: boolean) => Promise<boolean>;
     onDeleteEvents: (ids: string[]) => Promise<boolean>;
     onSaveTemplate: (t: DoseTemplate) => Promise<boolean>;
     onDeleteTemplate: (id: string) => Promise<boolean>;
@@ -120,7 +121,7 @@ const History: React.FC<HistoryProps> = ({
     isQuickAddOpen,
     setIsQuickAddOpen,
     doseTemplates,
-    onSaveEvent,
+    onUpdateEvent,
     onDeleteEvent,
     onAddEvents,
     onDeleteEvents,
@@ -230,23 +231,7 @@ const History: React.FC<HistoryProps> = ({
     }
     const plannedCount = plannedDays.reduce((n, day) => n + day.events.length, 0);
 
-    // How long the patch each removal took off had been worn, for its row.
-    // Paired the way the model pairs them (patchRemovalTimes in logic.ts): in
-    // time order, each removal ends the oldest patch still on, so the row says
-    // what the curve does. Keyed on the event, as there, since imported files
-    // can repeat an id.
-    const wornBeforeRemoval = useMemo(() => {
-        const wornH = new Map<DoseEvent, number>();
-        const onSkin: DoseEvent[] = [];
-        for (const e of [...allEvents].sort((a, b) => a.timeH - b.timeH)) {
-            if (e.route === Route.patchApply) onSkin.push(e);
-            else if (e.route === Route.patchRemove) {
-                const applied = onSkin.shift();
-                if (applied && e.timeH > applied.timeH) wornH.set(e, e.timeH - applied.timeH);
-            }
-        }
-        return wornH;
-    }, [allEvents]);
+    const removedPatches = patchRemovalPairs(events ?? allEvents);
 
     const markSaved = (e: DoseEvent) => {
         // A dose saved for later lands in the planned section: open it, or
@@ -280,23 +265,21 @@ const History: React.FC<HistoryProps> = ({
         setBatchOn(false);
     };
 
-    const handleQuickSave = async (e: DoseEvent) => {
+    const handleQuickSave = async (e: DoseEvent, replacePreviousPatch = false) => {
         const interval = parseFloat(batchIntervalDays);
         const count = Math.min(MAX_BATCH_COUNT, Math.floor(parseFloat(batchCount)));
+        const list = [e];
         if (batchOn && Number.isFinite(interval) && interval > 0 && Number.isFinite(count) && count > 1) {
-            const list: DoseEvent[] = [];
-            for (let k = 0; k < count; k++) {
+            for (let k = 1; k < count; k++) {
                 list.push({
                     ...e,
-                    id: k === 0 ? e.id : uuidv4(),
+                    id: uuidv4(),
                     timeH: e.timeH + k * interval * 24,
                     extras: { ...e.extras },
                 });
             }
-            if (!(await onAddEvents(list)) || !isMounted()) return false;
-        } else {
-            if (!(await onSaveEvent(e)) || !isMounted()) return false;
         }
+        if (!(await onAddEvents(list, replacePreviousPatch)) || !isMounted()) return false;
         closeQuickAdd();
         // For a batch, the first of the series: the dose at the time chosen.
         markSaved(e);
@@ -365,7 +348,8 @@ const History: React.FC<HistoryProps> = ({
         const isSaved = saved?.id === ev.id;
         const isMarked = isSaved && savedMarkOn;
         const isRemoval = ev.route === Route.patchRemove;
-        const wornH = isRemoval ? wornBeforeRemoval.get(ev) : undefined;
+        const applied = isRemoval ? removedPatches.get(ev) : undefined;
+        const wornH = applied && ev.timeH - applied.timeH;
         const editOpen = isEditing && !selectMode;
         return (
             <div
@@ -481,7 +465,7 @@ const History: React.FC<HistoryProps> = ({
                                 <DoseForm
                                     eventToEdit={ev}
                                     onSave={async e => {
-                                        if (!(await onSaveEvent(e)) || !isMounted()) return false;
+                                        if (!(await onUpdateEvent(e)) || !isMounted()) return false;
                                         setEditingId(null);
                                         markSaved(e);
                                         return true;

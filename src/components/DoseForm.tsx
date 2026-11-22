@@ -29,6 +29,7 @@ import OralFields from './dose_form/OralFields';
 import SublingualFields from './dose_form/SublingualFields';
 import GelFields from './dose_form/GelFields';
 import PatchFields from './dose_form/PatchFields';
+import PatchReplacementSwitch from './PatchReplacementSwitch';
 import QuickDoseButtons, { QuickDose } from './dose_form/QuickDoseButtons';
 import { useHRTMode } from '../contexts/HRTModeContext';
 
@@ -79,7 +80,7 @@ const formatGuideNumber = (val: number) => {
 
 interface DoseFormProps {
     eventToEdit: DoseEvent | null;
-    onSave: (event: DoseEvent) => Promise<boolean>;
+    onSave: (event: DoseEvent, replacePreviousPatch?: boolean) => Promise<boolean>;
     onCancel: () => void;
     onDelete: (id: string) => Promise<boolean>;
     templates: DoseTemplate[];
@@ -193,6 +194,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
     const [patchMode, setPatchMode] = useState<'dose' | 'rate'>('rate');
     const [patchRate, setPatchRate] = useState('');
     const [patchWearDays, setPatchWearDays] = useState('');
+    const [replacePreviousPatch, setReplacePreviousPatch] = useState(false);
 
     const [gelSite, setGelSite] = useState(0); // Index in GEL_SITE_ORDER
 
@@ -223,6 +225,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
     // last one taken. withAmount: false keeps the route, drug and how it was
     // taken (hold time, gel site, wear time) but leaves the amount empty.
     const fillFrom = (preset: Pick<DoseTemplate, 'route' | 'ester' | 'doseMG' | 'extras'>, withAmount: boolean) => {
+        setReplacePreviousPatch(false);
         setRoute(preset.route);
         setEster(preset.ester);
         if (!isKnownEster(preset.ester)) setForeignDrug({ route: preset.route, ester: preset.ester });
@@ -611,7 +614,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
             extras,
         };
 
-        await onSave(newEvent);
+        if (route === Route.patchRemove && eventToEdit?.route === Route.patchRemove) {
+            // The removal editor has no hormone selector. Preserve the recorded hormone and its patch.
+            newEvent.ester = eventToEdit.ester;
+            if (eventToEdit.patchApplicationId !== undefined)
+                newEvent.patchApplicationId = eventToEdit.patchApplicationId;
+        }
+        await onSave(newEvent, !eventToEdit && route === Route.patchApply && replacePreviousPatch);
         // Every current mount point unmounts this form after a successful save;
         // the delayed re-arm is a safety net for any future persistent mount,
         // while still swallowing the double-click window.
@@ -648,7 +657,14 @@ const DoseForm: React.FC<DoseFormProps> = ({
         [knownEsters, foreignDrug, route],
     );
 
-    const availableRoutes = useMemo(() => menuRoutes(isTransmasc), [isTransmasc]);
+    const editedRoute = eventToEdit?.route;
+    const availableRoutes = useMemo(() => {
+        const routes = menuRoutes(isTransmasc);
+        // Testosterone patch plans can log routes that the manual new-dose menu does not offer.
+        return (editedRoute === Route.patchApply || editedRoute === Route.patchRemove) && !routes.includes(editedRoute)
+            ? [...routes, editedRoute]
+            : routes;
+    }, [isTransmasc, editedRoute]);
 
     useEffect(() => {
         if (!availableRoutes.includes(route)) {
@@ -934,7 +950,10 @@ const DoseForm: React.FC<DoseFormProps> = ({
                 <CustomSelect
                     label={t('field.route')}
                     value={route}
-                    onChange={val => setRoute(val as Route)}
+                    onChange={val => {
+                        if (val !== route) setReplacePreviousPatch(false);
+                        setRoute(val as Route);
+                    }}
                     options={availableRoutes.map(r => ({
                         value: r,
                         label: t(`route.${r}`),
@@ -1052,6 +1071,15 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     invalid={!!shownDoseError}
                                     errorId={doseErrorId}
                                 />
+                            )}
+                            {route === Route.patchApply && !eventToEdit && (
+                                <div className="mt-4">
+                                    <PatchReplacementSwitch
+                                        context="manual"
+                                        checked={replacePreviousPatch}
+                                        onChange={setReplacePreviousPatch}
+                                    />
+                                </div>
                             )}
                         </div>
                         {shownDoseError && (

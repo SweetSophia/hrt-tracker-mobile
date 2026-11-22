@@ -84,3 +84,13 @@ describe('medication plan sync', () => {
         expect(result.remoteStale).toBe(true);
     });
 });
+
+it('merges the newer patch removal reference and distinguishes numeric-looking record IDs', () => {
+    const removal = { id: 'remove', route: 'patchRemove', ester: 'E2', timeH: 498272, doseMG: 0, extras: {} };
+    const state = (target: string, updatedAt: number) =>
+        normalizeSyncState({ events: [{ ...removal, patchApplicationId: target, updatedAt }] });
+    const local = state('01', 1000);
+    const remote = state('1', 2000);
+    expect(fingerprintState(local)).not.toBe(fingerprintState(state('1', 1000)));
+    expect(mergeSyncStates(local, remote).merged.modes.transfem.events[0].patchApplicationId).toBe('1');
+});
