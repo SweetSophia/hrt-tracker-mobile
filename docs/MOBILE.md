@@ -98,8 +98,10 @@ node scripts/mobile/run-webview-checks.mjs --serial emulator-NUMBER --output /tm
 node scripts/mobile/check-webview-durability.mjs --serial DEVICE --output /tmp/new-durability-report.json
 ```
 
-The durability diagnostic currently fails immediate acknowledged-write
-retention on the tested API 36 and API 37 emulators. Its delayed control is diagnostic only.
+The debug prototype's WebView storage can lose a recent write on force-stop
+on the tested API 36 and API 37 emulators. Android 1.0.1 saves the selected
+HRT mode in the encrypted native database before showing the new selection.
+On upgrade it adopts the mode previously saved by 1.0.0.
 The WebView smoke runner seeds synthetic records and is restricted to a dedicated
 emulator, with or without `--offline`. Before seeding, it refuses existing
 credentials or nonempty record arrays without its fixture marker. Exact empty

@@ -13,9 +13,9 @@
 
 ## 下载 Android 版
 
-[下载已签名的 Android 安装包（1.0.0）](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.0/hrt-tracker-1.0.0.apk) · [查看英文和简体中文发布说明](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.0.0)
+[下载已签名的 Android 安装包（1.0.1）](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.1/hrt-tracker-1.0.1.apk) · [查看英文和简体中文发布说明](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.0.1)
 
-HRT Tracker 支持 Android 7.0 及以上版本。已安装 **HRT Tracker** 签名测试版的用户可以直接更新。Android 包名为 `org.askarys.hrttracker`。iPhone 版计划在后续阶段推出。
+HRT Tracker 支持 Android 7.0 及以上版本。已安装 1.0.0 或 **HRT Tracker** 签名测试版的用户可以直接更新。Android 包名为 `org.askarys.hrttracker`。iPhone 版计划在后续阶段推出。
 
 ## 构建与贡献
 

@@ -20,6 +20,7 @@ public final class RecordStoreTest {
     static final String LOCAL = "records:v1:[\"offline\",\"local\"]";
     static final String ACCOUNT = "records:v1:[\"offline\",\"alice\"]";
     static final String PREFS = "preferences:v1";
+    static final String DEVICE = "device-preferences:v1";
     private Context context;
     private String id;
     private File root;
@@ -119,6 +120,27 @@ public final class RecordStoreTest {
         assertEquals(0, store.read(LOCAL).revision);
         assertEquals(0, scalar(store, "SELECT count(*) FROM namespaces"));
         assertThrows(Exception.class, () -> store.read("records:v1:[\"foreign\",\"local\"]"));
+    }
+
+    @Test public void devicePreferencesNamespaceAdmitsOnlyHrtModeValues() throws Exception {
+        store.initialize();
+        assertEquals(0, store.read(DEVICE).revision);
+        assertTrue(store.read(DEVICE).entries.isEmpty());
+        store.commit(Arrays.asList(put(DEVICE, 0, "hrt-mode", "transfem")));
+        assertEquals("transfem", store.read(DEVICE).entries.get("hrt-mode"));
+        store.commit(Arrays.asList(put(DEVICE, 1, "hrt-mode", "transmasc")));
+        assertEquals("transmasc", store.read(DEVICE).entries.get("hrt-mode"));
+        store.commit(Arrays.asList(new Change(DEVICE, 2, Collections.emptyMap(), Arrays.asList("hrt-mode"))));
+        assertEquals(3, store.read(DEVICE).revision);
+        List<Change> invalid = Arrays.asList(
+            put(DEVICE, 3, "hrt-mode", "unknown-mode"),
+            put(DEVICE, 3, "app-theme", "dark"));
+        for (Change change : invalid) assertThrows(Exception.class, () -> store.commit(Arrays.asList(change)));
+        assertEquals(3, store.read(DEVICE).revision);
+        assertTrue(store.read(DEVICE).entries.isEmpty());
+        store.commit(Arrays.asList(put(PREFS, 0, "app-theme", "dark")));
+        assertEquals("dark", store.read(PREFS).entries.get("app-theme"));
+        assertEquals(3, store.read(DEVICE).revision);
     }
 
     @Test public void concurrentInstancesAllowOnlyOneRevisionWinner() throws Exception {

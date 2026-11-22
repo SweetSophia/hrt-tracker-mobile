@@ -37,6 +37,7 @@ export class ApplicationRuntime {
         readonly secrets?: SecretStore,
         readonly files: FileSavePort = new WebFileSavePort(),
         readonly filePicker: FilePickPort = new WebFilePickPort(),
+        private readonly saveNativeMode?: (value: string) => Promise<void>,
     ) {
         const state = controller.getState();
         if (state.status !== 'ready') throw new Error('Runtime must be initialized');
@@ -58,17 +59,27 @@ export class ApplicationRuntime {
         };
     };
     getState = () => this.view;
-    setDevice(key: DeviceKey, value: string): boolean {
+    setDevice(key: Exclude<DeviceKey, 'hrt-mode'>, value: string): boolean;
+    setDevice(key: DeviceKey, value: string): boolean | Promise<boolean>;
+    setDevice(key: DeviceKey, value: string): boolean | Promise<boolean> {
         if (!DEVICE_KEYS.includes(key)) throw new Error('Unknown device preference');
-        try {
-            this.storage.setItem(key, value);
+        const publish = () => {
             this.view = { ...this.view, device: { ...this.view.device, [key]: value }, error: undefined };
             this.emit();
             return true;
-        } catch (error) {
+        };
+        const reportFailure = (error: unknown) => {
             this.view = { ...this.view, error };
             this.emit();
             return false;
+        };
+        try {
+            if (key === 'hrt-mode' && this.saveNativeMode)
+                return this.saveNativeMode(value).then(publish, reportFailure);
+            this.storage.setItem(key, value);
+            return publish();
+        } catch (error) {
+            return reportFailure(error);
         }
     }
     async setPreference(key: PortableKey, value: string): Promise<boolean> {
@@ -98,10 +109,10 @@ export class ApplicationRuntime {
     }
 }
 
-export function readDevicePreferences(storage: Pick<Storage, 'getItem'>): Record<string, string> {
+export function readDevicePreferences(storage: Pick<Storage, 'getItem'>, nativeMode?: string): Record<string, string> {
     const device: Record<string, string> = {};
     for (const key of DEVICE_KEYS) {
-        const value = storage.getItem(key);
+        const value = key === 'hrt-mode' && nativeMode !== undefined ? nativeMode : storage.getItem(key);
         if (value !== null) device[key] = value;
     }
     return device;

@@ -10,6 +10,8 @@ export interface RecordScope {
     readonly mode: HRTMode;
 }
 export const PREFERENCES_NAMESPACE = 'preferences:v1';
+/** Device-local namespace for the HRT mode selection; native record stores only, never backed up. */
+export const DEVICE_PREFERENCES_NAMESPACE = 'device-preferences:v1';
 export const PORTABLE_PREFERENCE_KEYS = Object.freeze([
     'app-theme',
     'hrt-lang',
@@ -17,6 +19,8 @@ export const PORTABLE_PREFERENCE_KEYS = Object.freeze([
     'app-hide-site-label',
     'hrt-supply-lead-days',
 ]);
+const DEVICE_PREFERENCE_KEYS = Object.freeze(['hrt-mode']);
+const DEVICE_MODES: readonly string[] = Object.freeze(['transfem', 'transmasc']);
 const MODE_SUFFIXES = [
     'events',
     'lab-results',
@@ -56,6 +60,7 @@ export const namespacesFor = (scope: RecordScope): readonly string[] => [recordN
 
 export function allowedKeys(namespace: string): ReadonlySet<string> {
     if (namespace === PREFERENCES_NAMESPACE) return new Set(PORTABLE_PREFERENCE_KEYS);
+    if (namespace === DEVICE_PREFERENCES_NAMESPACE) return new Set(DEVICE_PREFERENCE_KEYS);
     if (!namespace.startsWith('records:v1:')) throw new Error('Invalid record namespace');
     const parts: unknown = JSON.parse(namespace.slice('records:v1:'.length));
     if (!Array.isArray(parts) || parts.length !== 2 || parts.some(p => typeof p !== 'string' || !p)) {
@@ -80,6 +85,8 @@ export function validateSnapshot(namespace: string, snapshot: StoreSnapshot): vo
         throw new Error('Invalid entries');
     for (const [key, value] of Object.entries(snapshot.entries)) {
         if (!keys.has(key) || typeof value !== 'string') throw new Error('Invalid record entry');
+        if (namespace === DEVICE_PREFERENCES_NAMESPACE && !DEVICE_MODES.includes(value))
+            throw new Error('Invalid record entry');
     }
 }
 export function validateChange(change: StoreChange): void {

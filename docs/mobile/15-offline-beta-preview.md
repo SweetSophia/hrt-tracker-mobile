@@ -28,12 +28,14 @@ After the same npm setup above, assemble the unsigned release variant and align 
 sdk_tools="$ANDROID_HOME/build-tools/36.0.0"
 unsigned="android/app/build/outputs/apk/offlineBeta/app-offlineBeta-unsigned.apk"
 output=$(mktemp -d)
+version=$(node -p "require('./mobile/version.json').versionName")
+apk="$output/hrt-tracker-$version.apk"
 "$sdk_tools/zipalign" -P 16 4 "$unsigned" "$output/aligned.apk"
 "$sdk_tools/apksigner" sign --ks "$HRT_ANDROID_RELEASE_KEYSTORE" --ks-key-alias release \
-  --v4-signing-enabled false --out "$output/hrt-tracker-1.0.0.apk" "$output/aligned.apk"
-"$sdk_tools/apksigner" verify --verbose --print-certs "$output/hrt-tracker-1.0.0.apk"
-"$sdk_tools/zipalign" -c -P 16 4 "$output/hrt-tracker-1.0.0.apk"
-printf '%s\n' "$output/hrt-tracker-1.0.0.apk"
+  --v4-signing-enabled false --out "$apk" "$output/aligned.apk"
+"$sdk_tools/apksigner" verify --verbose --print-certs "$apk"
+"$sdk_tools/zipalign" -c -P 16 4 "$apk"
+printf '%s\n' "$apk"
 ```
 
 Keep the keystore and its password in project-controlled storage outside Git and preserve both for upgrades. [Android signing and key custody](https://developer.android.com/studio/publish/app-signing)

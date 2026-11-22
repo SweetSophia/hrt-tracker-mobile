@@ -6,7 +6,7 @@ import type { UiSession } from '../hooks/uiSession';
 import type { ApplicationRuntime } from '../application/runtime';
 import React, { useEffect, useRef, useState } from 'react';
 import { Plus, Close } from '../components/icons';
-import { BODY_WEIGHT_KG_MAX, BODY_WEIGHT_KG_MIN, ExtraKey, Route, isPlausibleBodyWeightKG } from '../../logic';
+import { BODY_WEIGHT_KG_MAX, BODY_WEIGHT_KG_MIN, ExtraKey, HRTMode, Route, isPlausibleBodyWeightKG } from '../../logic';
 import Tick from '../components/Tick';
 import PixelCat from '../components/PixelCat';
 import Doodle, { DoodleName } from '../components/Doodle';
@@ -252,6 +252,24 @@ const Onboarding: React.FC<OnboardingProps> = ({
         if (isPlausibleBodyWeightKG(kg) && kg !== weight) pendingWeight.current = onWeightChange(kg);
     };
 
+    // A mode choice must reach storage before the intro can end: Next past
+    // the mode step and Skip anywhere wait for the latest attempt, while
+    // Next elsewhere stays free, so a failure can't fence off the retry
+    // button one step back.
+    const pendingMode = useRef<Promise<boolean>>(Promise.resolve(true));
+    const pickMode = (m: HRTMode) => {
+        pendingMode.current = Promise.resolve(setMode(m));
+    };
+    // Settles once no newer tap lands mid-await; the runtime serializes
+    // writes, so the newest attempt covers every earlier one.
+    const settledModeSave = async (): Promise<boolean> => {
+        for (;;) {
+            const attempt = pendingMode.current;
+            const saved = await attempt;
+            if (pendingMode.current === attempt) return saved;
+        }
+    };
+
     // Adding to the plan from the intro: the Plan page's own questions (below).
     const [addingPlan, setAddingPlan] = useState(false);
     const canAddPlan = (Object.keys(PLAN_DRUGS[mode]) as Route[]).some(r =>
@@ -393,7 +411,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
                 {modeOptions.map(({ value, labelKey, descKey }) => (
                     <button
                         key={value}
-                        onClick={() => setMode(value)}
+                        onClick={() => pickMode(value)}
                         className={`flex w-full items-center justify-between gap-4 py-4 text-start ${divider} last:border-b-0`}
                     >
                         <span>
@@ -535,7 +553,9 @@ const Onboarding: React.FC<OnboardingProps> = ({
         setStep(next);
     };
     async function forward() {
-        if (!ready || !(await pendingWeight.current) || !isMounted()) return;
+        if (!ready) return;
+        if (current === 'mode' && !(await settledModeSave())) return;
+        if (!(await pendingWeight.current) || !isMounted()) return;
         if (isLast) onDone();
         else go(step + 1);
     }
@@ -575,7 +595,8 @@ const Onboarding: React.FC<OnboardingProps> = ({
             <div className="flex shrink-0 justify-end px-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] short:pt-[calc(0.5rem+env(safe-area-inset-top,0px))]">
                 <button
                     onClick={async () => {
-                        if ((await pendingWeight.current) && isMounted()) onDone();
+                        if (!(await settledModeSave()) || !(await pendingWeight.current) || !isMounted()) return;
+                        onDone();
                     }}
                     className={`rounded-lg px-2 py-1.5 text-xs text-muted hover:bg-[var(--surface-hover)] ${isLast ? 'invisible' : ''}`}
                     tabIndex={isLast ? -1 : 0}
