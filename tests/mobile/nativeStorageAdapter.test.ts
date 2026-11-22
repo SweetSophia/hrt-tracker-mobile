@@ -9,7 +9,7 @@ import {
     type NativeStorageRequest,
     type NativeStorageResponse,
 } from '../../src/platform/capacitor/bridge';
-import { PREFERENCES_NAMESPACE, recordNamespace } from '../../src/records/scope';
+import { DEVICE_PREFERENCES_NAMESPACE, PREFERENCES_NAMESPACE, recordNamespace } from '../../src/records/scope';
 import { modeKeyFor } from '../../src/utils/backupState';
 
 class FakeBridge {
@@ -201,6 +201,55 @@ describe('native storage adapters', () => {
                 expect((failure as Error).message).not.toContain('STALE_REVISION');
             }
         }
+    });
+
+    it('admits the device-preferences namespace for native reads and mode commits', async () => {
+        const { bridge, records } = await initialized();
+        bridge.handler = request => {
+            expect(request.operation).toBe('read');
+            expect(JSON.parse(request.payload)).toEqual({ namespace: DEVICE_PREFERENCES_NAMESPACE });
+            return payload({ revision: 3, entries: { 'hrt-mode': 'transmasc' } });
+        };
+        expect(await records.read(DEVICE_PREFERENCES_NAMESPACE)).toEqual({
+            revision: 3,
+            entries: { 'hrt-mode': 'transmasc' },
+        });
+        const mode = {
+            namespace: DEVICE_PREFERENCES_NAMESPACE,
+            expectedRevision: 3,
+            puts: { 'hrt-mode': 'transfem' },
+            removes: [],
+        };
+        bridge.handler = request => {
+            const body = JSON.parse(request.payload) as { changes: StoreChange[] };
+            expect(body.changes).toEqual([mode]);
+            return payload({ [DEVICE_PREFERENCES_NAMESPACE]: { revision: 4, entries: { 'hrt-mode': 'transfem' } } });
+        };
+        const ack = await records.commit([mode]);
+        expect(ack[DEVICE_PREFERENCES_NAMESPACE]).toEqual({ revision: 4, entries: { 'hrt-mode': 'transfem' } });
+    });
+
+    it('rejects invalid device preference keys and values like any other protocol failure', async () => {
+        const { bridge, records } = await initialized();
+        const invalid: StoreChange[] = [
+            {
+                namespace: DEVICE_PREFERENCES_NAMESPACE,
+                expectedRevision: 0,
+                puts: { 'hrt-mode': 'unknown-mode' },
+                removes: [],
+            },
+            {
+                namespace: DEVICE_PREFERENCES_NAMESPACE,
+                expectedRevision: 0,
+                puts: { 'app-theme': 'dark' },
+                removes: [],
+            },
+        ];
+        for (const change of invalid) await expect(records.commit([change])).rejects.toThrow();
+        expect(bridge.requests.filter(request => request.operation === 'commit')).toHaveLength(0);
+        bridge.handler = () => payload({ revision: 1, entries: { 'hrt-mode': 'forged-native-value' } });
+        await expect(records.read(DEVICE_PREFERENCES_NAMESPACE)).rejects.toThrow(NATIVE_STORAGE_UNAVAILABLE);
+        expect(bridge.requests.filter(request => request.operation === 'read')).toHaveLength(1);
     });
 
     it('maps only an out-of-band STALE_REVISION and drops every other native message', async () => {

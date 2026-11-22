@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WebRecordStore } from '../../src/platform/web/recordStore';
 import { StaleRevisionError, type StoreChange } from '../../src/platform/contracts';
-import { PREFERENCES_NAMESPACE, recordNamespace } from '../../src/records/scope';
+import { DEVICE_PREFERENCES_NAMESPACE, PREFERENCES_NAMESPACE, recordNamespace } from '../../src/records/scope';
 import { journalChecksum, REPLACE_JOURNAL_KEY } from '../../src/utils/replaceJournal';
 
 class Storage {
@@ -91,6 +91,34 @@ describe('browser RecordStore', () => {
             [{ ...change(), removes: ['hrt-weight'] }],
         ])
             await expect(store.commit(changes)).rejects.toThrow();
+        expect(storage.data.size).toBe(0);
+    });
+
+    it('rejects the native-only device preferences namespace for reads and writes', async () => {
+        const { store, storage } = await setup();
+        await expect(store.read(DEVICE_PREFERENCES_NAMESPACE)).rejects.toThrow(/native/i);
+        await expect(
+            store.commit([
+                {
+                    namespace: DEVICE_PREFERENCES_NAMESPACE,
+                    expectedRevision: 0,
+                    puts: { 'hrt-mode': 'transfem' },
+                    removes: [],
+                },
+            ]),
+        ).rejects.toThrow(/native/i);
+        expect(storage.data.size).toBe(0);
+        await expect(
+            store.commit([
+                change(),
+                {
+                    namespace: DEVICE_PREFERENCES_NAMESPACE,
+                    expectedRevision: 0,
+                    puts: { 'hrt-mode': 'transfem' },
+                    removes: [],
+                },
+            ]),
+        ).rejects.toThrow(/native/i);
         expect(storage.data.size).toBe(0);
     });
     it('rolls records and preferences back together when a later write fails', async () => {

@@ -7,7 +7,7 @@ import {
     type StoreSnapshot,
     type StoreSnapshots,
 } from '../contracts';
-import { allowedKeys, PREFERENCES_NAMESPACE, validateChange } from '../../records/scope';
+import { allowedKeys, DEVICE_PREFERENCES_NAMESPACE, PREFERENCES_NAMESPACE, validateChange } from '../../records/scope';
 import { LEGACY_AGE_BETA_KEY, nsFor, type StorageLike } from '../../utils/backupState';
 import { applyReplaceJournal, recoverReplaceJournal, type ReplaceJournalEntry } from '../../utils/replaceJournal';
 
@@ -52,6 +52,7 @@ export class WebRecordStore implements RecordStore {
         recoverReplaceJournal(this.storage);
     }
     private keys(namespace: string) {
+        if (namespace === DEVICE_PREFERENCES_NAMESPACE) throw new Error('Device preferences are native-only');
         const keys = allowedKeys(namespace);
         if (
             namespace !== PREFERENCES_NAMESPACE &&

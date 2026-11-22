@@ -165,6 +165,8 @@ public final class EncryptedRecordStore implements AutoCloseable {
             while (cursor.moveToNext()) {
                 String key = RecordProtocol.unquote(cursor.getString(0)), value = RecordProtocol.unquote(cursor.getString(1));
                 if (!keys.contains(key) || revision == 0 || entries.put(key, value) != null) throw new IOException("Invalid stored record");
+                if (RecordProtocol.DEVICE_PREFERENCES.equals(namespace) && !RecordProtocol.isDeviceMode(value))
+                    throw new IOException("Invalid stored record");
             }
         }
         return new Snapshot(revision, entries);

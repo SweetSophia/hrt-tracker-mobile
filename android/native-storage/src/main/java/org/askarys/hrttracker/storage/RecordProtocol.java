@@ -7,6 +7,9 @@ import org.json.JSONTokener;
 /** Wire-independent equivalent of src/platform/contracts.ts and src/records/scope.ts. */
 public final class RecordProtocol {
     public static final long MAX_REVISION = 9007199254740991L;
+    /** Device-local namespace mirroring DEVICE_PREFERENCES_NAMESPACE; only the HRT mode selection. */
+    static final String DEVICE_PREFERENCES = "device-preferences:v1";
+    private static final Set<String> DEVICE_MODES = new HashSet<>(Arrays.asList("transfem", "transmasc"));
     public static final class Snapshot {
         public final long revision;
         public final Map<String, String> entries;
@@ -33,6 +36,7 @@ public final class RecordProtocol {
     static Set<String> allowedKeys(String namespace, String backend) throws Exception {
         if ("preferences:v1".equals(namespace)) return new HashSet<>(Arrays.asList(
             "app-theme", "hrt-lang", "app-show-prediction", "app-hide-site-label", "hrt-supply-lead-days"));
+        if (DEVICE_PREFERENCES.equals(namespace)) return new HashSet<>(Arrays.asList("hrt-mode"));
         if (namespace == null || !namespace.startsWith("records:v1:")) throw new IllegalArgumentException("Invalid record namespace");
         JSONArray parts = new JSONArray(namespace.substring("records:v1:".length()));
         if (parts.length() != 2 || !(parts.get(0) instanceof String) || !(parts.get(1) instanceof String)) {
@@ -58,12 +62,19 @@ public final class RecordProtocol {
         if (revision < 0 || revision > MAX_REVISION) throw new IllegalArgumentException("Invalid store revision");
     }
 
+    /** Package-visible read-path check for stored device mode values. */
+    static boolean isDeviceMode(String value) {
+        return DEVICE_MODES.contains(value);
+    }
+
     static void validate(Change change, String backend) throws Exception {
         revision(change.expectedRevision);
         Set<String> keys = allowedKeys(change.namespace, backend);
         Set<String> seen = new HashSet<>();
         for (Map.Entry<String, String> entry : change.puts.entrySet()) {
             if (!keys.contains(entry.getKey()) || entry.getValue() == null) throw new IllegalArgumentException("Invalid record entry");
+            if (DEVICE_PREFERENCES.equals(change.namespace) && !DEVICE_MODES.contains(entry.getValue()))
+                throw new IllegalArgumentException("Invalid record entry");
             seen.add(entry.getKey());
         }
         for (String key : change.removes) {

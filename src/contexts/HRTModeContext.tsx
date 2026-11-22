@@ -4,7 +4,13 @@ import { HRTMode } from '../../logic';
 
 interface HRTModeContextValue {
     mode: HRTMode;
-    setMode: (m: HRTMode) => void;
+    /**
+     * `true` once the choice is durably saved; `false` on a failed write —
+     * synchronously on the web, after the write attempt on a native build —
+     * leaving `mode` at its last saved value. Callers that move the user on
+     * must wait for it, like Onboarding's Next and Skip.
+     */
+    setMode: (m: HRTMode) => boolean | Promise<boolean>;
     isTransmasc: boolean;
 }
 

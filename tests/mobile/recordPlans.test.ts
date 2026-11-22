@@ -1,7 +1,15 @@
 import { expect, it } from 'vitest';
 import { Ester, Route } from '../../src/domain/engine';
 import { planCompleteBackup, planRecordOperation, planSyncedState } from '../../src/records';
-import { recordNamespace, PREFERENCES_NAMESPACE, validateChange, validateSnapshot } from '../../src/records/scope';
+import {
+    allowedKeys,
+    DEVICE_PREFERENCES_NAMESPACE,
+    namespacesFor,
+    recordNamespace,
+    PREFERENCES_NAMESPACE,
+    validateChange,
+    validateSnapshot,
+} from '../../src/records/scope';
 import type { RecordScope } from '../../src/records/scope';
 import { emptySyncState, emptyTombstones } from '../../src/utils/syncMerge';
 import { COMPLETE_BACKUP_FORMAT } from '../../src/utils/backupBundle';
@@ -69,6 +77,50 @@ it('validates revisions, namespace encoding, values and conflicting mutations', 
     expect(() =>
         validateChange({ namespace: ns, expectedRevision: 0, puts: { 'hrt-weight': '70' }, removes: ['hrt-weight'] }),
     ).toThrow();
+});
+
+it('keeps device preferences as a standalone namespace outside portable scope', () => {
+    expect(DEVICE_PREFERENCES_NAMESPACE).toBe('device-preferences:v1');
+    expect(namespacesFor(scope)).toEqual([ns, PREFERENCES_NAMESPACE]);
+    expect([...allowedKeys(DEVICE_PREFERENCES_NAMESPACE)].sort()).toEqual(['hrt-mode']);
+    expect(() => validateSnapshot(DEVICE_PREFERENCES_NAMESPACE, { revision: 0, entries: {} })).not.toThrow();
+    expect(() =>
+        validateChange({
+            namespace: DEVICE_PREFERENCES_NAMESPACE,
+            expectedRevision: 0,
+            puts: { 'hrt-mode': 'transfem' },
+            removes: [],
+        }),
+    ).not.toThrow();
+    expect(() =>
+        validateChange({
+            namespace: DEVICE_PREFERENCES_NAMESPACE,
+            expectedRevision: 0,
+            puts: {},
+            removes: ['hrt-mode'],
+        }),
+    ).not.toThrow();
+});
+
+it('rejects device preference writes without the mode key, a mode value, or a portable key', () => {
+    const invalid = [{ 'app-theme': 'transfem' }, { 'hrt-mode': 'unknown-mode' }];
+    for (const puts of invalid) {
+        expect(() => validateSnapshot(DEVICE_PREFERENCES_NAMESPACE, { revision: 1, entries: puts })).toThrow();
+        expect(() =>
+            validateChange({ namespace: DEVICE_PREFERENCES_NAMESPACE, expectedRevision: 1, puts, removes: [] }),
+        ).toThrow();
+    }
+    expect(() =>
+        validateChange({
+            namespace: DEVICE_PREFERENCES_NAMESPACE,
+            expectedRevision: 1,
+            puts: {},
+            removes: ['app-theme'],
+        }),
+    ).toThrow();
+    expect(() =>
+        validateSnapshot(DEVICE_PREFERENCES_NAMESPACE, { revision: 1, entries: { 'hrt-mode': 'transmasc' } }),
+    ).not.toThrow();
 });
 
 it('plans complete replace with both modes, tombstones and portable preferences without mutating inputs', () => {
