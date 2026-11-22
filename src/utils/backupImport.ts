@@ -32,6 +32,7 @@ import {
     sanitizeImportedTemplates,
     writeTombstonesToStorage,
 } from './backupState';
+import { conflictingPatchRemovals } from './backupRecords';
 import { MODE_KEYS, ModeKey, RecordKind } from './syncMerge';
 
 export interface ImportActiveRecords {
@@ -135,16 +136,23 @@ const clampImportedWeight = (raw: unknown): number | undefined => {
 const readRecords = <T>(storage: StorageLike, owner: string, mode: ModeKey, suffix: string): T[] =>
     loadJSONFromStorage<T[]>(storage, modeKeyFor(owner, mode, suffix), []);
 
+/** Legacy merge keeps the local record for a duplicate ID. Only clear tombstones for accepted imports. */
+const safeImportedEvents = <T extends { id: string }>(incoming: T[], existing: { id: string }[]): T[] => {
+    const conflicts = conflictingPatchRemovals(incoming, existing);
+    return conflicts.size ? incoming.filter(event => !conflicts.has(event)) : incoming;
+};
+
 const appendOtherModeRecords = (
     storage: StorageLike,
     owner: string,
     mode: ModeKey,
     kind: RecordKind,
     suffix: string,
-    incoming: { id: string }[],
+    records: { id: string }[],
     now: number,
 ): number => {
     const existing = readRecords<{ id: string }>(storage, owner, mode, suffix);
+    const incoming = kind === 'events' ? safeImportedEvents(records, existing) : records;
     const existingIds = new Set(existing.map(record => record.id));
     const newOnes = incoming.filter(record => !existingIds.has(record.id));
     // An explicit import is the user asking for these records back, so any
@@ -307,20 +315,7 @@ export function processImportedDataToStorage(
         for (const e of newEvents) (eventBelongs(e) ? keepEvs : otherEvs).push(e);
         if (otherEvs.length) {
             otherModeWrites.push(() => {
-                const existing = readRecords<DoseEvent>(storage, owner, otherMode, 'events');
-                const existingIds = new Set(existing.map(x => x.id));
-                forgetTombstones(
-                    storage,
-                    owner,
-                    otherMode,
-                    'events',
-                    otherEvs.map(e => e.id),
-                    clock(),
-                );
-                storage.setItem(
-                    modeKeyFor(owner, otherMode, 'events'),
-                    JSON.stringify([...existing, ...otherEvs.filter(e => !existingIds.has(e.id))]),
-                );
+                appendOtherModeRecords(storage, owner, otherMode, 'events', 'events', otherEvs, clock());
             });
             importedOtherMode = true;
             newEvents = keepEvs;
@@ -438,7 +433,8 @@ export function mergeImportedDataToStorage(
                 const evIds = new Set(existingEvs.map(e => e.id));
                 const lsIds = new Set(existingLs.map(l => l.id));
                 const tmpIds = new Set(existingTmps.map(tm => tm.id));
-                const newEvs = evs.filter(e => !evIds.has(e.id));
+                const acceptedEvs = safeImportedEvents(evs, existingEvs);
+                const newEvs = acceptedEvs.filter(e => !evIds.has(e.id));
                 const newLs = ls.filter(l => !lsIds.has(l.id));
                 const newTmps = tmps.filter(tm => !tmpIds.has(tm.id));
                 // An explicit merge is the user asking for these records
@@ -448,7 +444,7 @@ export function mergeImportedDataToStorage(
                     owner,
                     m,
                     'events',
-                    evs.map(e => e.id),
+                    acceptedEvs.map(e => e.id),
                     clock(),
                 );
                 forgetTombstones(
@@ -544,6 +540,7 @@ export function mergeImportedDataToStorage(
     };
 
     if (incomingEvents.length > 0) {
+        incomingEvents = safeImportedEvents(incomingEvents, active.events);
         const existingIds = new Set(active.events.map(e => e.id));
         const newOnes = incomingEvents.filter(e => !existingIds.has(e.id));
         result.mergedCount += newOnes.length;

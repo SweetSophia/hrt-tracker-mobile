@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { Ester, Route, type DoseEvent } from '../logic';
+import { Ester, ExtraKey, Route, type DoseEvent } from '../logic';
 import {
     customSeed,
     draftToItem,
     freshDraft,
     itemToDraft,
+    planEvent,
     normalizePlanItem,
     parseFrequency,
     type PlanItem,
@@ -57,6 +58,97 @@ describe('custom plan rhythms', () => {
     it('no longer accepts an endless rhythm from storage', () => {
         expect(normalizePlanItem({ ...item(), everyDays: Infinity })).toBeNull();
         expect(normalizePlanItem({ ...item(), everyDays: 4 })).toMatchObject({ everyDays: 4 });
+    });
+});
+
+describe('replacing the previous patch from the plan', () => {
+    const patchItem = (over: Partial<PlanItem> = {}): PlanItem =>
+        item({
+            route: Route.patchApply,
+            ester: Ester.E2,
+            doseMG: 0,
+            extras: { [ExtraKey.releaseRateUGPerDay]: 100, [ExtraKey.patchWearH]: 84 },
+            everyDays: 3.5,
+            ...over,
+        });
+
+    it('saves the preference only when it is switched on, and only on a patch', () => {
+        const on = draftToItem({ ...freshDraft(Route.patchApply, Ester.E2), replacePreviousPatch: true }, 'p1');
+        expect(on?.replacePreviousPatch).toBe(true);
+        expect(draftToItem(freshDraft(Route.patchApply, Ester.E2), 'p1')?.replacePreviousPatch).toBeUndefined();
+        expect(
+            draftToItem({ ...freshDraft(Route.patchApply, Ester.E2), replacePreviousPatch: false }, 'p1')
+                ?.replacePreviousPatch,
+        ).toBeUndefined();
+        expect(
+            draftToItem({ ...freshDraft(Route.injection, Ester.EV), replacePreviousPatch: true }, 'p1')
+                ?.replacePreviousPatch,
+        ).toBeUndefined();
+    });
+
+    it('round-trips the preference when an existing plan is edited', () => {
+        const saved = draftToItem({ ...freshDraft(Route.patchApply, Ester.E2), replacePreviousPatch: true }, 'p1');
+        expect(itemToDraft(saved!)?.replacePreviousPatch).toBe(true);
+        expect(draftToItem(itemToDraft(saved!)!, 'p1')?.replacePreviousPatch).toBe(true);
+        // A plan saved before the preference existed edits back with it off.
+        expect(itemToDraft(patchItem())?.replacePreviousPatch).toBeUndefined();
+    });
+
+    it('reads old plans with the preference off and keeps only a strict true on a patch', () => {
+        expect(normalizePlanItem(patchItem())?.replacePreviousPatch).toBeUndefined();
+        expect(normalizePlanItem({ ...patchItem(), replacePreviousPatch: true })?.replacePreviousPatch).toBe(true);
+        for (const garbage of [false, 1, 'yes', null])
+            expect(
+                normalizePlanItem({ ...patchItem(), replacePreviousPatch: garbage })?.replacePreviousPatch,
+            ).toBeUndefined();
+        expect(normalizePlanItem({ ...item(), replacePreviousPatch: true })?.replacePreviousPatch).toBeUndefined();
+    });
+
+    it('still logs a regular application for an item that replaces the previous patch', () => {
+        expect(planEvent(patchItem({ replacePreviousPatch: true }), 'e1', 0)).toStrictEqual({
+            id: 'e1',
+            route: Route.patchApply,
+            ester: Ester.E2,
+            doseMG: 0,
+            extras: { [ExtraKey.releaseRateUGPerDay]: 100, [ExtraKey.patchWearH]: 84 },
+            timeH: 0,
+        });
+    });
+
+    it("flipping only the switch keeps an imported patch plan's own wear and extras", () => {
+        const imported = patchItem({
+            everyDays: 3,
+            extras: {
+                [ExtraKey.releaseRateUGPerDay]: 100,
+                [ExtraKey.patchWearH]: 48,
+                futureExtra: 7,
+            } as PlanItem['extras'],
+        });
+        const saved = draftToItem({ ...itemToDraft(imported)!, replacePreviousPatch: true }, imported.id, imported);
+        expect(saved?.extras).toEqual({
+            [ExtraKey.releaseRateUGPerDay]: 100,
+            [ExtraKey.patchWearH]: 48,
+            futureExtra: 7,
+        });
+    });
+
+    it('flipping only the switch keeps a patch saved with no wear duration', () => {
+        const imported = patchItem({ everyDays: 3, extras: { [ExtraKey.releaseRateUGPerDay]: 100 } });
+        const saved = draftToItem({ ...itemToDraft(imported)!, replacePreviousPatch: true }, imported.id, imported);
+        expect(saved?.extras).toEqual({ [ExtraKey.releaseRateUGPerDay]: 100 });
+    });
+
+    it('a changed dose or rhythm derives the wear again, and a new plan never saw an original', () => {
+        const imported = patchItem({
+            everyDays: 3,
+            extras: { [ExtraKey.releaseRateUGPerDay]: 100, [ExtraKey.patchWearH]: 48 },
+        });
+        const reRate = draftToItem({ ...itemToDraft(imported)!, dose: '50' }, imported.id, imported);
+        expect(reRate?.extras[ExtraKey.releaseRateUGPerDay]).toBe(50);
+        expect(reRate?.extras[ExtraKey.patchWearH]).toBe(72);
+        const changed = draftToItem({ ...itemToDraft(imported)!, freq: 'e7' }, imported.id, imported);
+        expect(changed?.extras[ExtraKey.patchWearH]).toBe(168);
+        expect(draftToItem(freshDraft(Route.patchApply, Ester.E2), 'p1')?.extras[ExtraKey.patchWearH]).toBe(84);
     });
 });
 

@@ -65,6 +65,7 @@ export interface DosageShareSnapshot {
         doseMG: number;
         ester: string;
         extras: Record<string, number>;
+        patchApplicationId?: string;
     }>;
     simulation: null | {
         timeH: number[];
@@ -140,6 +141,12 @@ export function sanitizeShareSnapshot(raw: unknown): { snapshot?: DosageShareSna
                 return { error: `${path}.extras.${key} is invalid` };
             extras[key] = value;
         }
+        const target = event.patchApplicationId;
+        if (
+            target !== undefined &&
+            (event.route !== 'patchRemove' || typeof target !== 'string' || target.length < 1 || target.length > 128)
+        )
+            return { error: `${path}.patchApplicationId is invalid` };
         events.push({
             id: event.id,
             route: event.route,
@@ -147,6 +154,7 @@ export function sanitizeShareSnapshot(raw: unknown): { snapshot?: DosageShareSna
             doseMG: event.doseMG,
             ester: event.ester,
             extras,
+            ...(target !== undefined ? { patchApplicationId: target } : {}),
         });
     }
 

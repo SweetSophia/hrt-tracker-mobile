@@ -37,6 +37,7 @@ import {
 import {
     exportRecordState,
     planEdit,
+    planPatchReplacement,
     planLegacyImport,
     prepareLegacyImport,
     readRecordState,
@@ -278,8 +279,22 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         return null;
     }, [currentLevel, currentT, isTransmasc]);
 
-    const addEvent = (event: DoseEvent) => edit({ kind: 'events', action: 'add', records: [event] });
-    const addEvents = (records: DoseEvent[]) => edit({ kind: 'events', action: 'add', records });
+    const addEvents = async (records: DoseEvent[], replacePreviousPatch = false): Promise<string[] | null> => {
+        if (!replacePreviousPatch) {
+            return (await edit({ kind: 'events', action: 'add', records })) ? records.map(record => record.id) : null;
+        }
+        const applications = structuredClone(records);
+        const removalIds = applications.map(() => uuidv4());
+        const now = Date.now();
+        try {
+            const { active, result } = await dispatch(context =>
+                planPatchReplacement(context, applications, removalIds, now),
+            );
+            return active ? result : null;
+        } catch {
+            return null;
+        }
+    };
     const updateEvent = (event: DoseEvent) => edit({ kind: 'events', action: 'update', records: [event] });
     const deleteEvent = (id: string) => edit({ kind: 'events', action: 'delete', ids: [id] });
     const deleteEvents = (ids: string[]) => edit({ kind: 'events', action: 'delete', ids });
@@ -468,7 +483,6 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         currentStatus,
         simulationAhead,
         groupedEvents,
-        addEvent,
         addEvents,
         updateEvent,
         deleteEvent,
