@@ -18,7 +18,9 @@ record taking off the previous patch at the time you enter for the new one.
 The first patch creates a single application. If several patches of the same
 hormone are eligible, the oldest comes off and the others stay on. Leave the
 switch off when adding another patch alongside them. **Batch add** applies
-your choice at each interval in the batch.
+your choice at each interval in the batch. A replacement at the same recorded
+minute can close a patch you already saved. Patches first added together at
+that timestamp stay separate.
 
 To use this every time you tap **Done**, enable the switch on the patch in
 **Medication plan**. The removal is recorded when you tap **Done**. **Undo**

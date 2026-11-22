@@ -125,21 +125,21 @@ describe('patchRemovalPairs pairs a removal with the patch it closed', () => {
         expect(patchRemovalPairs([a1, r]).get(r)).toBe(a1);
     });
 
-    it('drops an explicit link to a missing, foreign-hormone, non-earlier, or already-closed target', () => {
+    it('drops an explicit link to a missing, foreign-hormone, future, or already-closed target', () => {
         const a1 = apply(Ester.E2, T0, RATE, 'a1');
         const a2 = apply(Ester.E2, T0 + 24, RATE, 'a2');
         const tApply = apply(Ester.T, T0, RATE, 't1');
         const missing = removal(Ester.E2, T0 + 72, 'gone', 'r-missing');
         const foreign = removal(Ester.E2, T0 + 72, 't1', 'r-foreign');
-        const sameMoment = removal(Ester.E2, T0, 'a1', 'r-same-moment');
+        const future = removal(Ester.E2, T0 - 1, 'a1', 'r-before-apply');
         const retarget = removal(Ester.E2, T0 + 48, 'a1', 'r-retarget');
-        const events = [a1, a2, tApply, retarget, missing, foreign, sameMoment];
+        const events = [a1, a2, tApply, retarget, missing, foreign, future];
         const pairs = patchRemovalPairs(events);
         expect(pairs.get(retarget)).toBe(a1);
         // A dead link never redirects the removal onto another patch.
         expect(pairs.has(missing)).toBe(false);
         expect(pairs.has(foreign)).toBe(false);
-        expect(pairs.has(sameMoment)).toBe(false);
+        expect(pairs.has(future)).toBe(false);
         expect(patchRemovalTimes(events).has(a2)).toBe(false);
     });
 
@@ -332,6 +332,17 @@ describe('patchEntriesWithReplacements generates the records for an opted-in sav
             second,
         ]);
         expect([...one, ...two]).toEqual(out);
+    });
+
+    it('can replace an already saved patch at the same time without ending another new patch in the same batch', () => {
+        const prior = apply(Ester.E2, T0, RATE, 'old');
+        const first = apply(Ester.E2, T0, RATE, 'first');
+        const second = apply(Ester.E2, T0, RATE, 'second');
+        const added = patchEntriesWithReplacements([prior], [first, second], ['off1', 'off2']);
+        expect(added).toEqual([expect.objectContaining({ patchApplicationId: prior.id }), first, second]);
+        expect(resolvePatchWearH(prior, [prior, ...added])).toBe(0);
+        expect(patchRemovalTimes([prior, ...added]).has(first)).toBe(false);
+        expect(patchEntriesWithReplacements([], [first, second], ['off1', 'off2'])).toEqual([first, second]);
     });
 
     it('closes nothing when no prior patch is eligible', () => {

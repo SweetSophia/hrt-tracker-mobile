@@ -280,6 +280,16 @@ describe('patch', () => {
         }
     });
 
+    it('shows only the new patch when an already logged patch is replaced at the same recorded time', () => {
+        const timeH = NOW_H - 72;
+        const old = dose(Route.patchApply, Ester.E2, 0, timeH, rate(200));
+        const next = dose(Route.patchApply, Ester.E2, 0, timeH, rate(100));
+        const replacement = patchEntriesWithReplacements([old], [next], ['take-off-old']);
+        const after = runSimulation([old, ...replacement], BW)!;
+        const one = runSimulation([next], BW)!;
+        expect(E2(after, timeH + 24)).toBeCloseTo(E2(one, timeH + 24)!, 6);
+    });
+
     it('zero-order release approaches rate/k3 while worn', () => {
         const sim = runSimulation([dose(Route.patchApply, Ester.E2, 0, NOW_H - 200, rate(50))], BW)!;
         expect(relErr(E2(sim, NOW_H - 100)!, toPgMl(0.05 / 24 / 0.41))).toBeLessThan(1e-6);

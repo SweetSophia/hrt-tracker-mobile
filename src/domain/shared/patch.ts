@@ -36,8 +36,9 @@ function matchPatches(
     const applications = new Map<DoseEvent, DoseEvent>();
     const proposed = new Set(requests.map(request => request.removal));
     const recordedApplies = recorded.filter(e => e.route === Route.patchApply);
+    const newApplications = new Set(requests.map(request => request.application));
     const applies = recordedApplies
-        .concat(requests.map(request => request.application))
+        .concat([...newApplications])
         .sort(
             (a, b) =>
                 a.timeH - b.timeH ||
@@ -100,21 +101,23 @@ function matchPatches(
                 target &&
                 hormone &&
                 _patchHormone(target) === hormone &&
-                target.timeH < removal.timeH &&
+                target.timeH <= removal.timeH &&
                 !times.has(target)
             )
                 matched = target;
         } else {
-            while (next < applies.length && applies[next].timeH < removal.timeH) open.push(applies[next++]);
+            while (next < applies.length && applies[next].timeH <= removal.timeH) open.push(applies[next++]);
             open = open.filter(a => {
                 const wear = _plannedWearH(a);
                 return !times.has(a) && (wear === null || a.timeH + wear + PATCH_REMOVAL_GRACE_H >= removal.timeH);
             });
-            // A person explicitly replacing a patch can take it off within the first hour.
-            // Keep the original one-hour inference rule for an unlinked manual removal.
+            // At minute precision a change may share the old patch's time. Only a previously
+            // saved application can be that old patch. Unlinked manual removals still require one hour.
             const fits = (a: DoseEvent) =>
                 (hormone === null || _patchHormone(a) === hormone) &&
-                (replacing || a.timeH <= removal.timeH - PATCH_MIN_WEAR_H);
+                (replacing
+                    ? a.timeH < removal.timeH || !newApplications.has(a)
+                    : a.timeH <= removal.timeH - PATCH_MIN_WEAR_H);
             matched = open.find(fits);
             if (!matched) {
                 // Outside the normal grace window only the newest prior application can qualify for late removal.
@@ -212,7 +215,7 @@ export function patchEntriesWithReplacements(
  */
 export function resolvePatchWearH(event: DoseEvent, allEvents: DoseEvent[]): number {
     const removeAt = patchRemovalTimes(allEvents).get(event);
-    if (removeAt !== undefined && removeAt > event.timeH) return removeAt - event.timeH;
+    if (removeAt !== undefined) return removeAt - event.timeH;
     const planned = event.extras?.[ExtraKey.patchWearH];
     if (typeof planned === 'number' && Number.isFinite(planned) && planned > 0) return planned;
     return Number.MAX_VALUE;
