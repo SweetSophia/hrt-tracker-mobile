@@ -1,5 +1,6 @@
 import type { MergeResult, MergeStats, RecordKind, SyncState, TombstoneMap, Tombstones } from './types';
 import { emptySyncState, hasOwn, MODE_KEYS, RECORD_KINDS } from './types';
+import { Route } from '../../domain/types';
 import { asTimestamp, mergeTombstoneMaps } from './tombstones';
 import { cleanDoseMG } from '../cleanDose';
 
@@ -44,6 +45,21 @@ function recordId(record: any): string | null {
 
 function recordStamp(record: any): number {
     return asTimestamp(record?.updatedAt);
+}
+
+interface LinkCarrier {
+    route?: unknown;
+    ester?: unknown;
+    patchApplicationId?: unknown;
+}
+
+/** Older clients omit the target on edit. Recover it only while both copies are removals of the same hormone. */
+function withRestoredPatchLink<T extends LinkCarrier>(kind: RecordKind, winner: T, loser: T): T {
+    if (kind !== 'events') return winner;
+    if (winner?.route !== Route.patchRemove || loser?.route !== Route.patchRemove) return winner;
+    if (winner?.patchApplicationId != null || winner?.ester !== loser?.ester) return winner;
+    const link = loser?.patchApplicationId;
+    return typeof link === 'string' && link ? { ...winner, patchApplicationId: link } : winner;
 }
 
 // --- Merge ------------------------------------------------------------------
@@ -98,10 +114,12 @@ function mergeKind(kind: RecordKind, local: any[], remote: any[], tombstones: To
                   // and the other one reach the same answer and stop overwriting each
                   // other; which of the two it lands on is arbitrary by necessity.
                   theirsFp > mineFp;
-        if (theirsWins) {
-            out.set(id, record);
-            stats.updated++;
-        }
+        const winner = theirsWins ? record : mine;
+        const loser = theirsWins ? mine : record;
+        const healed = withRestoredPatchLink(kind, winner, loser);
+        // Recovering the link also changes local content when its timestamp already wins.
+        if (theirsWins || healed !== winner) stats.updated++;
+        out.set(id, healed);
     }
 
     return [...out.values()];

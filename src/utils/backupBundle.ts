@@ -44,6 +44,7 @@ import type { Lang } from '../i18n/translations';
 import { legacyCpaItem, normalizePlanItem, type PlanItem } from './plan';
 import { normalizeSupply, type Pack, type Supply } from './regimen';
 import { cleanDoseMG } from './cleanDose';
+import { canonical, conflictingPatchRemovals, isObject } from './backupRecords';
 import {
     MAX_IMPORT_ENTRIES,
     loadJSONFromStorage,
@@ -304,9 +305,6 @@ const KIND_CATEGORY: Record<RecordKind, ArrayCategory> = {
     doseTemplates: 'doseTemplates',
 };
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-    !!value && typeof value === 'object' && !Array.isArray(value);
-
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
 const isRoute = (value: unknown): value is Route =>
@@ -382,21 +380,6 @@ const isCalibrationMethodValue = (value: unknown): value is CalibrationMethod =>
 
 const isCalibrationHistoryMode = (value: unknown): value is CalibrationHistoryMode =>
     value === 'forward' || value === 'retrospective';
-
-/**
- * A deterministic JSON form for "same timestamp, same content?" checks, so
- * object key order from another device does not look like an edit.
- */
-const canonical = (value: unknown): string => {
-    if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-    if (isObject(value)) {
-        return `{${Object.keys(value)
-            .sort()
-            .map(key => `${JSON.stringify(key)}:${canonical(value[key])}`)
-            .join(',')}}`;
-    }
-    return JSON.stringify(value);
-};
 
 const recordStamp = (record: unknown): number | undefined => {
     if (!isObject(record)) return undefined;
@@ -1632,6 +1615,19 @@ const planCategoryMerge = (
         }
     }
 
+    if (category === 'events') {
+        // Either side may win a record by timestamp. Check each surviving removal
+        // against the application it referred to on its own side of the merge.
+        const unsafeIncoming = conflictingPatchRemovals(incoming, merged, localById);
+        const unsafeLocal = conflictingPatchRemovals(local, merged, recordsById(incoming));
+        const conflict = merged.find(record => unsafeIncoming.has(record) || unsafeLocal.has(record));
+        if (isObject(conflict)) {
+            return {
+                blocked: `${path}: patch removal ${conflict.id} would point to a different application (${conflict.patchApplicationId})`,
+                conflicts: [],
+            };
+        }
+    }
     return { plan: { merged, added, updated, skipped, clearedTombstoneIds }, conflicts };
 };
 

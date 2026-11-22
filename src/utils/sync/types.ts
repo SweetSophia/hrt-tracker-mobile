@@ -38,7 +38,7 @@ export interface SyncState {
 export interface MergeStats {
     /** Records the cloud had that this device did not. */
     added: number;
-    /** Records replaced by a newer version from the cloud. */
+    /** Local records updated with content from the cloud, including recovered patch links. */
     updated: number;
     /** Records dropped here because another device deleted them. */
     removed: number;

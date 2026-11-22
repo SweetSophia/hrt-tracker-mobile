@@ -94,3 +94,63 @@ it('merges the newer patch removal reference and distinguishes numeric-looking r
     expect(fingerprintState(local)).not.toBe(fingerprintState(state('1', 1000)));
     expect(mergeSyncStates(local, remote).merged.modes.transfem.events[0].patchApplicationId).toBe('1');
 });
+
+const removalCopy = (patchApplicationId: string | undefined, updatedAt: number) => ({
+    id: 'remove',
+    route: 'patchRemove',
+    ester: 'E2',
+    timeH: 498272,
+    doseMG: 0,
+    extras: {},
+    ...(patchApplicationId === undefined ? {} : { patchApplicationId }),
+    updatedAt,
+});
+
+const removalState = (patchApplicationId: string | undefined, updatedAt: number) =>
+    normalizeSyncState({ events: [removalCopy(patchApplicationId, updatedAt)] });
+
+it('an old-client edit that drops the link keeps the recorded patch, both ways', () => {
+    // An app without patch pairing rebuilds the edited removal without patchApplicationId,
+    // and its newer stamp would otherwise win and leave the link stripped.
+    const linked = removalState('01', 1000);
+    const stripped = removalState(undefined, 2000);
+
+    const pull = mergeSyncStates(stripped, linked);
+    expect(pull.merged.modes.transfem.events[0].patchApplicationId).toBe('01');
+    expect(pull.localChanged).toBe(true);
+    expect(pull.remoteStale).toBe(false);
+    expect(pull.stats.updated).toBe(1);
+
+    const push = mergeSyncStates(linked, stripped);
+    expect(push.merged.modes.transfem.events[0].patchApplicationId).toBe('01');
+    expect(push.localChanged).toBe(false);
+    expect(push.remoteStale).toBe(true);
+    expect(push.stats.updated).toBe(1);
+    expect(JSON.stringify(push.merged.modes.transfem.events)).toBe(JSON.stringify(pull.merged.modes.transfem.events));
+
+    // Once the healed copy is applied and pushed, both sides hold the same
+    // content: the next merge settles with nothing left to do.
+    const settled = mergeSyncStates(push.merged, push.merged);
+    expect(settled.localChanged).toBe(false);
+    expect(settled.remoteStale).toBe(false);
+    expect(settled.stats.updated).toBe(0);
+});
+
+it('respects an explicitly changed link and a changed hormone or route', () => {
+    const relinked = removalState('02', 2000);
+    expect(mergeSyncStates(removalState('01', 1000), relinked).merged.modes.transfem.events[0].patchApplicationId).toBe(
+        '02',
+    );
+
+    const otherHormone = normalizeSyncState({ events: [{ ...removalCopy(undefined, 2000), ester: 'T' }] });
+    const hormoneMerge = mergeSyncStates(removalState('01', 1000), otherHormone).merged;
+    expect(hormoneMerge.modes.transfem.events[0].patchApplicationId).toBe('01');
+    expect(hormoneMerge.modes.transmasc.events[0].patchApplicationId).toBeUndefined();
+
+    const otherRoute = normalizeSyncState({
+        events: [{ ...removalCopy(undefined, 2000), route: 'oral', ester: 'EV', doseMG: 2 }],
+    });
+    const routeMerge = mergeSyncStates(removalState('01', 1000), otherRoute).merged;
+    expect(routeMerge.modes.transfem.events[0].route).toBe('oral');
+    expect(routeMerge.modes.transfem.events[0].patchApplicationId).toBeUndefined();
+});

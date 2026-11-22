@@ -287,7 +287,10 @@ Rules for model changes:
   flags keep the default off. A generated `patchRemove` carries the old
   application's ID in `patchApplicationId`. Keep that reference through edits
   and backups, and remap it with the event IDs when sharing. An unlinked legacy
-  removal continues to use the wear-time matching rules.
+  removal continues to use the wear-time matching rules. When merging backups,
+  check that a reused application ID still identifies the patch the removal
+  refers to. Sync can recover a missing link from another copy of the same
+  removal when an older client edits it.
 - `useAppData` persists through namespaced `localStorage` keys. Account and mode
   namespaces are deliberate; do not collapse them.
 - `src/utils/backupState.ts` owns the stored shapes and migration of old keys.
