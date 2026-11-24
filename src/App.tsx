@@ -96,6 +96,8 @@ import SiteNoticeBanner from './components/SiteNotice';
 import { getBuildTarget, getCapabilities } from './platform/runtime';
 import JsDependencyNotice from './components/JsDependencyNotice';
 import UpdatePrompt from './components/UpdatePrompt';
+import AndroidUpdateNotice from './components/AndroidUpdateNotice';
+import { useAndroidUpdates } from './hooks/useAndroidUpdates';
 import { copyText } from './utils/clipboard';
 
 const AppContent = ({ session }: { session: UiSession }) => {
@@ -108,6 +110,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
     // on the plan's doses. Off unless switched on in Settings; a display
     // preference, so it stays on the device. ---
     const runtime = useApplicationRuntime();
+    const androidUpdates = useAndroidUpdates(runtime.androidUpdates);
     const [showPrediction, setShowPrediction] = usePortablePreference('app-show-prediction', raw => raw === 'true');
 
     // Use Custom Hooks
@@ -971,6 +974,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
                 <JsDependencyNotice />
                 {getCapabilities().remoteBackend && <SiteNoticeBanner />}
                 <UpdatePrompt />
+                {androidUpdates && <AndroidUpdateNotice updates={androidUpdates} />}
                 {/* Where a prompt goes when nothing on the page was pressed to
                     put it under (contexts/DialogContext.tsx). */}
                 <div id="prompt-slot" className="relative z-30 shrink-0" />
@@ -1139,6 +1143,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
 
                         {currentView === 'settings' && (
                             <Settings
+                                androidUpdates={androidUpdates}
                                 t={t}
                                 lang={lang}
                                 theme={theme}

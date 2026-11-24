@@ -5,6 +5,7 @@ import { PREFERENCES_NAMESPACE, PORTABLE_PREFERENCE_KEYS } from '../records/scop
 import { planRecordOperation } from '../records';
 import { clearAccountHealthData } from '../utils/backupState';
 import type { SecretStore } from '../platform/contracts';
+import type { AndroidUpdatePort } from '../platform/contracts/androidUpdates';
 import type { FileSavePort, FilePickPort } from '../platform/contracts/files';
 
 export const DEVICE_KEYS = [
@@ -40,6 +41,7 @@ export class ApplicationRuntime {
         readonly files: FileSavePort = new WebFileSavePort(),
         readonly filePicker: FilePickPort = new WebFilePickPort(),
         private readonly saveNativeMode?: (value: string) => Promise<void>,
+        readonly androidUpdates?: AndroidUpdatePort,
     ) {
         const state = controller.getState();
         if (state.status !== 'ready') throw new Error('Runtime must be initialized');
