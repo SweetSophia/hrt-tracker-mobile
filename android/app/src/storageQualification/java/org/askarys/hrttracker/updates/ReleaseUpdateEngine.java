@@ -11,7 +11,7 @@ final class ReleaseUpdateEngine {
         boolean put(String key, String value);
     }
     interface Clock { long nowMillis(); }
-    interface ReleaseFetcher { String fetch() throws IOException; }
+    interface ReleaseFetcher { String fetchLatest() throws IOException; }
 
     enum Outcome {
         SKIPPED("skipped"), CHECKED("checked"), NO_RELEASE("noRelease");
@@ -71,7 +71,7 @@ final class ReleaseUpdateEngine {
 
     private CheckResult check(boolean automatic) throws IOException {
         if (!admitCheck(automatic)) return new CheckResult(Outcome.SKIPPED, state());
-        return publishCheck(ReleaseCatalog.selectLatest(fetcher.fetch()));
+        return publishCheck(fetcher.fetchLatest());
     }
 
     private synchronized boolean admitCheck(boolean fromForeground) throws IOException {
@@ -93,9 +93,11 @@ final class ReleaseUpdateEngine {
     }
 
     private synchronized CheckResult publishCheck(String latest) throws IOException {
+        // A catalog without a usable Android release can leave earlier evidence intact.
+        if (latest == null) return new CheckResult(Outcome.NO_RELEASE, state());
         String newer = ReleaseCatalog.isNewer(latest, installedVersion) ? latest : null;
         if (!write(KEY_AVAILABLE, newer)) throw new IOException("Could not save the release check result.");
-        return new CheckResult(latest == null ? Outcome.NO_RELEASE : Outcome.CHECKED, state());
+        return new CheckResult(Outcome.CHECKED, state());
     }
 
     private void recordAttempt(long now) throws IOException {

@@ -1,8 +1,10 @@
 package org.askarys.hrttracker.updates;
 
-import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Authenticator;
 import okhttp3.CookieJar;
@@ -13,7 +15,7 @@ import okhttp3.ResponseBody;
 
 /** One bounded GET using a client isolated from Capacitor's process-wide cookie handler. */
 final class GitHubReleaseFetcher implements ReleaseUpdateEngine.ReleaseFetcher {
-    private static final int MAX_BYTES = 2 * 1024 * 1024;
+    static final int MAX_BYTES = 10 * 1024 * 1024;
     // Initialize TLS and the HTTP client only when a check actually runs.
     private static final class Connection {
         private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
@@ -32,22 +34,44 @@ final class GitHubReleaseFetcher implements ReleaseUpdateEngine.ReleaseFetcher {
             .build();
     }
 
-    @Override public String fetch() throws IOException {
+    @Override public String fetchLatest() throws IOException {
         try (Response response = Connection.CLIENT.newCall(Connection.RELEASES).execute()) {
             ResponseBody body = response.body();
             if (response.code() != 200 || body == null) throw new IOException("Release catalog unavailable.");
-            return readBounded(body.byteStream());
+            return readCatalog(body.byteStream());
         }
     }
 
-    private static String readBounded(InputStream input) throws IOException {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        byte[] chunk = new byte[8192];
-        int count;
-        while ((count = input.read(chunk)) != -1) {
-            if (output.size() + count > MAX_BYTES) throw new IOException("Release catalog exceeds the size limit.");
-            output.write(chunk, 0, count);
+    static String readCatalog(InputStream input) throws IOException {
+        InputStream bounded = new CatalogInputStream(input);
+        return ReleaseCatalog.selectLatest(new InputStreamReader(bounded, StandardCharsets.UTF_8.newDecoder()));
+    }
+
+    static final class CatalogTooLargeException extends IOException {
+        CatalogTooLargeException() { super("Release catalog exceeds the size limit."); }
+    }
+
+    private static final class CatalogInputStream extends FilterInputStream {
+        private int remaining = MAX_BYTES;
+
+        CatalogInputStream(InputStream input) { super(input); }
+
+        @Override public int read() throws IOException {
+            int value = super.read();
+            if (value >= 0) count(1);
+            return value;
         }
-        return output.toString("UTF-8");
+
+        @Override public int read(byte[] buffer, int offset, int length) throws IOException {
+            // Probe for EOF at the limit so an exact-sized response stays valid.
+            int read = super.read(buffer, offset, Math.min(length, remaining + 1));
+            if (read > 0) count(read);
+            return read;
+        }
+
+        private void count(int read) throws CatalogTooLargeException {
+            if (read > remaining) throw new CatalogTooLargeException();
+            remaining -= read;
+        }
     }
 }

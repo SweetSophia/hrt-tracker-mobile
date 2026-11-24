@@ -72,17 +72,22 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
     }
 
     @PluginMethod public void openRelease(PluginCall call) {
-        bridge.executeOnMainThread(() -> {
+        onIo(call, () -> {
             String version = call.getString("version");
-            String url = !allowed() || !bridge.getApp().isActive() || !engine.canOpen(version) ? null : ReleaseCatalog.releaseUrl(version);
+            String url = engine.canOpen(version) ? ReleaseCatalog.releaseUrl(version) : null;
             if (url == null) { reject(call, "RELEASE_PAGE_UNAVAILABLE"); return; }
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                intent.addCategory(Intent.CATEGORY_BROWSABLE);
-                getActivity().startActivity(intent);
-                call.resolve();
-            } catch (Exception unavailable) { reject(call, "RELEASE_PAGE_UNAVAILABLE"); }
+            bridge.executeOnMainThread(() -> launchReleasePage(call, url));
         });
+    }
+
+    private void launchReleasePage(PluginCall call, String url) {
+        if (!allowed() || !bridge.getApp().isActive()) { reject(call, "RELEASE_PAGE_UNAVAILABLE"); return; }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            getActivity().startActivity(intent);
+            call.resolve();
+        } catch (RuntimeException unavailable) { reject(call, "RELEASE_PAGE_UNAVAILABLE"); }
     }
 
     private void check(PluginCall call, boolean automatic) {
@@ -93,6 +98,8 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
                 json.put("outcome", result.outcome.wireName);
                 json.put("state", stateJson(result.state));
                 call.resolve(json);
+            } catch (GitHubReleaseFetcher.CatalogTooLargeException oversized) {
+                reject(call, "UPDATE_CATALOG_TOO_LARGE");
             } catch (IOException unavailable) {
                 reject(call, "UPDATE_CHECK_UNAVAILABLE");
             }

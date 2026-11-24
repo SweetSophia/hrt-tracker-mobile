@@ -59,6 +59,6 @@ Keep the keystore and its password in project-controlled storage outside Git and
 
 For in-app update checks, publish the stable Android release under the tag `android-v<version>` and upload `hrt-tracker-<version>.apk` to that release on [GitHub](https://github.com/SweetSophia/hrt-tracker-mobile/releases). Match `<version>` to `versionName` in the APK and increase `versionCode` from the previous release.
 
-The checker compares Android versions within the first 100 releases returned by GitHub. Keep the latest stable Android release in that window as other platforms are added. The app uses a fixed release repository URL. Plan for existing installs before renaming or transferring the repository.
+The checker compares Android versions within the first 100 releases returned by GitHub. It reads one response with a 10 MiB limit after decompression. Keep the latest stable Android release in that window as other platforms are added. The app uses a fixed release repository URL. Plan for existing installs before renaming or transferring the repository.
 
 Before publishing, install the signed APK on a device or emulator with no active default network and walk the core offline journey: save a synthetic dose and lab result, force-stop and reopen the app, then export and restore a complete backup through the file picker. Use synthetic records only, and report device-specific problems through [issues](https://github.com/SweetSophia/hrt-tracker-mobile/issues/new/choose).

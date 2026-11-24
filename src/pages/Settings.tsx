@@ -129,8 +129,9 @@ const AndroidUpdateSection = ({ updates, t }: { updates: AndroidUpdates; t: Sett
     let feedback = '';
     if (checking) feedback = t('androidUpdate.checking');
     else if (checkFeedback === 'failed') feedback = t('androidUpdate.checkError');
-    else if (checkFeedback === 'noRelease') feedback = t('androidUpdate.noRelease');
+    else if (checkFeedback === 'catalogTooLarge') feedback = t('androidUpdate.catalogTooLarge');
     else if (available) feedback = fill(t('androidUpdate.available'), { version: available });
+    else if (checkFeedback === 'noRelease') feedback = t('androidUpdate.noRelease');
     else if (checkFeedback === 'checked') feedback = t('androidUpdate.current');
 
     const settingsError = failure === 'toggle' ? 'androidUpdate.preferenceError' : 'androidUpdate.openError';

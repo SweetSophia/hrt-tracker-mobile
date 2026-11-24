@@ -157,6 +157,7 @@ export const UK = {
     'androidUpdate.noRelease': 'Стабільного випуску для Android не знайдено.',
     'androidUpdate.available': 'Доступний HRT Tracker {version}.',
     'androidUpdate.checkError': 'Не вдалося перевірити оновлення. Спробуйте ще раз.',
+    'androidUpdate.catalogTooLarge': 'Список випусків завеликий. Перевірте наявність оновлень на GitHub.',
     'androidUpdate.preferenceError': 'Не вдалося зберегти налаштування оновлень. Спробуйте ще раз.',
     'androidUpdate.dismissError': 'Не вдалося приховати сповіщення. Спробуйте ще раз.',
     'androidUpdate.openError': 'Не вдалося відкрити сторінку релізу. Спробуйте ще раз.',

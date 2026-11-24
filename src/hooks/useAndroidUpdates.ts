@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AndroidUpdatePort, AndroidUpdateState } from '../platform/contracts/androidUpdates';
 
 type LocalAction = 'toggle' | 'dismiss' | 'openInAbout' | 'openInNotice';
-type CheckFeedback = 'checked' | 'noRelease' | 'failed';
+type CheckFeedback = 'checked' | 'noRelease' | 'catalogTooLarge' | 'failed';
 
 export function useAndroidUpdates(port: AndroidUpdatePort | undefined) {
     const [state, setState] = useState<AndroidUpdateState | null>(null);
@@ -29,9 +29,17 @@ export function useAndroidUpdates(port: AndroidUpdatePort | undefined) {
             try {
                 const result = await (automatic ? port.checkOnOpen() : port.checkNow());
                 publish(result.state);
-                if (result.outcome !== 'skipped') setCheckFeedback(automatic ? null : result.outcome);
-            } catch {
-                setCheckFeedback(automatic ? null : 'failed');
+                if (result.outcome !== 'skipped') setCheckFeedback(result.outcome);
+            } catch (error) {
+                if (automatic) setCheckFeedback(null);
+                else if (
+                    error &&
+                    typeof error === 'object' &&
+                    'code' in error &&
+                    error.code === 'UPDATE_CATALOG_TOO_LARGE'
+                )
+                    setCheckFeedback('catalogTooLarge');
+                else setCheckFeedback('failed');
             } finally {
                 checkBusy.current = false;
                 setChecking(false);

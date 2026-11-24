@@ -158,6 +158,7 @@ export const RU = {
     'androidUpdate.noRelease': 'Стабильный выпуск для Android не найден.',
     'androidUpdate.available': 'Доступен HRT Tracker {version}.',
     'androidUpdate.checkError': 'Не удалось проверить обновления. Попробуйте ещё раз.',
+    'androidUpdate.catalogTooLarge': 'Список выпусков слишком большой. Проверьте наличие обновлений на GitHub.',
     'androidUpdate.preferenceError': 'Не удалось сохранить настройки обновлений. Попробуйте ещё раз.',
     'androidUpdate.dismissError': 'Не удалось скрыть уведомление. Попробуйте ещё раз.',
     'androidUpdate.openError': 'Не удалось открыть страницу релиза. Попробуйте ещё раз.',

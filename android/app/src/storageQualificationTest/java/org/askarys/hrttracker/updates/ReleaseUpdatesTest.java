@@ -10,8 +10,12 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.os.Build;
 import androidx.test.platform.app.InstrumentationRegistry;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +61,13 @@ public final class ReleaseUpdatesTest {
         final List<String> attemptAtFetch = new ArrayList<>();
         int fetches;
         FakeFetcher(FakePrefs prefs) { this.prefs = prefs; }
-        public String fetch() throws IOException {
+        public String fetchLatest() throws IOException {
             fetches++;
             attemptAtFetch.add(prefs.get(ReleaseUpdateEngine.KEY_LAST_ATTEMPT));
             if (script.isEmpty()) throw new IOException("Synthetic fetch failure.");
             Object next = script.remove(0);
             if (next instanceof IOException) throw (IOException) next;
-            return (String) next;
+            return selectLatest((String) next);
         }
     }
 
@@ -99,6 +103,21 @@ public final class ReleaseUpdatesTest {
         try {
             return body(release("android-v" + version, false, false, "hrt-tracker-" + version + ".apk", "uploaded"));
         } catch (Exception malformed) { throw new AssertionError(malformed); }
+    }
+
+    private static String selectLatest(String catalog) throws IOException {
+        return ReleaseCatalog.selectLatest(new StringReader(catalog));
+    }
+
+    private static ByteArrayInputStream catalogWithChangelog(int bytes) {
+        byte[] prefix = "[{\"body\":\"".getBytes(StandardCharsets.UTF_8);
+        byte[] suffix = ("\",\"assets\":[{\"state\":\"uploaded\",\"name\":\"hrt-tracker-1.2.0.apk\"}],"
+            + "\"prerelease\":false,\"tag_name\":\"android-v1.2.0\",\"draft\":false}]").getBytes(StandardCharsets.UTF_8);
+        byte[] catalog = new byte[bytes];
+        Arrays.fill(catalog, (byte) 'x');
+        System.arraycopy(prefix, 0, catalog, 0, prefix.length);
+        System.arraycopy(suffix, 0, catalog, catalog.length - suffix.length, suffix.length);
+        return new ByteArrayInputStream(catalog);
     }
 
     @Test public void freshStateKeepsConsentOffAndAutomaticChecksIdle() throws Exception {
@@ -178,31 +197,59 @@ public final class ReleaseUpdatesTest {
             release("android-v1.10.1", false, false, "hrt-tracker-1.10.1.apk", "starter"),
             release("android-v1.10.0", false, false, "hrt-tracker-1.10.0.apk", "uploaded"),
             release("android-v1.9.0", false, false, "hrt-tracker-1.9.0.apk", "uploaded"));
-        assertEquals("1.10.0", ReleaseCatalog.selectLatest(list));
+        assertEquals("1.10.0", selectLatest(list));
         assertEquals("https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.10.0", ReleaseCatalog.releaseUrl("1.10.0"));
         assertNull(ReleaseCatalog.releaseUrl("../../wiki"));
         assertNull(ReleaseCatalog.releaseUrl("1.2"));
     }
 
-    @Test public void emptyValidCatalogClearsAvailabilityWithoutReportingCurrent() throws Exception {
-        assertNull(ReleaseCatalog.selectLatest("[]"));
-        assertNull(ReleaseCatalog.selectLatest(body(release("ios-v2.0.0", false, false, "hrt-tracker-2.0.0.ipa", "uploaded"))));
+    @Test public void emptyValidCatalogKeepsPreviouslyConfirmedAvailability() throws Exception {
+        assertNull(selectLatest("[]"));
+        assertNull(selectLatest(body(release("ios-v2.0.0", false, false, "hrt-tracker-2.0.0.ipa", "uploaded"))));
         Harness h = new Harness("1.0.9");
         h.fetcher.script.add(available("1.1.0"));
         assertEquals("1.1.0", h.engine.checkNow().state.availableVersion);
         h.fetcher.script.add("[]");
         ReleaseUpdateEngine.CheckResult result = h.engine.checkNow();
         assertEquals(ReleaseUpdateEngine.Outcome.NO_RELEASE, result.outcome);
+        assertEquals("1.1.0", result.state.availableVersion);
+        assertEquals("1.1.0", h.prefs.values.get(ReleaseUpdateEngine.KEY_AVAILABLE));
+        assertTrue(h.engine.canOpen("1.1.0"));
+        h.fetcher.script.add(body(release("android-v1.1.0", false, false, "hrt-tracker-1.1.0.apk", "starter")));
+        result = h.engine.checkNow();
+        assertEquals(ReleaseUpdateEngine.Outcome.NO_RELEASE, result.outcome);
+        assertEquals("1.1.0", result.state.availableVersion);
+    }
+
+    @Test public void aConfirmedCurrentReleaseClearsPriorAvailability() throws Exception {
+        Harness h = new Harness("1.1.0");
+        h.fetcher.script.add(available("1.2.0"));
+        assertEquals("1.2.0", h.engine.checkNow().state.availableVersion);
+        h.fetcher.script.add(available("1.1.0"));
+        ReleaseUpdateEngine.CheckResult result = h.engine.checkNow();
+        assertEquals(ReleaseUpdateEngine.Outcome.CHECKED, result.outcome);
         assertNull(result.state.availableVersion);
-        assertNull(h.prefs.values.get(ReleaseUpdateEngine.KEY_AVAILABLE));
+        assertFalse(h.engine.canOpen("1.2.0"));
+    }
+
+    @Test public void unusableRowsDoNotHideAValidStableAndroidRelease() throws Exception {
+        String valid = available("1.2.0").substring(1);
+        assertEquals("1.2.0", selectLatest("[null,{},42,{\"tag_name\":\"ios-v3.0.0\"},"
+            + "{\"tag_name\":\"android-v3.0.0\",\"draft\":false,\"prerelease\":false,\"assets\":null}," + valid));
+        assertNull(selectLatest("[null,{}]"));
+    }
+
+    @Test public void streamsLargeChangelogsAndRejectsAtTheResponseLimit() throws Exception {
+        assertEquals("1.2.0", GitHubReleaseFetcher.readCatalog(catalogWithChangelog(GitHubReleaseFetcher.MAX_BYTES)));
+        assertThrows(GitHubReleaseFetcher.CatalogTooLargeException.class,
+            () -> GitHubReleaseFetcher.readCatalog(catalogWithChangelog(GitHubReleaseFetcher.MAX_BYTES + 1)));
     }
 
     @Test public void malformedCatalogRejectsAndKeepsTheCachedState() throws Exception {
-        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("not json"));
-        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("{}"));
-        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("[null]"));
-        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("[{}]"));
-        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("[] {}"));
+        assertThrows(IOException.class, () -> selectLatest("not json"));
+        assertThrows(IOException.class, () -> selectLatest("{}"));
+        assertThrows(IOException.class, () -> selectLatest("[{},]"));
+        assertThrows(IOException.class, () -> selectLatest("[] {}"));
         Harness h = new Harness("1.0.9");
         h.fetcher.script.add(available("1.1.0"));
         assertEquals("1.1.0", h.engine.checkNow().state.availableVersion);
@@ -216,7 +263,7 @@ public final class ReleaseUpdatesTest {
         String name = "hrt_release_updates_test_" + UUID.randomUUID();
         try {
         ReleaseUpdateEngine engine = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
-            () -> 5_000L, () -> available("1.1.0"), "1.0.0");
+            () -> 5_000L, () -> "1.1.0", "1.0.0");
             assertEquals("1.1.0", engine.checkNow().state.availableVersion);
             assertFalse(engine.dismiss("9.9.9"));
             assertTrue(engine.dismiss("1.1.0"));
@@ -228,7 +275,7 @@ public final class ReleaseUpdatesTest {
             assertEquals("1.1.0", state.availableVersion);
             assertEquals("1.1.0", state.dismissedVersion);
             ReleaseUpdateEngine updated = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
-                () -> 25_000_000L, () -> available("2.0.0"), "1.0.0");
+                () -> 25_000_000L, () -> "2.0.0", "1.0.0");
             ReleaseUpdateState afterUpdate = updated.checkNow().state;
             assertEquals("2.0.0", afterUpdate.availableVersion);
             assertEquals("1.1.0", afterUpdate.dismissedVersion);
@@ -343,7 +390,7 @@ public final class ReleaseUpdatesTest {
                 Thread.currentThread().interrupt();
                 throw new IOException(interrupted);
             }
-            return available("1.2.0");
+            return "1.2.0";
         }, "1.1.0");
         assertTrue(engine.setAutomatic(true));
         ExecutorService network = Executors.newSingleThreadExecutor();
