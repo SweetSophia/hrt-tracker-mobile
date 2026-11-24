@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -33,7 +34,7 @@ import org.junit.Test;
 /** Consent, throttling, release selection, and dismissal rules for the update bridge. */
 public final class ReleaseUpdatesTest {
 
-    private static final class FakePrefs implements ReleaseUpdateEngine.ReleasePreferences {
+    static final class FakePrefs implements ReleaseUpdateEngine.ReleasePreferences {
         final Map<String, String> values = new HashMap<>();
         final Map<String, Integer> failingWrites = new HashMap<>();
         public String get(String key) { return values.get(key); }
@@ -110,7 +111,7 @@ public final class ReleaseUpdatesTest {
         return ReleaseCatalog.selectLatest(new StringReader(catalog));
     }
 
-    private static ByteArrayInputStream catalogWithChangelog(int bytes) {
+    static ByteArrayInputStream catalogWithChangelog(int bytes) {
         byte[] prefix = "[{\"body\":\"".getBytes(StandardCharsets.UTF_8);
         byte[] suffix = ("\",\"assets\":[{\"state\":\"uploaded\",\"name\":\"hrt-tracker-1.2.0.apk\"}],"
             + "\"prerelease\":false,\"tag_name\":\"android-v1.2.0\",\"draft\":false}]").getBytes(StandardCharsets.UTF_8);
@@ -416,6 +417,14 @@ public final class ReleaseUpdatesTest {
         }
     }
 
+    private static HrtReleaseUpdatesPlugin bridgeWithEngine(ReleaseUpdateEngine engine) throws ReflectiveOperationException {
+        HrtReleaseUpdatesPlugin plugin = new HrtReleaseUpdatesPlugin();
+        Field field = HrtReleaseUpdatesPlugin.class.getDeclaredField("engine");
+        field.setAccessible(true);
+        field.set(plugin, engine);
+        return plugin;
+    }
+
     @Test public void aCheckFromADestroyedBridgeCannotOverwriteTheCurrentRelease() throws Exception {
         Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         String name = "hrt_release_updates_test_" + UUID.randomUUID();
@@ -432,10 +441,8 @@ public final class ReleaseUpdatesTest {
                 }
                 return "1.2.0";
             }, "1.1.0");
-        HrtReleaseUpdatesPlugin oldBridge = new HrtReleaseUpdatesPlugin();
-        Field engine = HrtReleaseUpdatesPlugin.class.getDeclaredField("engine");
-        engine.setAccessible(true);
-        engine.set(oldBridge, oldEngine);
+        HrtReleaseUpdatesPlugin oldBridge = bridgeWithEngine(oldEngine);
+        assertTrue(oldEngine.setAutomatic(true));
         ExecutorService network = Executors.newSingleThreadExecutor();
         try {
             Future<ReleaseUpdateEngine.CheckResult> pending = network.submit(oldEngine::checkNow);
@@ -444,10 +451,11 @@ public final class ReleaseUpdatesTest {
 
             ReleaseUpdateEngine currentEngine = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
                 () -> 6_000L, () -> "1.3.0", "1.1.0");
+            assertEquals(ReleaseUpdateEngine.Outcome.SKIPPED, currentEngine.checkOnOpen().outcome);
             assertEquals("1.3.0", currentEngine.checkNow().state.availableVersion);
 
             finish.countDown();
-            pending.get(5, TimeUnit.SECONDS);
+            assertEquals(ReleaseUpdateEngine.Outcome.SKIPPED, pending.get(5, TimeUnit.SECONDS).outcome);
             assertEquals("1.3.0", currentEngine.state().availableVersion);
             assertTrue(currentEngine.canOpen("1.3.0"));
             assertTrue(currentEngine.dismiss("1.3.0"));
@@ -456,6 +464,63 @@ public final class ReleaseUpdatesTest {
             finish.countDown();
             network.shutdownNow();
             if (Build.VERSION.SDK_INT >= 24) context.deleteSharedPreferences(name);
+        }
+    }
+
+    @Test public void teardownDoesNotWaitForAnAvailabilityWrite() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        String name = "hrt_release_updates_test_" + UUID.randomUUID();
+        AndroidReleasePreferences prefs = new AndroidReleasePreferences(context, name);
+        CountDownLatch writing = new CountDownLatch(1);
+        CountDownLatch finishWrite = new CountDownLatch(1);
+        ReleaseUpdateEngine.ReleasePreferences slowPrefs = new ReleaseUpdateEngine.ReleasePreferences() {
+            @Override public String get(String key) { return prefs.get(key); }
+
+            @Override public boolean put(String key, String value) {
+                if (ReleaseUpdateEngine.KEY_AVAILABLE.equals(key)) {
+                    writing.countDown();
+                    try {
+                        assertTrue("Test did not release the old write", finishWrite.await(15, TimeUnit.SECONDS));
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(interrupted);
+                    }
+                }
+                return prefs.put(key, value);
+            }
+        };
+        ReleaseUpdateEngine oldEngine = new ReleaseUpdateEngine(slowPrefs, () -> 5_000L, () -> "1.2.0", "1.1.0");
+        HrtReleaseUpdatesPlugin oldBridge = bridgeWithEngine(oldEngine);
+        ExecutorService workers = Executors.newFixedThreadPool(3);
+        try {
+            Future<ReleaseUpdateEngine.CheckResult> pending = workers.submit(oldEngine::checkNow);
+            assertTrue("Old availability write did not start", writing.await(5, TimeUnit.SECONDS));
+            Future<?> teardown = workers.submit(
+                () -> InstrumentationRegistry.getInstrumentation().runOnMainSync(oldBridge::handleOnDestroy));
+            teardown.get(5, TimeUnit.SECONDS);
+            assertFalse(pending.isDone());
+
+            ReleaseUpdateEngine replacement = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
+                () -> 6_000L, () -> "1.3.0", "1.1.0");
+            CountDownLatch checking = new CountDownLatch(1);
+            Future<ReleaseUpdateEngine.CheckResult> current = workers.submit(() -> {
+                checking.countDown();
+                return replacement.checkNow();
+            });
+            assertTrue(checking.await(5, TimeUnit.SECONDS));
+            assertThrows(TimeoutException.class, () -> current.get(250, TimeUnit.MILLISECONDS));
+
+            finishWrite.countDown();
+            assertEquals(ReleaseUpdateEngine.Outcome.CHECKED, pending.get(5, TimeUnit.SECONDS).outcome);
+            assertEquals("1.3.0", current.get(5, TimeUnit.SECONDS).state.availableVersion);
+            assertTrue(replacement.canOpen("1.3.0"));
+        } finally {
+            finishWrite.countDown();
+            oldBridge.handleOnDestroy();
+            workers.shutdown();
+            if (workers.awaitTermination(5, TimeUnit.SECONDS) && Build.VERSION.SDK_INT >= 24) {
+                context.deleteSharedPreferences(name);
+            }
         }
     }
 

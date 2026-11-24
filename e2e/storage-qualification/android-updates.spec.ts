@@ -282,7 +282,7 @@ test('a foreground notice respects consent and dismissal across reloads', async 
 
 const pendingWindows = [
     ['fetch', 'a held fetch leaves local update controls responsive'],
-    ['reply', 'an older bridge reply cannot undo consent or restore a dismissed notice'],
+    ['reply', 'an older bridge reply cannot undo consent'],
 ] as const;
 
 for (const [phase, title] of pendingWindows) {
@@ -317,11 +317,33 @@ for (const [phase, title] of pendingWindows) {
         await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.finishCheck());
         await expect(check).toBeEnabled();
         await expect(toggle).not.toBeChecked();
-        await toggle.click();
-        await expect(toggle).toBeChecked();
-        await expect(later).toHaveCount(0);
     });
 }
+
+test('an older bridge reply cannot restore a dismissed notice while automatic checks stay on', async ({ page }) => {
+    await page.goto('/');
+    await about(page);
+    const toggle = page.getByRole('switch', { name: 'Automatically check for updates' });
+    const later = page.getByRole('button', { name: 'Later', exact: true });
+    const check = page.getByRole('button', { name: 'Check for updates', exact: true });
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await openForeground(page, '1.2.0');
+    await expect(later).toBeVisible();
+    await page.evaluate(() =>
+        (window as unknown as { updateFixture: UpdateFixture }).updateFixture.holdNextCheck('reply'),
+    );
+    await check.click();
+    await expect(page.getByText('Checking for updates…')).toBeVisible();
+    await expect(check).toHaveAttribute('disabled', '');
+    await later.click();
+    await expect(later).toHaveCount(0);
+    // Automatic checks stay enabled, so no later republish can mask a wrongly restored notice.
+    await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.finishCheck());
+    await expect(check).toBeEnabled();
+    await expect(toggle).toBeChecked();
+    await expect(later).toHaveCount(0);
+});
 
 test('a settled foreground check supersedes the previous manual result', async ({ page }) => {
     await page.goto('/');

@@ -40,8 +40,10 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
     }
 
     private boolean allowed() {
-        Uri uri = Uri.parse(bridge.getWebView().getUrl() == null ? "" : bridge.getWebView().getUrl());
-        return !destroyed && supported && "https".equals(uri.getScheme()) && "localhost".equals(uri.getHost())
+        if (destroyed || !supported) return false;
+        String url = bridge.getWebView().getUrl();
+        Uri uri = Uri.parse(url == null ? "" : url);
+        return "https".equals(uri.getScheme()) && "localhost".equals(uri.getHost())
             && uri.getPort() == -1 && uri.getUserInfo() == null;
     }
 
@@ -55,7 +57,7 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
         boolean enabled = (Boolean) raw;
         onIo(call, () -> {
             if (engine.setAutomatic(enabled)) call.resolve(stateJson(engine.state()));
-            else reject(call, "UPDATE_PREFERENCES_UNAVAILABLE");
+            else reject(call, destroyed ? "UPDATE_CHECK_UNAVAILABLE" : "UPDATE_PREFERENCES_UNAVAILABLE");
         });
     }
 
@@ -67,7 +69,7 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
         String version = call.getString("version");
         onIo(call, () -> {
             if (engine.dismiss(version)) call.resolve(stateJson(engine.state()));
-            else reject(call, "UPDATE_NOTICE_UNAVAILABLE");
+            else reject(call, destroyed ? "UPDATE_CHECK_UNAVAILABLE" : "UPDATE_NOTICE_UNAVAILABLE");
         });
     }
 
