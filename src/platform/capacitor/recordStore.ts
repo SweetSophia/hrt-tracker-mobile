@@ -1,5 +1,10 @@
 import type { RecordStore, StoreChange, StoreSnapshot, StoreSnapshots } from '../contracts';
-import { PREFERENCES_NAMESPACE, validateChange, validateSnapshot } from '../../records/scope';
+import {
+    DEVICE_PREFERENCES_NAMESPACE,
+    PREFERENCES_NAMESPACE,
+    validateChange,
+    validateSnapshot,
+} from '../../records/scope';
 import {
     NATIVE_INITIALIZE_TIMEOUT_MS,
     invokeNative,
@@ -11,7 +16,7 @@ import {
 const OFFLINE_BACKEND = 'offline';
 
 function assertOfflineNamespace(namespace: string): void {
-    if (namespace === PREFERENCES_NAMESPACE) return;
+    if (namespace === PREFERENCES_NAMESPACE || namespace === DEVICE_PREFERENCES_NAMESPACE) return;
     let parts: unknown;
     try {
         parts = JSON.parse(namespace.slice('records:v1:'.length));

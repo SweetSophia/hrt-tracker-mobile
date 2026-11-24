@@ -793,6 +793,67 @@ describe('complete backup bundle data layer', () => {
         expect(validPreview.blocked).not.toContain('transfem.plan');
     });
 
+    it('round-trips replacePreviousPatch for patch plans and leaves every other plan off', () => {
+        const bundle = build(seed());
+        bundle.modes.transfem.plan = [
+            plan('tf-patch-on', {
+                route: Route.patchApply,
+                doseMG: 0,
+                extras: { releaseRateUGPerDay: 100, patchWearH: 84 },
+                everyDays: 3.5,
+                timesPerDay: 1,
+                replacePreviousPatch: true,
+            }),
+            // Saved before the preference existed.
+            plan('tf-patch-old', {
+                route: Route.patchApply,
+                doseMG: 0,
+                extras: { releaseRateUGPerDay: 50, patchWearH: 168 },
+                everyDays: 7,
+                timesPerDay: 1,
+            }),
+            // Only a patch may carry it.
+            plan('tf-subl-true', { replacePreviousPatch: true }),
+        ];
+        const target = new MemoryStorage();
+        const preview = inspectCompleteBackupBundle(bundle, context(target));
+        expect(preview.blocked).not.toContain('transfem.plan');
+        const result = mergeCompleteBackupBundleToStorage(bundle, context(target));
+        expect(result.blocked).toEqual([]);
+        const stored = JSON.parse(target.getItem(key('transfem', 'plan'))!) as Record<string, unknown>[];
+        expect(stored.find(i => i.id === 'tf-patch-on')?.replacePreviousPatch).toBe(true);
+        expect('replacePreviousPatch' in stored.find(i => i.id === 'tf-patch-old')!).toBe(false);
+        expect('replacePreviousPatch' in stored.find(i => i.id === 'tf-subl-true')!).toBe(false);
+
+        // The export reads a stored patch plan back through the loader with the preference kept.
+        target.setItem(
+            key('transmasc', 'plan'),
+            JSON.stringify([
+                {
+                    id: 'tm-patch-on',
+                    route: Route.patchApply,
+                    ester: Ester.T,
+                    doseMG: 0,
+                    extras: { releaseRateUGPerDay: 50, patchWearH: 168 },
+                    everyDays: 7,
+                    timesPerDay: 1,
+                    replacePreviousPatch: true,
+                },
+            ]),
+        );
+        const rebuilt = buildCompleteBackupBundleFromStorage(
+            target,
+            OWNER,
+            'transfem',
+            activeFrom(target, 'transfem'),
+            CREATED_AT,
+            NOW,
+        );
+        expect((rebuilt.modes.transmasc.plan as Record<string, unknown>[] | undefined)?.[0]?.replacePreviousPatch).toBe(
+            true,
+        );
+    });
+
     it('rejects an array above the shared import entry cap', () => {
         const bundle = build(seed());
         bundle.modes.transfem.events = Array.from({ length: MAX_IMPORT_ENTRIES + 1 }, (_, index) =>

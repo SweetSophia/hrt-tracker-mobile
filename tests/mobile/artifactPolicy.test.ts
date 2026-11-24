@@ -46,7 +46,7 @@ describe('ordinary mobile artifact', () => {
             .map(path => readFileSync(path, 'utf8'))
             .join('\n');
         expect(
-            /__importDialogCounts|__hrtProbe|__hrtStorageQualification|__hrtScreenQualification|__hrtContentQualification|__hrtEngineWorkerQualification|__hrtAppEngineWorkerQualification|__hrtForecastWorkerQualification|ForecastReference|__hrtDemoWorkerQualification|DemoReference|__hrtLongHistoryQualification|__hrtRendererProfile|hrt\.renderer\.|__hrtStartupNetwork|__hrtUpgradeAssetVersion|__hrtDocumentQualification|__hrtBackupQualification|synthetic-qualification-password|HrtNativeDocuments|HrtNativeStorage|hrt_feasibility|CapacitorSQLite|registerSW/.test(
+            /__importDialogCounts|__hrtProbe|__hrtStorageQualification|__hrtScreenQualification|__hrtContentQualification|__hrtEngineWorkerQualification|__hrtAppEngineWorkerQualification|__hrtForecastWorkerQualification|ForecastReference|__hrtDemoWorkerQualification|DemoReference|__hrtLongHistoryQualification|__hrtRendererProfile|hrt\.renderer\.|__hrtStartupNetwork|__hrtUpgradeAssetVersion|__hrtDocumentQualification|__hrtBackupQualification|synthetic-qualification-password|HrtNativeDocuments|HrtReleaseUpdates|HrtNativeStorage|hrt_feasibility|CapacitorSQLite|registerSW/.test(
                 js,
             ),
             'qualification-free JavaScript',
@@ -61,7 +61,7 @@ describe('ordinary mobile artifact', () => {
         expect(plugins.map((plugin: { pkg: string }) => plugin.pkg)).toEqual(['@capacitor/app']);
         for (const name of entries.filter(name => /^classes\d*\.dex$/.test(name))) {
             expect(unpack(name).toString('latin1')).not.toMatch(
-                /capacitor[/]community[/]database[/]sqlite|HrtNativeDocuments|DocumentIo|DocumentUiTest|ScreenMigrationTest|LifecycleParityTest|EngineWorkerTest|LongHistoryPerformanceTest|PlanningSettingsTest|ContentBoundaryTest|StartupNetworkTest|OfflineUpgradeTest|NetworkTestRunner|RecordingActivity|HrtNativeStorage|EncryptedRecordStore|NativeSecretStore|ProbeBridgeTest|KeystoreProbeTest|BackupBridgeTest/,
+                /capacitor[/]community[/]database[/]sqlite|HrtNativeDocuments|HrtReleaseUpdates|DocumentIo|DocumentUiTest|ScreenMigrationTest|LifecycleParityTest|EngineWorkerTest|LongHistoryPerformanceTest|PlanningSettingsTest|ContentBoundaryTest|StartupNetworkTest|OfflineUpgradeTest|NetworkTestRunner|RecordingActivity|HrtNativeStorage|EncryptedRecordStore|NativeSecretStore|ProbeBridgeTest|KeystoreProbeTest|BackupBridgeTest/,
             );
         }
     });

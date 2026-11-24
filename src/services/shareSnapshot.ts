@@ -1,8 +1,25 @@
 import { v4 as uuidv4 } from 'uuid';
-import { DoseEvent, HRTMode, SimulationResult } from '../../logic';
-import { SharedDosageSnapshot } from './sharing';
+import { Route, type DoseEvent, type HRTMode, type SimulationResult } from '../domain/types';
+import type { SharedDosageSnapshot } from './sharing';
 
 const MAX_SHARED_SIMULATION_POINTS = 2500;
+
+/** Rotate both event IDs and patch references for each recipient. A missing target stays unpaired. */
+export function anonymizeShareEvents(events: DoseEvent[]): DoseEvent[] {
+    const ids = events.map(() => uuidv4());
+    const patchIds = new Map<string, string | null>();
+    events.forEach((event, i) => {
+        if (event.route === Route.patchApply) patchIds.set(event.id, patchIds.has(event.id) ? null : ids[i]);
+    });
+    return events.map(({ patchApplicationId, ...event }, i) => ({
+        ...event,
+        id: ids[i],
+        extras: { ...event.extras },
+        ...(event.route === Route.patchRemove && typeof patchApplicationId === 'string'
+            ? { patchApplicationId: patchIds.get(patchApplicationId) ?? uuidv4() }
+            : {}),
+    }));
+}
 
 const evenlySampleRange = (start: number, end: number, count: number): number[] => {
     if (count <= 0 || end < start) return [];
@@ -91,11 +108,7 @@ export const buildSharedDosageSnapshot = ({
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
         createdAt: Date.now(),
         // Never send the app's stable local event IDs to the share service.
-        events: events.map(event => ({
-            ...event,
-            id: uuidv4(),
-            extras: { ...event.extras },
-        })),
+        events: anonymizeShareEvents(events),
         simulation: sharedSimulation,
     };
 };

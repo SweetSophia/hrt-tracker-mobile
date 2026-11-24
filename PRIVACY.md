@@ -6,6 +6,8 @@
 
 HRT Tracker for Android works offline. The app stores dose and lab records in a SQLCipher database on your phone. Android Keystore protects the database key. If you export a complete backup, anyone with access to the exported file can read those records. Android's file picker lets you choose where to save it.
 
+Automatic update checks are off by default. If you turn them on or tap **Check for updates** in **Settings → About**, the app requests public release information from GitHub. The request carries no health records. GitHub can see the IP address used for the request.
+
 ## Upstream web app
 
 This page describes what HRT Recorder Web stores, where, and who can read it.

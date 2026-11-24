@@ -6,6 +6,7 @@ import PageHeader, { PAGE_COLUMN, headerAction, headerActionAccent } from '../co
 import CustomSelect from '../components/CustomSelect';
 import Doodle from '../components/Doodle';
 import PlanWizard from '../components/PlanWizard';
+import PatchReplacementSwitch from '../components/PatchReplacementSwitch';
 import { SettingsListItem, settingsSection } from '../components/SettingsListItem';
 import { planToCalendar } from '../utils/planCalendar';
 import type { DoseEvent } from '../../logic';
@@ -60,6 +61,15 @@ const AmountFields: React.FC<{
                     style={{ fontSize: '16px' }}
                 />
             </label>
+            {draft.route === Route.patchApply && (
+                <div className="col-span-2">
+                    <PatchReplacementSwitch
+                        checked={draft.replacePreviousPatch === true}
+                        onChange={next => onChange({ replacePreviousPatch: next })}
+                        context="plan"
+                    />
+                </div>
+            )}
             <CustomSelect
                 label={t('plan.freq')}
                 value={custom ? 'custom' : draft.freq}
@@ -146,7 +156,7 @@ const Plan: React.FC<PlanProps> = ({ onBack, plan, onSave, onDelete, events }) =
         setEdit(itemToDraft(item));
     };
     const saveEdit = async (item: PlanItem) => {
-        const next = edit && draftToItem(edit, item.id);
+        const next = edit && draftToItem(edit, item.id, item);
         if (!next) return;
         if (!(await onSave(next))) return;
         setOpenId(null);

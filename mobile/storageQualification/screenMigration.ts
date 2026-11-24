@@ -89,7 +89,8 @@ export function installScreenMigration(runtime: ApplicationRuntime) {
             prepare: async () => {
                 await prepareScreenRecords(runtime.controller);
                 runtime.setDevice('app-onboarded', 'true');
-                runtime.setDevice('hrt-mode', 'transfem');
+                if (!(await runtime.setDevice('hrt-mode', 'transfem')))
+                    throw new Error('Unable to select fixture mode');
                 runtime.setDevice('app-pixel-cats', 'false');
                 return 'ready';
             },

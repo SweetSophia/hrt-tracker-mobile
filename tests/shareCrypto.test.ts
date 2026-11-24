@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Ester, Route } from '../src/domain/types';
+import { buildSharedDosageSnapshot } from '../src/services/shareSnapshot';
+import { sealSnapshotForLink } from '../src/services/sharing';
 import {
     decryptShareSnapshot,
     encryptShareSnapshot,
@@ -170,4 +173,42 @@ describe('share link fragments', () => {
     it('read a link from before encryption as token only', () => {
         expect(parseShareFragment('B'.repeat(43))).toEqual({ token: 'B'.repeat(43), key: null });
     });
+});
+
+it('gives linked patch removals fresh references for each share while preserving the pairing', async () => {
+    const application = {
+        id: 'local-apply',
+        route: Route.patchApply,
+        timeH: 489000,
+        doseMG: 0,
+        ester: Ester.E2,
+        extras: {},
+    };
+    const removal = {
+        ...application,
+        id: 'local-remove',
+        route: Route.patchRemove,
+        timeH: 489001,
+        patchApplicationId: application.id,
+    };
+    const orphan = { ...removal, id: 'local-orphan', patchApplicationId: 'local-deleted-patch' };
+    const local = buildSharedDosageSnapshot({
+        mode: 'transfem',
+        events: [removal, application, orphan],
+        simulation: null,
+        calibrationFn: () => 1,
+    });
+    expect(JSON.stringify(local.events)).not.toContain('local-');
+    expect(local.events[0].patchApplicationId).toBe(local.events[1].id);
+    const key = generateShareKey();
+    const openLink = async () => (await decryptShareSnapshot(await sealSnapshotForLink(local, key), key))!.events;
+    const first = await openLink();
+    const second = await openLink();
+    for (const events of [first, second]) {
+        expect(events[0].patchApplicationId).toBe(events[1].id);
+        expect(events[1].id).not.toBe(local.events[1].id);
+        expect(events[2].patchApplicationId).toBeTruthy();
+        expect(events.map(event => event.id)).not.toContain(events[2].patchApplicationId);
+    }
+    expect(first[0].patchApplicationId).not.toBe(second[0].patchApplicationId);
 });

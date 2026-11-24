@@ -1,4 +1,5 @@
 import { isPlausibleBirthYear, type DoseEvent, type LabResult } from '../domain/engine';
+import { patchEntriesWithReplacements } from '../domain/shared/patch';
 import { activeFromSnapshot } from './index';
 import { planRecordOperation, type RecordContext } from './snapshot';
 import {
@@ -90,6 +91,33 @@ export function planEdit(context: RecordContext, edit: RecordEdit, now: number) 
             if (mode === 'transfem') storage.removeItem(nsFor(owner, 'cpa-plan'));
         }
     });
+}
+
+/** Resolve all replacements against the queued snapshot and commit both sides of each change together. */
+export function planPatchReplacement(
+    context: RecordContext,
+    applications: readonly DoseEvent[],
+    removalIds: readonly string[],
+    now: number,
+) {
+    if (removalIds.length !== applications.length) throw new Error('Expected one removal ID per application');
+    const existing = readRecordState(context).events;
+    const existingIds = new Set(existing.map(event => event.id));
+    const pending = applications
+        .map((event, i) => ({ event, removalId: removalIds[i] }))
+        .filter(({ event }) => !existingIds.has(event.id));
+    if (!pending.length) return planRecordOperation(context, () => [] as string[]);
+    const records = patchEntriesWithReplacements(
+        existing,
+        pending.map(p => p.event),
+        pending.map(p => p.removalId),
+    );
+    for (const record of records) {
+        if (existingIds.has(record.id)) throw new Error('Duplicate patch record ID');
+        existingIds.add(record.id);
+    }
+    const { changes } = planEdit(context, { kind: 'events', action: 'add', records }, now);
+    return { changes, result: records.map(record => record.id) };
 }
 
 /** Copy untrusted input and allocate nondeterministic defaults once, before planning. */

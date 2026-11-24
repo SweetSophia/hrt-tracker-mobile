@@ -11,6 +11,26 @@ Keep the app modular so improvements from the web project remain practical
 to review and port. The app is a bundled Capacitor build with shared React UI
 and native adapters at the platform boundary.
 
+## Logging a patch change
+
+In **History → Add dose → Patch apply**, turn on **Replace previous patch** to
+record taking off the previous patch at the time you enter for the new one.
+The first patch creates a single application. If several patches of the same
+hormone are eligible, the oldest comes off and the others stay on. Leave the
+switch off when adding another patch alongside them. **Batch add** applies
+your choice at each interval in the batch. A replacement at the same recorded
+minute can close a patch you already saved. Patches first added together at
+that timestamp stay separate.
+
+To use this every time you tap **Done**, enable the switch on the patch in
+**Medication plan**. The removal is recorded when you tap **Done**. **Undo**
+on Overview takes back both entries from that tap.
+
+To keep the link between a removal and its patch when restoring a backup,
+open it with a version that supports patch replacement.
+
+![The Replace previous patch switch below Wear duration on Android](images/patch-replacement-android.webp)
+
 ## Repository baseline
 
 The public history starts directly from upstream commit
@@ -98,8 +118,14 @@ node scripts/mobile/run-webview-checks.mjs --serial emulator-NUMBER --output /tm
 node scripts/mobile/check-webview-durability.mjs --serial DEVICE --output /tmp/new-durability-report.json
 ```
 
-The durability diagnostic currently fails immediate acknowledged-write
-retention on the tested API 36 and API 37 emulators. Its delayed control is diagnostic only.
+The debug prototype's WebView storage can lose a recent write on force-stop
+on the tested API 36 and API 37 emulators. Android 1.0.1 saves the selected
+HRT mode in the encrypted native database before showing the new selection.
+On upgrade it adopts the mode previously saved by 1.0.0. If Android cannot
+confirm that first write, the startup screen offers **Reload** to read the
+native state again. A later failed mode change leaves the last saved choice
+visible and offers **Retry** for that selection.
+
 The WebView smoke runner seeds synthetic records and is restricted to a dedicated
 emulator, with or without `--offline`. Before seeding, it refuses existing
 credentials or nonempty record arrays without its fixture marker. Exact empty

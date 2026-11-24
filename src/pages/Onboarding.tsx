@@ -17,6 +17,7 @@ import PageHeader from '../components/PageHeader';
 import OnboardingCurve, { useOnboardingCurve, BEATS, type Beat, type CurveData } from '../components/OnboardingCurve';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useHRTMode } from '../contexts/HRTModeContext';
+import { useApplicationRuntime } from '../contexts/RecordsContext';
 import { useDialog } from '../contexts/DialogContext';
 import { Lang, TRANSLATIONS } from '../i18n/translations';
 import { PlanItem, PLAN_DRUGS } from '../utils/plan';
@@ -235,6 +236,7 @@ const Onboarding: React.FC<OnboardingProps> = ({
     const isMounted = useMounted();
     const { t, lang, setLang } = useTranslation();
     const { mode, setMode, isTransmasc } = useHRTMode();
+    const runtime = useApplicationRuntime();
     const { showDialog } = useDialog();
     const { value: curve, status: curveStatus, retry: retryCurve } = useOnboardingCurve(isTransmasc, runDemo);
 
@@ -535,7 +537,9 @@ const Onboarding: React.FC<OnboardingProps> = ({
         setStep(next);
     };
     async function forward() {
-        if (!ready || !(await pendingWeight.current) || !isMounted()) return;
+        if (!ready) return;
+        if (current === 'mode' && !(await runtime.waitForModeSave())) return;
+        if (!(await pendingWeight.current) || !isMounted()) return;
         if (isLast) onDone();
         else go(step + 1);
     }
@@ -575,7 +579,9 @@ const Onboarding: React.FC<OnboardingProps> = ({
             <div className="flex shrink-0 justify-end px-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] short:pt-[calc(0.5rem+env(safe-area-inset-top,0px))]">
                 <button
                     onClick={async () => {
-                        if ((await pendingWeight.current) && isMounted()) onDone();
+                        if (!(await runtime.waitForModeSave()) || !(await pendingWeight.current) || !isMounted())
+                            return;
+                        onDone();
                     }}
                     className={`rounded-lg px-2 py-1.5 text-xs text-muted hover:bg-[var(--surface-hover)] ${isLast ? 'invisible' : ''}`}
                     tabIndex={isLast ? -1 : 0}

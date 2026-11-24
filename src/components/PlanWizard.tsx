@@ -5,6 +5,7 @@ import { Ester, GEL_SITE_ORDER, GNRH_AGONISTS, Route, SL_TIER_ORDER, SublingualT
 import Tick from './Tick';
 import Doodle from './Doodle';
 import DoseRings from './DoseRings';
+import PatchReplacementSwitch from './PatchReplacementSwitch';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useHRTMode } from '../contexts/HRTModeContext';
 import CustomRhythm from './CustomRhythm';
@@ -285,6 +286,15 @@ const PlanWizard: React.FC<PlanWizardProps> = ({ plan, onAdd, onCancel, aboveNav
                                     {isPatch ? `µg${t('regimen.per_day')}` : 'mg'}
                                 </span>
                             </label>
+                            {isPatch && (
+                                <div className="mt-5">
+                                    <PatchReplacementSwitch
+                                        checked={draft.replacePreviousPatch === true}
+                                        onChange={next => patch({ replacePreviousPatch: next })}
+                                        context="plan"
+                                    />
+                                </div>
+                            )}
                             {draft.route === Route.gel && draft.ester === Ester.E2 && (
                                 <div className="mt-3">
                                     <GelDoseConverter onApply={mg => patch({ dose: mg })} />
