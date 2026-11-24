@@ -152,6 +152,7 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
 
     @Override protected void handleOnDestroy() {
         destroyed = true;
+        if (engine != null) engine.retire();
         io.shutdown();
         network.shutdown();
     }

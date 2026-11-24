@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -412,6 +413,49 @@ public final class ReleaseUpdatesTest {
         } finally {
             finish.countDown();
             network.shutdownNow();
+        }
+    }
+
+    @Test public void aCheckFromADestroyedBridgeCannotOverwriteTheCurrentRelease() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        String name = "hrt_release_updates_test_" + UUID.randomUUID();
+        CountDownLatch requested = new CountDownLatch(1);
+        CountDownLatch finish = new CountDownLatch(1);
+        ReleaseUpdateEngine oldEngine = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
+            () -> 5_000L, () -> {
+                requested.countDown();
+                try {
+                    if (!finish.await(10, TimeUnit.SECONDS)) throw new IOException("Test request did not finish.");
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException(interrupted);
+                }
+                return "1.2.0";
+            }, "1.1.0");
+        HrtReleaseUpdatesPlugin oldBridge = new HrtReleaseUpdatesPlugin();
+        Field engine = HrtReleaseUpdatesPlugin.class.getDeclaredField("engine");
+        engine.setAccessible(true);
+        engine.set(oldBridge, oldEngine);
+        ExecutorService network = Executors.newSingleThreadExecutor();
+        try {
+            Future<ReleaseUpdateEngine.CheckResult> pending = network.submit(oldEngine::checkNow);
+            assertTrue(requested.await(5, TimeUnit.SECONDS));
+            oldBridge.handleOnDestroy();
+
+            ReleaseUpdateEngine currentEngine = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
+                () -> 6_000L, () -> "1.3.0", "1.1.0");
+            assertEquals("1.3.0", currentEngine.checkNow().state.availableVersion);
+
+            finish.countDown();
+            pending.get(5, TimeUnit.SECONDS);
+            assertEquals("1.3.0", currentEngine.state().availableVersion);
+            assertTrue(currentEngine.canOpen("1.3.0"));
+            assertTrue(currentEngine.dismiss("1.3.0"));
+        } finally {
+            oldBridge.handleOnDestroy();
+            finish.countDown();
+            network.shutdownNow();
+            if (Build.VERSION.SDK_INT >= 24) context.deleteSharedPreferences(name);
         }
     }
 

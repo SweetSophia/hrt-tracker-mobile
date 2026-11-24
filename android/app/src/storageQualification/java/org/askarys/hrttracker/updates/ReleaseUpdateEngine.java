@@ -41,6 +41,7 @@ final class ReleaseUpdateEngine {
     private final ReleaseFetcher fetcher;
     private final String installedVersion;
     private long revision;
+    private boolean retired;
 
     ReleaseUpdateEngine(ReleasePreferences prefs, Clock clock, ReleaseFetcher fetcher, String installedVersion) {
         this.prefs = prefs;
@@ -52,6 +53,9 @@ final class ReleaseUpdateEngine {
     synchronized ReleaseUpdateState state() {
         return new ReleaseUpdateState(revision, installedVersion, automatic(), available(), prefs.get(KEY_DISMISSED));
     }
+
+    // Serialize teardown with preference writes before a recreated bridge reads the same store.
+    synchronized void retire() { retired = true; }
 
     synchronized boolean setAutomatic(boolean enabled) { return write(KEY_AUTOMATIC, enabled ? "1" : "0"); }
 
@@ -75,6 +79,7 @@ final class ReleaseUpdateEngine {
     }
 
     private synchronized boolean admitCheck(boolean fromForeground) throws IOException {
+        if (retired) return false;
         long now = clock.nowMillis();
         if (fromForeground) {
             if (!automatic()) return false;
@@ -93,6 +98,7 @@ final class ReleaseUpdateEngine {
     }
 
     private synchronized CheckResult publishCheck(String latest) throws IOException {
+        if (retired) return new CheckResult(Outcome.SKIPPED, state());
         // A catalog without a usable Android release can leave earlier evidence intact.
         if (latest == null) return new CheckResult(Outcome.NO_RELEASE, state());
         String newer = ReleaseCatalog.isNewer(latest, installedVersion) ? latest : null;
@@ -105,6 +111,7 @@ final class ReleaseUpdateEngine {
     }
 
     private boolean write(String key, String value) {
+        if (retired) return false;
         String previous = prefs.get(key);
         if (Objects.equals(previous, value)) return true;
         if (prefs.put(key, value)) {
