@@ -1,9 +1,9 @@
 package org.askarys.hrttracker.updates;
 
-import android.os.Bundle;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import androidx.webkit.WebViewFeature;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -25,6 +25,7 @@ import org.json.JSONObject;
 public final class HrtReleaseUpdatesPlugin extends Plugin {
     private static final String PREFS = "hrt_release_updates";
     private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private final ExecutorService network = Executors.newSingleThreadExecutor();
     private volatile boolean destroyed;
     private boolean supported;
     private ReleaseUpdateEngine engine;
@@ -85,29 +86,33 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
     }
 
     private void check(PluginCall call, boolean automatic) {
-        onIo(call, automatic, () -> {
+        dispatch(call, network, automatic, () -> {
             try {
-                call.resolve(stateJson(automatic ? engine.checkOnOpen() : engine.checkNow()));
+                ReleaseUpdateEngine.CheckResult result = automatic ? engine.checkOnOpen() : engine.checkNow();
+                JSObject json = new JSObject();
+                json.put("outcome", result.outcome.wireName);
+                json.put("state", stateJson(result.state));
+                call.resolve(json);
             } catch (IOException unavailable) {
                 reject(call, "UPDATE_CHECK_UNAVAILABLE");
             }
         });
     }
 
-    private void onIo(PluginCall call, Runnable work) { onIo(call, false, work); }
+    private void onIo(PluginCall call, Runnable work) { dispatch(call, io, false, work); }
 
-    private void onIo(PluginCall call, boolean foregroundOnly, Runnable work) {
+    private void dispatch(PluginCall call, ExecutorService executor, boolean foregroundOnly, Runnable work) {
         bridge.executeOnMainThread(() -> {
             if (!allowed() || (foregroundOnly && !bridge.getApp().isActive())) {
                 reject(call, "UPDATE_CHECK_UNAVAILABLE");
                 return;
             }
             try {
-                io.execute(() -> {
+                executor.execute(() -> {
                     try {
                         if (!destroyed) work.run();
                         else reject(call, "UPDATE_CHECK_UNAVAILABLE");
-                    } catch (RuntimeException unavailable) {
+                    } catch (RuntimeException | LinkageError unavailable) {
                         reject(call, "UPDATE_CHECK_UNAVAILABLE");
                     }
                 });
@@ -119,6 +124,7 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
 
     static JSObject stateJson(ReleaseUpdateState state) {
         JSObject json = new JSObject();
+        json.put("revision", state.revision);
         json.put("installedVersion", state.installedVersion);
         json.put("automatic", state.automatic);
         json.put("availableVersion", state.availableVersion == null ? JSONObject.NULL : state.availableVersion);
@@ -140,5 +146,6 @@ public final class HrtReleaseUpdatesPlugin extends Plugin {
     @Override protected void handleOnDestroy() {
         destroyed = true;
         io.shutdown();
+        network.shutdown();
     }
 }

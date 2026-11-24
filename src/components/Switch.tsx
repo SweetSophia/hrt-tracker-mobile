@@ -28,11 +28,9 @@ const Switch: React.FC<{
         aria-checked={checked}
         aria-label={label}
         aria-describedby={describedBy}
-        aria-disabled={disabled || undefined}
-        onClick={() => {
-            if (!disabled) onChange(!checked);
-        }}
-        className={`relative inline-flex switch-track h-[1.625rem] w-11 shrink-0 items-center rounded-full aria-disabled:opacity-60 ${checked ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex switch-track h-[1.625rem] w-11 shrink-0 items-center rounded-full disabled:opacity-60 ${checked ? 'bg-[var(--accent)]' : 'bg-[var(--border-strong)]'}`}
     >
         <span
             className={`inline-block switch-knob size-[1.375rem] rounded-full bg-white shadow-[var(--shadow-xs)] ${checked ? 'translate-x-5' : 'translate-x-0.5'}`}

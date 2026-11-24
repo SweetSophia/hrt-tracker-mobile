@@ -20,6 +20,7 @@ final class GitHubReleaseFetcher implements ReleaseUpdateEngine.ReleaseFetcher {
             .cookieJar(CookieJar.NO_COOKIES)
             .authenticator(Authenticator.NONE)
             .proxyAuthenticator(Authenticator.NONE)
+            // Restrict metadata requests to the configured GitHub endpoint.
             .followRedirects(false)
             .retryOnConnectionFailure(false)
             .callTimeout(15, TimeUnit.SECONDS)

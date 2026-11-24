@@ -17,17 +17,17 @@ export default function AndroidUpdateNotice({ updates }: { updates: AndroidUpdat
                 <div className="flex flex-wrap items-center gap-x-1">
                     <button
                         type="button"
-                        aria-disabled={!!pending}
+                        disabled={!!pending}
                         onClick={() => updates.openRelease(noticeVersion, 'notice')}
-                        className={`${headerActionAccent} min-h-11 aria-disabled:opacity-60`}
+                        className={`${headerActionAccent} min-h-11 disabled:opacity-60`}
                     >
                         {t('androidUpdate.view')}
                     </button>
                     <button
                         type="button"
-                        aria-disabled={!!pending}
+                        disabled={!!pending}
                         onClick={() => updates.dismiss(noticeVersion)}
-                        className={`${headerAction} min-h-11 aria-disabled:opacity-60`}
+                        className={`${headerAction} min-h-11 disabled:opacity-60`}
                     >
                         {t('update.later')}
                     </button>

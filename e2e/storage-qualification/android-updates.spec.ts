@@ -7,6 +7,8 @@ interface UpdateFixture {
     setRelease: (version: string | null) => void;
     failCheck: () => void;
     failDismiss: () => void;
+    holdNextCheck: () => void;
+    finishCheck: () => void;
 }
 
 const about = async (page: Page) => {
@@ -26,10 +28,13 @@ test.beforeEach(async ({ page }) => {
         localStorage.setItem('app-onboarded', 'true');
         const foregroundListeners = new Map<string, () => void>();
         let nextListener = 0;
-        let release: string | null = null;
+        let release: string | null | undefined;
         let networkFailure = false;
         let dismissFailure = false;
+        let checkGate: Promise<void> | undefined;
+        let releaseGate: (() => void) | undefined;
         const state = {
+            revision: 0,
             installedVersion: '1.1.0',
             automatic: localStorage.getItem('fixture-auto-update') === 'true',
             availableVersion: localStorage.getItem('fixture-available-update'),
@@ -42,6 +47,12 @@ test.beforeEach(async ({ page }) => {
             setRelease: version => (release = version),
             failCheck: () => (networkFailure = true),
             failDismiss: () => (dismissFailure = true),
+            holdNextCheck: () => {
+                checkGate = new Promise(resolve => {
+                    releaseGate = resolve;
+                });
+            },
+            finishCheck: () => releaseGate?.(),
         };
         Object.assign(window, {
             androidBridge: {},
@@ -110,29 +121,40 @@ test.beforeEach(async ({ page }) => {
                     switch (method) {
                         case 'setAutomatic':
                             state.automatic = options.enabled;
+                            state.revision++;
                             localStorage.setItem('fixture-auto-update', String(state.automatic));
                             break;
                         case 'checkOnOpen':
-                            if (!state.automatic) break;
-                            // The real daily limit is exercised by the Android unit tests.
-                            if (release === null) break;
-                        // Fall through to respond with the available release for this foreground event.
-                        case 'checkNow':
+                        case 'checkNow': {
+                            // Android tests cover the persistent 24-hour limit.
+                            if (method === 'checkOnOpen' && (!state.automatic || release === undefined))
+                                return { outcome: 'skipped', state: { ...state } };
                             fixture.attempts++;
                             if (networkFailure) {
                                 networkFailure = false;
                                 throw new Error('Synthetic network failure');
                             }
-                            state.availableVersion = release;
-                            if (release) localStorage.setItem('fixture-available-update', release);
+                            const latest = release === state.installedVersion ? null : (release ?? null);
+                            state.availableVersion = latest;
+                            state.revision++;
+                            if (latest) localStorage.setItem('fixture-available-update', latest);
                             else localStorage.removeItem('fixture-available-update');
-                            break;
+                            const response = {
+                                outcome: release === null ? 'noRelease' : 'checked',
+                                state: { ...state },
+                            };
+                            const gate = checkGate;
+                            checkGate = undefined;
+                            await gate;
+                            return response;
+                        }
                         case 'dismiss':
                             if (dismissFailure) {
                                 dismissFailure = false;
                                 throw new Error('Synthetic dismissal failure');
                             }
                             state.dismissedVersion = options.version;
+                            state.revision++;
                             localStorage.setItem('fixture-dismissed-update', options.version);
                             break;
                         case 'openRelease':
@@ -167,13 +189,16 @@ test('manual checks work with automatic checks off and can be retried', async ({
     await page.evaluate(() => {
         const { updateFixture } = window as unknown as { updateFixture: UpdateFixture };
         if (updateFixture.attempts !== 0) throw new Error('An automatic check was attempted without consent');
-        updateFixture.setRelease(null);
+        updateFixture.setRelease('1.1.0');
         updateFixture.failCheck();
     });
     await check.click();
     await expect(page.getByText('Couldn’t check for updates. Try again.')).toBeVisible();
     await check.click();
     await expect(page.getByText('You’re up to date.')).toBeVisible();
+    await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.setRelease(null));
+    await check.click();
+    await expect(page.getByText('No stable Android release found.')).toBeVisible();
     await page.evaluate(() =>
         (window as unknown as { updateFixture: UpdateFixture }).updateFixture.setRelease('1.2.0'),
     );
@@ -210,4 +235,66 @@ test('a foreground notice respects consent and dismissal across reloads', async 
     await toggle.click();
     await expect(toggle).not.toBeChecked();
     await expect(later).toHaveCount(0);
+});
+
+test('a pending check cannot block Later or restore a dismissed notice', async ({ page }) => {
+    await page.goto('/');
+    await about(page);
+    const toggle = page.getByRole('switch', { name: 'Automatically check for updates' });
+    const later = page.getByRole('button', { name: 'Later', exact: true });
+    const check = page.getByRole('button', { name: 'Check for updates', exact: true });
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await openForeground(page, '1.2.0');
+    await expect(later).toBeVisible();
+    await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.holdNextCheck());
+    await check.click();
+    await expect(page.getByText('Checking for updates…')).toBeVisible();
+    await expect(check).toHaveAttribute('disabled', '');
+    await expect(later).toBeEnabled();
+    await page.getByRole('button', { name: 'View release', exact: true }).first().click();
+    await expect
+        .poll(() => page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.opened))
+        .toEqual(['1.2.0']);
+    await later.click();
+    await expect(later).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).not.toBeChecked();
+    await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.finishCheck());
+    await expect(check).toBeEnabled();
+    await expect(toggle).not.toBeChecked();
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(later).toHaveCount(0);
+});
+
+test('an attempted foreground check supersedes the previous manual result', async ({ page }) => {
+    await page.goto('/');
+    await about(page);
+    const check = page.getByRole('button', { name: 'Check for updates', exact: true });
+    const toggle = page.getByRole('switch', { name: 'Automatically check for updates' });
+    const current = page.getByText('You’re up to date.');
+    const error = page.getByText('Couldn’t check for updates. Try again.');
+
+    await page.evaluate(() =>
+        (window as unknown as { updateFixture: UpdateFixture }).updateFixture.setRelease('1.1.0'),
+    );
+    await check.click();
+    await expect(current).toBeVisible();
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await page.evaluate(() => {
+        const { updateFixture } = window as unknown as { updateFixture: UpdateFixture };
+        updateFixture.failCheck();
+        updateFixture.foreground();
+    });
+    await expect(current).toHaveCount(0);
+    await expect(error).toHaveCount(0);
+
+    await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.failCheck());
+    await check.click();
+    await expect(error).toBeVisible();
+    await openForeground(page, '1.2.0');
+    await expect(page.getByText('HRT Tracker 1.2.0 is available.')).toHaveCount(2);
+    await expect(error).toHaveCount(0);
 });

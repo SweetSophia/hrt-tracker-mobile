@@ -1,36 +1,56 @@
 package org.askarys.hrttracker.updates;
 
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 /** Selects the newest stable release that carries its matching APK. */
 final class ReleaseCatalog {
-    static final String RELEASES_URL = "https://api.github.com/repos/SweetSophia/hrt-tracker-mobile/releases?per_page=20";
+    // Read one page at GitHub’s maximum page size. Compare versions within that window.
+    static final String RELEASES_URL = "https://api.github.com/repos/SweetSophia/hrt-tracker-mobile/releases?per_page=100";
     private static final String TAG_PREFIX = "android-v";
     private static final String COMPONENT = "(0|[1-9][0-9]{0,9})";
     private static final Pattern VERSION = Pattern.compile(COMPONENT + "\\." + COMPONENT + "\\." + COMPONENT);
 
     private ReleaseCatalog() {}
 
-    static String selectLatest(String body) {
+    /**
+     * Returns the newest matching version, or null for a valid catalog with no match.
+     * @throws IOException if the response is missing the GitHub release fields used here
+     *     or does not contain one JSON array
+     */
+    static String selectLatest(String body) throws IOException {
+        if (body == null) throw new IOException("Release catalog malformed.");
         JSONArray releases;
         try {
-            releases = new JSONArray(body);
+            JSONTokener parser = new JSONTokener(body);
+            Object value = parser.nextValue();
+            if (!(value instanceof JSONArray) || parser.nextClean() != 0)
+                throw new IOException("Release catalog malformed.");
+            releases = (JSONArray) value;
         } catch (JSONException malformed) {
-            return null;
+            throw new IOException("Release catalog malformed.", malformed);
         }
         String best = null;
         for (int i = 0; i < releases.length(); i++) {
             JSONObject release = releases.optJSONObject(i);
-            if (release == null || !Boolean.FALSE.equals(release.opt("draft"))
-                || !Boolean.FALSE.equals(release.opt("prerelease"))) continue;
-            String tag = release.optString("tag_name");
+            if (release == null) throw new IOException("Release catalog row malformed.");
+            Object tagField = release.opt("tag_name");
+            Object draftField = release.opt("draft");
+            Object prereleaseField = release.opt("prerelease");
+            JSONArray assets = release.optJSONArray("assets");
+            if (!(tagField instanceof String) || !(draftField instanceof Boolean)
+                || !(prereleaseField instanceof Boolean) || assets == null)
+                throw new IOException("Release catalog row malformed.");
+            if ((Boolean) draftField || (Boolean) prereleaseField) continue;
+            String tag = (String) tagField;
             if (!tag.startsWith(TAG_PREFIX)) continue;
             String candidate = tag.substring(TAG_PREFIX.length());
-            if (!isVersion(candidate) || !hasUploadedApk(release, candidate)) continue;
+            if (!isVersion(candidate) || !hasUploadedApk(assets, candidate)) continue;
             if (best == null || isNewer(candidate, best)) best = candidate;
         }
         return best;
@@ -40,9 +60,7 @@ final class ReleaseCatalog {
         return isVersion(version) ? "https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/" + TAG_PREFIX + version : null;
     }
 
-    private static boolean hasUploadedApk(JSONObject release, String version) {
-        JSONArray assets = release.optJSONArray("assets");
-        if (assets == null) return false;
+    private static boolean hasUploadedApk(JSONArray assets, String version) {
         String expected = "hrt-tracker-" + version + ".apk";
         for (int i = 0; i < assets.length(); i++) {
             JSONObject asset = assets.optJSONObject(i);

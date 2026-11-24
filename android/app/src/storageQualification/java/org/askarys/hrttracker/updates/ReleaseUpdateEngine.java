@@ -3,7 +3,7 @@ package org.askarys.hrttracker.updates;
 import java.io.IOException;
 import java.util.Objects;
 
-/** Owns consent, throttling, and dismissal. The plugin serializes all writes. */
+/** Holds the lock for local state changes. The release request runs outside the lock. */
 final class ReleaseUpdateEngine {
     interface ReleasePreferences {
         String get(String key);
@@ -12,6 +12,23 @@ final class ReleaseUpdateEngine {
     }
     interface Clock { long nowMillis(); }
     interface ReleaseFetcher { String fetch() throws IOException; }
+
+    enum Outcome {
+        SKIPPED("skipped"), CHECKED("checked"), NO_RELEASE("noRelease");
+
+        final String wireName;
+        Outcome(String wireName) { this.wireName = wireName; }
+    }
+
+    static final class CheckResult {
+        final Outcome outcome;
+        final ReleaseUpdateState state;
+
+        CheckResult(Outcome outcome, ReleaseUpdateState state) {
+            this.outcome = outcome;
+            this.state = state;
+        }
+    }
 
     static final String KEY_AUTOMATIC = "automatic";
     static final String KEY_LAST_ATTEMPT = "lastAttemptMillis";
@@ -23,6 +40,7 @@ final class ReleaseUpdateEngine {
     private final Clock clock;
     private final ReleaseFetcher fetcher;
     private final String installedVersion;
+    private long revision;
 
     ReleaseUpdateEngine(ReleasePreferences prefs, Clock clock, ReleaseFetcher fetcher, String installedVersion) {
         this.prefs = prefs;
@@ -31,46 +49,53 @@ final class ReleaseUpdateEngine {
         this.installedVersion = installedVersion;
     }
 
-    ReleaseUpdateState state() {
-        return new ReleaseUpdateState(installedVersion, automatic(), available(), prefs.get(KEY_DISMISSED));
+    synchronized ReleaseUpdateState state() {
+        return new ReleaseUpdateState(revision, installedVersion, automatic(), available(), prefs.get(KEY_DISMISSED));
     }
 
-    boolean setAutomatic(boolean enabled) { return write(KEY_AUTOMATIC, enabled ? "1" : "0"); }
+    synchronized boolean setAutomatic(boolean enabled) { return write(KEY_AUTOMATIC, enabled ? "1" : "0"); }
 
-    // A manual check also satisfies the interval for an automatic check.
-    ReleaseUpdateState checkNow() throws IOException { return refresh(clock.nowMillis()); }
+    // The plugin serializes network checks. Either kind of check satisfies the interval.
+    CheckResult checkNow() throws IOException { return check(false); }
 
-    ReleaseUpdateState checkOnOpen() throws IOException {
-        if (!automatic()) return state();
-        long now = clock.nowMillis();
-        long lastAttempt = lastAttempt();
-        if (lastAttempt > now) {
-            // Restart the interval when Android corrects a clock that was set ahead.
-            recordAttempt(now);
-            return state();
-        }
-        if (lastAttempt >= 0 && now - lastAttempt < AUTOMATIC_INTERVAL_MILLIS) return state();
-        return refresh(now);
-    }
+    CheckResult checkOnOpen() throws IOException { return check(true); }
 
-    boolean dismiss(String version) { return canOpen(version) && write(KEY_DISMISSED, version); }
+    synchronized boolean dismiss(String version) { return canOpen(version) && write(KEY_DISMISSED, version); }
 
-    boolean canOpen(String version) { return version != null && version.equals(available()); }
+    synchronized boolean canOpen(String version) { return version != null && version.equals(available()); }
 
     private String available() {
         String cached = prefs.get(KEY_AVAILABLE);
         return ReleaseCatalog.isNewer(cached, installedVersion) ? cached : null;
     }
 
-    private ReleaseUpdateState refresh(long now) throws IOException {
+    private CheckResult check(boolean automatic) throws IOException {
+        if (!admitCheck(automatic)) return new CheckResult(Outcome.SKIPPED, state());
+        return publishCheck(ReleaseCatalog.selectLatest(fetcher.fetch()));
+    }
+
+    private synchronized boolean admitCheck(boolean fromForeground) throws IOException {
+        long now = clock.nowMillis();
+        if (fromForeground) {
+            if (!automatic()) return false;
+            long lastAttempt = lastAttempt();
+            if (lastAttempt > now) {
+                // Restart the interval when Android corrects a clock that was set ahead.
+                recordAttempt(now);
+                return false;
+            }
+            if (lastAttempt >= 0 && now - lastAttempt < AUTOMATIC_INTERVAL_MILLIS) return false;
+        }
         if (!ReleaseCatalog.isVersion(installedVersion)) throw new IOException("Installed Android version unavailable.");
         // Record unsuccessful requests too, so foreground checks stay throttled offline.
         recordAttempt(now);
-        String latest = ReleaseCatalog.selectLatest(fetcher.fetch());
-        if (latest == null) throw new IOException("No Android releases recognized.");
+        return true;
+    }
+
+    private synchronized CheckResult publishCheck(String latest) throws IOException {
         String newer = ReleaseCatalog.isNewer(latest, installedVersion) ? latest : null;
         if (!write(KEY_AVAILABLE, newer)) throw new IOException("Could not save the release check result.");
-        return state();
+        return new CheckResult(latest == null ? Outcome.NO_RELEASE : Outcome.CHECKED, state());
     }
 
     private void recordAttempt(long now) throws IOException {
@@ -79,7 +104,11 @@ final class ReleaseUpdateEngine {
 
     private boolean write(String key, String value) {
         String previous = prefs.get(key);
-        if (Objects.equals(previous, value) || prefs.put(key, value)) return true;
+        if (Objects.equals(previous, value)) return true;
+        if (prefs.put(key, value)) {
+            revision++;
+            return true;
+        }
         // SharedPreferences can update its in-memory value even if the disk commit fails.
         prefs.put(key, previous);
         return false;

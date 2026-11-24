@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -15,6 +16,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -97,7 +103,9 @@ public final class ReleaseUpdatesTest {
 
     @Test public void freshStateKeepsConsentOffAndAutomaticChecksIdle() throws Exception {
         Harness h = new Harness(installedVersion());
-        ReleaseUpdateState state = h.engine.checkOnOpen();
+        ReleaseUpdateEngine.CheckResult result = h.engine.checkOnOpen();
+        assertEquals(ReleaseUpdateEngine.Outcome.SKIPPED, result.outcome);
+        ReleaseUpdateState state = result.state;
         assertEquals(0, h.fetcher.fetches);
         assertFalse(state.automatic);
         assertNull(state.availableVersion);
@@ -107,38 +115,41 @@ public final class ReleaseUpdatesTest {
         assertSame(JSONObject.NULL, json.get("dismissedVersion"));
         assertEquals(installedVersion(), json.getString("installedVersion"));
         assertFalse(json.getBoolean("automatic"));
+        assertEquals(state.revision, json.getLong("revision"));
     }
 
     @Test public void automaticChecksNeedConsentAndRunAtMostOncePerDay() throws Exception {
         Harness h = new Harness("1.1.0");
         h.fetcher.script.add(available("1.2.0"));
         assertTrue(h.engine.setAutomatic(true));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
         assertEquals(1, h.fetcher.fetches);
         h.clock.now += 60L * 60 * 1000;
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        ReleaseUpdateEngine.CheckResult throttled = h.engine.checkOnOpen();
+        assertEquals(ReleaseUpdateEngine.Outcome.SKIPPED, throttled.outcome);
+        assertEquals("1.2.0", throttled.state.availableVersion);
         assertEquals(1, h.fetcher.fetches);
         h.clock.now += 25L * 60 * 60 * 1000;
         h.fetcher.script.add(available("1.2.0"));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
         assertEquals(2, h.fetcher.fetches);
         assertTrue(h.engine.setAutomatic(false));
         h.clock.now += 25L * 60 * 60 * 1000;
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
         assertEquals(2, h.fetcher.fetches);
     }
 
     @Test public void manualChecksRunWithoutConsentAndSatisfyTheInterval() throws Exception {
         Harness h = new Harness("1.1.0");
         h.fetcher.script.add(available("1.2.0"));
-        assertEquals("1.2.0", h.engine.checkNow().availableVersion);
+        assertEquals("1.2.0", h.engine.checkNow().state.availableVersion);
         assertEquals(1, h.fetcher.fetches);
         assertTrue(h.engine.setAutomatic(true));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
         assertEquals(1, h.fetcher.fetches);
         h.clock.now += 24L * 60 * 60 * 1000 + 1L;
         h.fetcher.script.add(available("1.2.0"));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
         assertEquals(2, h.fetcher.fetches);
     }
 
@@ -154,7 +165,7 @@ public final class ReleaseUpdatesTest {
         assertNull(h.engine.state().availableVersion);
         h.clock.now += 25L * 60 * 60 * 1000;
         h.fetcher.script.add(available("1.2.0"));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
     }
 
     @Test public void selectionPicksTheHighestStableReleaseWithAnExactUploadedApk() throws Exception {
@@ -173,19 +184,30 @@ public final class ReleaseUpdatesTest {
         assertNull(ReleaseCatalog.releaseUrl("1.2"));
     }
 
-    @Test public void unrecognizedReleaseListsRejectAndKeepTheCachedState() throws Exception {
+    @Test public void emptyValidCatalogClearsAvailabilityWithoutReportingCurrent() throws Exception {
         assertNull(ReleaseCatalog.selectLatest("[]"));
-        assertNull(ReleaseCatalog.selectLatest("not json"));
-        assertNull(ReleaseCatalog.selectLatest(body(release("v1.1.0", false, false, "hrt-tracker-1.1.0.apk", "uploaded"))));
+        assertNull(ReleaseCatalog.selectLatest(body(release("ios-v2.0.0", false, false, "hrt-tracker-2.0.0.ipa", "uploaded"))));
         Harness h = new Harness("1.0.9");
         h.fetcher.script.add(available("1.1.0"));
-        assertEquals("1.1.0", h.engine.checkNow().availableVersion);
-        assertEquals(1, h.fetcher.fetches);
-        h.clock.now += 25L * 60 * 60 * 1000;
+        assertEquals("1.1.0", h.engine.checkNow().state.availableVersion);
         h.fetcher.script.add("[]");
-        boolean failed = false;
-        try { h.engine.checkNow(); } catch (IOException unavailable) { failed = true; }
-        assertTrue(failed);
+        ReleaseUpdateEngine.CheckResult result = h.engine.checkNow();
+        assertEquals(ReleaseUpdateEngine.Outcome.NO_RELEASE, result.outcome);
+        assertNull(result.state.availableVersion);
+        assertNull(h.prefs.values.get(ReleaseUpdateEngine.KEY_AVAILABLE));
+    }
+
+    @Test public void malformedCatalogRejectsAndKeepsTheCachedState() throws Exception {
+        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("not json"));
+        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("{}"));
+        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("[null]"));
+        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("[{}]"));
+        assertThrows(IOException.class, () -> ReleaseCatalog.selectLatest("[] {}"));
+        Harness h = new Harness("1.0.9");
+        h.fetcher.script.add(available("1.1.0"));
+        assertEquals("1.1.0", h.engine.checkNow().state.availableVersion);
+        h.fetcher.script.add("not json");
+        assertThrows(IOException.class, h.engine::checkNow);
         assertEquals("1.1.0", h.engine.state().availableVersion);
     }
 
@@ -195,7 +217,7 @@ public final class ReleaseUpdatesTest {
         try {
         ReleaseUpdateEngine engine = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
             () -> 5_000L, () -> available("1.1.0"), "1.0.0");
-            assertEquals("1.1.0", engine.checkNow().availableVersion);
+            assertEquals("1.1.0", engine.checkNow().state.availableVersion);
             assertFalse(engine.dismiss("9.9.9"));
             assertTrue(engine.dismiss("1.1.0"));
             assertTrue(engine.canOpen("1.1.0"));
@@ -207,7 +229,7 @@ public final class ReleaseUpdatesTest {
             assertEquals("1.1.0", state.dismissedVersion);
             ReleaseUpdateEngine updated = new ReleaseUpdateEngine(new AndroidReleasePreferences(context, name),
                 () -> 25_000_000L, () -> available("2.0.0"), "1.0.0");
-            ReleaseUpdateState afterUpdate = updated.checkNow();
+            ReleaseUpdateState afterUpdate = updated.checkNow().state;
             assertEquals("2.0.0", afterUpdate.availableVersion);
             assertEquals("1.1.0", afterUpdate.dismissedVersion);
         } finally {
@@ -231,7 +253,7 @@ public final class ReleaseUpdatesTest {
         assertFalse(h.engine.canOpen("1.1.0"));
         assertFalse(h.engine.dismiss("1.1.0"));
         h.fetcher.script.add(available("1.1.0"));
-        assertNull(h.engine.checkNow().availableVersion);
+        assertNull(h.engine.checkNow().state.availableVersion);
         assertNull(h.prefs.values.get(ReleaseUpdateEngine.KEY_AVAILABLE));
     }
 
@@ -241,10 +263,10 @@ public final class ReleaseUpdatesTest {
         assertNull(h.engine.state().availableVersion);
         assertFalse(h.engine.canOpen("1.0.9"));
         h.fetcher.script.add(available("1.0.9"));
-        assertNull(h.engine.checkNow().availableVersion);
+        assertNull(h.engine.checkNow().state.availableVersion);
         assertNull(h.prefs.values.get(ReleaseUpdateEngine.KEY_AVAILABLE));
         h.fetcher.script.add(available("1.1.1"));
-        assertEquals("1.1.1", h.engine.checkNow().availableVersion);
+        assertEquals("1.1.1", h.engine.checkNow().state.availableVersion);
     }
 
     @Test public void aFailedAttemptWriteBlocksTheRequest() throws Exception {
@@ -264,7 +286,7 @@ public final class ReleaseUpdatesTest {
         assertEquals("1", h.prefs.values.get(ReleaseUpdateEngine.KEY_AUTOMATIC));
         h.clock.now += 25L * 60 * 60 * 1000;
         h.fetcher.script.add(available("1.2.0"));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
     }
     @Test public void unrecognizedInstalledVersionsAndCacheEntriesNeverShowAnUpdate() throws Exception {
         Harness h = new Harness("1.1.0");
@@ -304,8 +326,46 @@ public final class ReleaseUpdatesTest {
         assertEquals(1, h.fetcher.fetches);
         h.clock.now += interval;
         h.fetcher.script.add(available("1.2.0"));
-        assertEquals("1.2.0", h.engine.checkOnOpen().availableVersion);
+        assertEquals("1.2.0", h.engine.checkOnOpen().state.availableVersion);
         assertEquals(2, h.fetcher.fetches);
+    }
+
+    @Test public void dismissalAndConsentCanChangeWhileAForegroundRequestIsPending() throws Exception {
+        FakePrefs prefs = new FakePrefs();
+        prefs.values.put(ReleaseUpdateEngine.KEY_AVAILABLE, "1.2.0");
+        CountDownLatch requested = new CountDownLatch(1);
+        CountDownLatch finish = new CountDownLatch(1);
+        ReleaseUpdateEngine engine = new ReleaseUpdateEngine(prefs, new FakeClock(), () -> {
+            requested.countDown();
+            try {
+                if (!finish.await(10, TimeUnit.SECONDS)) throw new IOException("Test request did not finish.");
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                throw new IOException(interrupted);
+            }
+            return available("1.2.0");
+        }, "1.1.0");
+        assertTrue(engine.setAutomatic(true));
+        ExecutorService network = Executors.newSingleThreadExecutor();
+        try {
+            Future<ReleaseUpdateEngine.CheckResult> pending = network.submit(engine::checkOnOpen);
+            assertTrue(requested.await(5, TimeUnit.SECONDS));
+            ReleaseUpdateState before = engine.state();
+            assertTrue(engine.dismiss("1.2.0"));
+            assertTrue(engine.setAutomatic(false));
+            ReleaseUpdateState after = engine.state();
+            assertFalse(pending.isDone());
+            assertTrue(after.revision > before.revision);
+            finish.countDown();
+            ReleaseUpdateEngine.CheckResult result = pending.get(5, TimeUnit.SECONDS);
+            assertEquals(ReleaseUpdateEngine.Outcome.CHECKED, result.outcome);
+            assertEquals(after.revision, result.state.revision);
+            assertFalse(result.state.automatic);
+            assertEquals("1.2.0", result.state.dismissedVersion);
+        } finally {
+            finish.countDown();
+            network.shutdownNow();
+        }
     }
 
 }

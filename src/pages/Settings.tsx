@@ -124,17 +124,17 @@ const SwitchRow: React.FC<{
 };
 
 const AndroidUpdateSection = ({ updates, t }: { updates: AndroidUpdates; t: SettingsProps['t'] }) => {
-    const { state, checked, pending, failure } = updates;
+    const { state, checking, checkFeedback, pending, failure } = updates;
     const available = state?.availableVersion;
     let feedback = '';
-    if (pending === 'check') feedback = t('androidUpdate.checking');
-    else if (failure === 'check') feedback = t('androidUpdate.checkError');
-    else if (failure === 'toggle') feedback = t('androidUpdate.preferenceError');
-    else if (failure === 'openInAbout') feedback = t('androidUpdate.openError');
+    if (checking) feedback = t('androidUpdate.checking');
+    else if (checkFeedback === 'failed') feedback = t('androidUpdate.checkError');
+    else if (checkFeedback === 'noRelease') feedback = t('androidUpdate.noRelease');
     else if (available) feedback = fill(t('androidUpdate.available'), { version: available });
-    else if (checked) feedback = t('androidUpdate.current');
+    else if (checkFeedback === 'checked') feedback = t('androidUpdate.current');
 
-    const actionRow = `${rowBase} ${rowBleed} ${rowLabel} aria-disabled:opacity-60`;
+    const settingsError = failure === 'toggle' ? 'androidUpdate.preferenceError' : 'androidUpdate.openError';
+    const actionRow = `${rowBase} ${rowBleed} ${rowLabel} disabled:opacity-60`;
     return (
         <div>
             <SectionHeading title={t('androidUpdate.title')} />
@@ -145,7 +145,7 @@ const AndroidUpdateSection = ({ updates, t }: { updates: AndroidUpdates; t: Sett
                         <bdi className={rowValue}>{state.installedVersion}</bdi>
                     </div>
                 )}
-                <button type="button" className={actionRow} onClick={updates.checkNow} aria-disabled={!!pending}>
+                <button type="button" className={actionRow} onClick={updates.checkNow} disabled={checking}>
                     {t('androidUpdate.check')}
                 </button>
                 <SwitchRow
@@ -160,7 +160,7 @@ const AndroidUpdateSection = ({ updates, t }: { updates: AndroidUpdates; t: Sett
                         type="button"
                         className={actionRow}
                         onClick={() => updates.openRelease(available, 'about')}
-                        aria-disabled={!!pending}
+                        disabled={!!pending}
                     >
                         {t('androidUpdate.view')}
                     </button>
@@ -168,6 +168,9 @@ const AndroidUpdateSection = ({ updates, t }: { updates: AndroidUpdates; t: Sett
             </div>
             <p aria-live="polite" className={`mt-1 text-sm ${muted} empty:mt-0`}>
                 {feedback}
+            </p>
+            <p aria-live="polite" className={`mt-1 text-sm ${muted} empty:mt-0`}>
+                {(failure === 'toggle' || failure === 'openInAbout') && t(settingsError)}
             </p>
         </div>
     );

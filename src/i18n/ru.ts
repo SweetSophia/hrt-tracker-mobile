@@ -155,6 +155,7 @@ export const RU = {
     'androidUpdate.check': 'Проверить обновления',
     'androidUpdate.checking': 'Проверка обновлений…',
     'androidUpdate.current': 'У вас последняя версия.',
+    'androidUpdate.noRelease': 'Стабильный выпуск для Android не найден.',
     'androidUpdate.available': 'Доступен HRT Tracker {version}.',
     'androidUpdate.checkError': 'Не удалось проверить обновления. Попробуйте ещё раз.',
     'androidUpdate.preferenceError': 'Не удалось сохранить настройки обновлений. Попробуйте ещё раз.',

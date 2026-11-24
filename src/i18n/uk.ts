@@ -154,6 +154,7 @@ export const UK = {
     'androidUpdate.check': 'Перевірити оновлення',
     'androidUpdate.checking': 'Перевірка оновлень…',
     'androidUpdate.current': 'У вас актуальна версія.',
+    'androidUpdate.noRelease': 'Стабільного випуску для Android не знайдено.',
     'androidUpdate.available': 'Доступний HRT Tracker {version}.',
     'androidUpdate.checkError': 'Не вдалося перевірити оновлення. Спробуйте ще раз.',
     'androidUpdate.preferenceError': 'Не вдалося зберегти налаштування оновлень. Спробуйте ще раз.',
