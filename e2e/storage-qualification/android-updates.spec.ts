@@ -316,6 +316,7 @@ for (const [phase, title] of pendingWindows) {
         await expect(toggle).not.toBeChecked();
         await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.finishCheck());
         await expect(check).toBeEnabled();
+        await expect(page.getByText('HRT Tracker 1.2.0 is available.', { exact: true })).toBeVisible();
         await expect(toggle).not.toBeChecked();
     });
 }
@@ -341,6 +342,7 @@ test('an older bridge reply cannot restore a dismissed notice while automatic ch
     // Automatic checks stay enabled, so no later republish can mask a wrongly restored notice.
     await page.evaluate(() => (window as unknown as { updateFixture: UpdateFixture }).updateFixture.finishCheck());
     await expect(check).toBeEnabled();
+    await expect(page.getByText('HRT Tracker 1.2.0 is available.', { exact: true })).toBeVisible();
     await expect(toggle).toBeChecked();
     await expect(later).toHaveCount(0);
 });

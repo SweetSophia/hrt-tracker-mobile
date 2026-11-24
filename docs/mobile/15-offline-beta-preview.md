@@ -26,7 +26,7 @@ From the repository root, run the following commands with one emulator connected
 ```sh
 npm run android:sync:storage
 ./android/gradlew -p android -PstorageQualification \
-  -Pandroid.testInstrumentationRunnerArguments.class=org.askarys.hrttracker.updates.ReleaseUpdatesTest \
+  -Pandroid.testInstrumentationRunnerArguments.package=org.askarys.hrttracker.updates \
   :app:connectedStorageQualificationAndroidTest
 ```
 

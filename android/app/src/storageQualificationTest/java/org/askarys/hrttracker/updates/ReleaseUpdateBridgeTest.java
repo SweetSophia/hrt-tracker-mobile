@@ -9,6 +9,7 @@ import android.app.Instrumentation;
 import android.net.Uri;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.webkit.WebViewFeature;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PluginCall;
 import java.io.IOException;
@@ -60,7 +61,8 @@ public final class ReleaseUpdateBridgeTest {
                 plugin.checkNow(call);
                 assertTrue("checkNow did not settle", call.settled.await(30, TimeUnit.SECONDS));
                 // Prove the failure came from the fetcher, past the bundled-origin check.
-                assertEquals(1, fetches.get());
+                assertEquals("Expected one fetch from the bundled test page (WEB_MESSAGE_LISTENER supported: "
+                    + WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) + ")", 1, fetches.get());
                 assertEquals(code, call.code);
             } finally {
                 instrumentation.runOnMainSync(plugin::handleOnDestroy);
@@ -68,7 +70,7 @@ public final class ReleaseUpdateBridgeTest {
         }
     }
 
-    /** The same bundled-origin rule allowed() enforces before any check dispatches. */
+    /** Waits for the bundled WebView origin before calling the plugin. */
     private static void waitForAuthorizedOrigin(ActivityScenario<MainActivity> activity) throws Exception {
         AtomicReference<String> url = new AtomicReference<>();
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60);
@@ -95,6 +97,10 @@ public final class ReleaseUpdateBridgeTest {
         private final CountDownLatch settled = new CountDownLatch(1);
         private String code;
         private RecordingCall() { super(null, "HrtReleaseUpdates", "bridge-error-mapping", "checkNow", new JSObject()); }
+        // Capture the overload called by the plugin directly.
+        @Override public void reject(String reason, String rejectionCode) {
+            reject(reason, rejectionCode, null, null);
+        }
         @Override public void reject(String reason, String rejectionCode, Exception error, JSObject extra) {
             this.code = rejectionCode;
             settled.countDown();
