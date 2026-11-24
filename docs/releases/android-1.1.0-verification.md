@@ -9,6 +9,21 @@ The signed release updates `org.askarys.hrttracker` from version code 8 to 9. It
 
 Android's signing tool verified the APK and the certificate matched the public 1.0.1 download. The APK passed 16 KiB ZIP alignment. All 197 files in its bundled web interface matched the offline production build byte for byte. The manifest disables Android app backup and cleartext traffic. Both the APK and the WebView disable debugging.
 
+## Signed upgrade and offline backup
+
+On an Android 16 emulator in airplane mode, the public 1.0.1 APK retained a
+synthetic dose, lab result, and selected feminizing mode after a force-stop.
+Installing the signed 1.1.0 APK in place kept the Android app ID and all three
+after a cold launch.
+
+On signed 1.1.0, logging a patch with **Replace previous patch** produced a
+new application and a removal at the same time. A complete backup saved
+through Android's file picker referenced the earlier application in that
+removal. After exporting, a second synthetic lab result survived a
+force-stop. Restoring the exported file through the picker and cold-launching
+the app again returned the history to four dose records and the original lab
+result.
+
 ## Patch replacement
 
 On an offline Android 16 emulator, three synthetic 100 µg/day patches logged three days apart with the development build produced a next-day estimate of 72.6 pg/mL after each application. History contained three applications and two removals linked to the correct patches. With replacement enabled in a saved medication plan, **Done** added the application and removal together. **Undo** restored the original history, and the saved plan survived a cold launch.
