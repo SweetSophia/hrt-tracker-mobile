@@ -7,15 +7,15 @@ English · [简体中文](./README.zh-CN.md)
 ## Android features
 
 - **On-device records.** Log doses and lab results in feminizing and masculinizing modes. Records are encrypted at rest in a local SQLCipher database with a key protected by Android Keystore.
-- **Charts and planning.** View estimated hormone levels over time, compare estimates with labs, and use medication plans, supplies, and what-if forecasts.
+- **Charts and planning.** View estimated hormone levels over time, compare estimates with labs, and use medication plans, supplies, and what-if forecasts. When logging a patch change, you can record removing the previous patch in the same step.
 - **Portable backups.** Use Android's file picker to save or restore a complete backup of both modes. A compatible backup file can carry records from the web tracker or the earlier Android preview. Complete backup exports contain readable health data.
 - **Phone controls and nine languages.** The app supports Android Back navigation and adapts its screens to phones. The interface offers Simplified Chinese, Traditional Chinese, Cantonese, English, Japanese, Korean, Turkish, Russian, and Ukrainian.
 
 ## Download for Android
 
-[Download the signed Android APK (1.0.1)](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.0.1/hrt-tracker-1.0.1.apk) · [Release notes in English and Simplified Chinese](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.0.1)
+[Download the signed Android APK (1.1.0)](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.1.0/hrt-tracker-1.1.0.apk) · [Release notes in English and Simplified Chinese](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.1.0)
 
-HRT Tracker runs on Android 7.0 or newer. The signed APK updates 1.0.0 or the private **HRT Tracker** beta in place. The Android package ID is `org.askarys.hrttracker`. An iPhone version is planned.
+HRT Tracker runs on Android 7.0 or newer. To update an earlier signed release or the private **HRT Tracker** beta, open the APK and choose **Update**. The Android package ID is `org.askarys.hrttracker`. An iPhone version is planned.
 
 ## Build and contribute
 
