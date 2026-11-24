@@ -1,3 +1,4 @@
+import { createAndroidUpdates } from '../platform/capacitor/androidUpdates';
 import { createNativeFiles } from '../platform/capacitor/files';
 import type { FilePickPort, FileSavePort } from '../platform/contracts/files';
 import { ApplicationRuntime, readDevicePreferences } from './runtime';
@@ -61,5 +62,6 @@ export async function createNativeRuntime(
         documents,
         documents,
         saveMode,
+        createAndroidUpdates(),
     );
 }

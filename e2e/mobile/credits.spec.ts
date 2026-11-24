@@ -19,6 +19,7 @@ test('mobile About and Credits identify both projects and their contributor link
     await page.goto('/');
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('tab', { name: 'About', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'App updates' })).toHaveCount(0);
     await page.getByRole('button', { name: 'GitHub repository', exact: true }).click();
     await confirmDialog(page, 'OK');
     await expect.poll(() => externalLinks).toEqual([mobileRepo]);

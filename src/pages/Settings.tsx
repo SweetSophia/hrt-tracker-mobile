@@ -13,9 +13,11 @@ import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import Tabs, { useSwitchAnimation } from '../components/Tabs';
 import { fill } from '../utils/regimenText';
 import { voteStatusAt } from '../../communityVote';
+import type { AndroidUpdates } from '../hooks/useAndroidUpdates';
 import { navDepth, pushNavEntry, readNavEntry, replaceNavEntry, stepBack, TAB_RESELECT } from '../hooks/navHistory';
 
 interface SettingsProps {
+    androidUpdates?: AndroidUpdates;
     t: (key: string) => string;
     lang: Lang;
     theme: AppTheme;
@@ -93,12 +95,13 @@ const NavRow: React.FC<{ label: string; value?: React.ReactNode; onClick: () => 
 // The text is the switch's <label>, so a tap on the words (the bigger, more
 // natural target on a phone) flips it too. The description is read after the
 // name rather than folded into it.
-const SwitchRow: React.FC<{ label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }> = ({
-    label,
-    desc,
-    checked,
-    onChange,
-}) => {
+const SwitchRow: React.FC<{
+    label: string;
+    desc: string;
+    checked: boolean;
+    onChange: (v: boolean) => void;
+    disabled?: boolean;
+}> = ({ label, desc, checked, onChange, disabled }) => {
     const id = React.useId();
     return (
         <div className={`${rowBase} cursor-default`}>
@@ -108,7 +111,64 @@ const SwitchRow: React.FC<{ label: string; desc: string; checked: boolean; onCha
                     {desc}
                 </span>
             </label>
-            <Switch id={id} checked={checked} onChange={onChange} label={label} describedBy={`${id}-desc`} />
+            <Switch
+                id={id}
+                checked={checked}
+                onChange={onChange}
+                label={label}
+                describedBy={`${id}-desc`}
+                disabled={disabled}
+            />
+        </div>
+    );
+};
+
+const AndroidUpdateSection = ({ updates, t }: { updates: AndroidUpdates; t: SettingsProps['t'] }) => {
+    const { state, checked, pending, failure } = updates;
+    const available = state?.availableVersion;
+    let feedback = '';
+    if (pending === 'check') feedback = t('androidUpdate.checking');
+    else if (failure === 'check') feedback = t('androidUpdate.checkError');
+    else if (failure === 'toggle') feedback = t('androidUpdate.preferenceError');
+    else if (failure === 'openInAbout') feedback = t('androidUpdate.openError');
+    else if (available) feedback = fill(t('androidUpdate.available'), { version: available });
+    else if (checked) feedback = t('androidUpdate.current');
+
+    const actionRow = `${rowBase} ${rowBleed} ${rowLabel} aria-disabled:opacity-60`;
+    return (
+        <div>
+            <SectionHeading title={t('androidUpdate.title')} />
+            <div className={section}>
+                {state && (
+                    <div className={rowBase}>
+                        <span className={rowLabel}>{t('androidUpdate.installed')}</span>
+                        <bdi className={rowValue}>{state.installedVersion}</bdi>
+                    </div>
+                )}
+                <button type="button" className={actionRow} onClick={updates.checkNow} aria-disabled={!!pending}>
+                    {t('androidUpdate.check')}
+                </button>
+                <SwitchRow
+                    label={t('androidUpdate.automatic')}
+                    desc={t('androidUpdate.automaticDescription')}
+                    checked={state?.automatic ?? false}
+                    onChange={updates.setAutomatic}
+                    disabled={!state || !!pending}
+                />
+                {available && (
+                    <button
+                        type="button"
+                        className={actionRow}
+                        onClick={() => updates.openRelease(available, 'about')}
+                        aria-disabled={!!pending}
+                    >
+                        {t('androidUpdate.view')}
+                    </button>
+                )}
+            </div>
+            <p aria-live="polite" className={`mt-1 text-sm ${muted} empty:mt-0`}>
+                {feedback}
+            </p>
         </div>
     );
 };
@@ -150,6 +210,7 @@ const leaveMobileCat = (setMobileView: (v: MobileView) => void) => {
 };
 
 const Settings: React.FC<SettingsProps> = ({
+    androidUpdates,
     t,
     lang,
     theme,
@@ -449,6 +510,7 @@ const Settings: React.FC<SettingsProps> = ({
 
     const renderAbout = () => (
         <div className="space-y-8">
+            {androidUpdates && <AndroidUpdateSection updates={androidUpdates} t={t} />}
             <SectionHeading title={t('settings.section.about')} />
             <div className={section}>
                 <NavRow label={t('drawer.model_title')} onClick={() => navTo(onNavigateToModelGuide, 'about')} />

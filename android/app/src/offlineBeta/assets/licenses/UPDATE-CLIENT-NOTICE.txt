@@ -1,0 +1,5 @@
+Android update checks use OkHttp and Okio from Square, Inc.
+Both projects use the Apache License, Version 2.0. See Apache-2.0.txt.
+
+OkHttp https://github.com/lysine-dev/okhttp
+Okio https://github.com/lysine-dev/okio
