@@ -804,7 +804,6 @@ const Home: React.FC<HomeProps> = ({
                                     labResults={labResults}
                                     calibrationFn={calibrationFn}
                                     modelNowMs={modelNowMs}
-                                    isDarkMode={isDarkMode}
                                     isMono={isMono}
                                     fillShort={chartFirst}
                                 />

@@ -1,3 +1,4 @@
+import { APPEARANCE_COPY } from './appearanceCopy';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { RU } from './ru';
 import { UK } from './uk';
@@ -4243,16 +4244,19 @@ export const TRANSLATIONS = {
     zh: {
         ...TRANSLATIONS_BASE.zh,
         ...MOBILE_CREDITS.zh,
+        ...APPEARANCE_COPY.zh,
     },
 
     'zh-TW': {
         ...ZH_TW,
         ...MOBILE_CREDITS['zh-TW'],
+        ...APPEARANCE_COPY['zh-TW'],
     },
 
     yue: {
         ...ZH_TW,
         ...MOBILE_CREDITS.yue,
+        ...APPEARANCE_COPY.yue,
         'storage.startup_title': '開唔到本機記錄',
         'storage.startup_retry': '重新載入',
         'storage.startup_detail':
@@ -5078,10 +5082,12 @@ export const TRANSLATIONS = {
     en: {
         ...TRANSLATIONS_BASE.en,
         ...MOBILE_CREDITS.en,
+        ...APPEARANCE_COPY.en,
         'app.title': 'HRT Tracker',
     },
     ja: {
         ...MOBILE_CREDITS.ja,
+        ...APPEARANCE_COPY.ja,
         'storage.startup_title': '端末内の記録を開けませんでした',
         'storage.startup_retry': '再読み込み',
         'storage.startup_detail':
@@ -6303,6 +6309,7 @@ export const TRANSLATIONS = {
 
     ko: {
         ...MOBILE_CREDITS.ko,
+        ...APPEARANCE_COPY.ko,
         'storage.startup_title': '기기에 저장된 기록을 열 수 없습니다',
         'storage.startup_retry': '새로고침',
         'storage.startup_detail':
@@ -7508,6 +7515,7 @@ export const TRANSLATIONS = {
     tr: {
         ...TRANSLATIONS_BASE.en,
         ...MOBILE_CREDITS.tr,
+        ...APPEARANCE_COPY.tr,
         'storage.startup_title': 'Yerel kayıtlar açılamadı',
         'storage.startup_retry': 'Yeniden yükle',
         'storage.startup_detail':
@@ -8734,9 +8742,11 @@ export const TRANSLATIONS = {
     ru: {
         ...RU,
         ...MOBILE_CREDITS.ru,
+        ...APPEARANCE_COPY.ru,
     },
     uk: {
         ...UK,
         ...MOBILE_CREDITS.uk,
+        ...APPEARANCE_COPY.uk,
     },
 } as const;

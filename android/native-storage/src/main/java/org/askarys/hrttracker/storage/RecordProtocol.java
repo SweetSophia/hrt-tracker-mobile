@@ -35,7 +35,8 @@ public final class RecordProtocol {
     }
     static Set<String> allowedKeys(String namespace, String backend) throws Exception {
         if ("preferences:v1".equals(namespace)) return new HashSet<>(Arrays.asList(
-            "app-theme", "hrt-lang", "app-show-prediction", "app-hide-site-label", "hrt-supply-lead-days"));
+            "app-theme", "app-palette", "hrt-lang", "app-show-prediction", "app-hide-site-label",
+            "hrt-supply-lead-days"));
         if (DEVICE_PREFERENCES.equals(namespace)) return new HashSet<>(Arrays.asList("hrt-mode"));
         if (namespace == null || !namespace.startsWith("records:v1:")) throw new IllegalArgumentException("Invalid record namespace");
         JSONArray parts = new JSONArray(namespace.substring("records:v1:".length()));

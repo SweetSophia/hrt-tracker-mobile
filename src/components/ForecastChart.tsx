@@ -51,10 +51,9 @@ const ForecastChart: React.FC<{
     horizonH: number;
     target: { low: number; high: number } | null;
     unit: string;
-    isDarkMode: boolean;
     lang: Lang;
     labels: { history: string; target: string; swing: string };
-}> = ({ history, lines, band, bandLabel, nowH, horizonH, target, unit, isDarkMode, lang, labels }) => {
+}> = ({ history, lines, band, bandLabel, nowH, horizonH, target, unit, lang, labels }) => {
     const [plotEl, setPlotEl] = useState<HTMLDivElement | null>(null);
     const { width } = useElementSize(plotEl);
     const [hoverH, setHoverH] = useState<number | null>(null);
@@ -77,28 +76,20 @@ const ForecastChart: React.FC<{
     const axisFont = 13 * ui;
     const pad = { l: 40 * ui, r: 8 * ui, t: 22 * ui, b: 24 * ui };
 
-    const c = isDarkMode
-        ? // The chart-* design tokens as hex for SVG; band is chart-band, dot is
-          // chart-dot (the page colour). The target band is drawn in primary,
-          // as on the Overview chart, so the two read as the same range.
-          {
-              primary: '#df8f74',
-              second: '#838078',
-              grid: '#2c2a26',
-              axis: '#a7a49e',
-              faint: '#6b6860',
-              band: 'rgba(223,143,116,0.12)',
-              dot: '#181714',
-          }
-        : {
-              primary: '#cc785c',
-              second: '#a7a49e',
-              grid: '#eeedea',
-              axis: '#6b6860',
-              faint: '#a7a49e',
-              band: 'rgba(204,120,92,0.1)',
-              dot: '#ffffff',
-          };
+    // The chart-* design tokens, for SVG; band is chart-band, dot is
+    // chart-dot (the page colour). The target band is drawn in primary, as on
+    // the Overview chart, so the two read as the same range. Like there, the
+    // browser re-resolves the tokens at paint, so a palette or light/dark
+    // flip recolours the chart live.
+    const c = {
+        primary: 'var(--chart-line)',
+        second: 'var(--chart-second)',
+        grid: 'var(--chart-grid)',
+        axis: 'var(--chart-axis)',
+        faint: 'var(--chart-faint)',
+        band: 'var(--chart-band)',
+        dot: 'var(--chart-dot)',
+    };
     const tone = (t: ChartLine['tone']) => (t === 'primary' ? c.primary : c.second);
 
     const x0 = nowH - 14 * DAY_H;

@@ -271,7 +271,6 @@ const ResultChart = ({
     calibrationFn = (_t: number) => 1,
     modelNowMs,
     onPointClick,
-    isDarkMode = false,
     isMono = false,
     mode,
     title,
@@ -290,7 +289,6 @@ const ResultChart = ({
     /** Exact worker-table readout time; omitted by ordinary web/share consumers. */
     modelNowMs?: number;
     onPointClick?: (e: DoseEvent) => void;
-    isDarkMode?: boolean;
     isMono?: boolean;
     mode?: HRTMode;
     title?: string;
@@ -332,28 +330,21 @@ const ResultChart = ({
         setPanOffset(0);
     };
 
-    // The chart tokens (chart-line, chart-second, chart-grid, chart-axis,
-    // chart-dot, chart-lab) as hex, because SVG attributes are set from here:
-    // terracotta on a warm neutral grid, axis figures at text-muted strength.
-    const c = isDarkMode
-        ? {
-              primary: '#df8f74',
-              second: '#838078',
-              grid: '#2c2a26',
-              axis: '#a7a49e',
-              faint: '#6b6860',
-              dot: '#181714',
-              lab: '#facebd',
-          }
-        : {
-              primary: '#cc785c',
-              second: '#a7a49e',
-              grid: '#eeedea',
-              axis: '#6b6860',
-              faint: '#a7a49e',
-              dot: '#ffffff',
-              lab: '#924833',
-          };
+    // The chart tokens themselves (chart-line, chart-second, chart-grid,
+    // chart-axis, chart-faint, chart-dot, chart-lab): terracotta on a warm
+    // neutral grid, axis figures at text-muted strength. SVG attributes take
+    // them directly, and the browser re-resolves them whenever the root
+    // palette or light/dark class changes, so a scheme flip recolours the
+    // chart live.
+    const c = {
+        primary: 'var(--chart-line)',
+        second: 'var(--chart-second)',
+        grid: 'var(--chart-grid)',
+        axis: 'var(--chart-axis)',
+        faint: 'var(--chart-faint)',
+        dot: 'var(--chart-dot)',
+        lab: 'var(--chart-lab)',
+    };
 
     // Which series are relevant for the current mode / logged doses: total T
     // for transmasc; E2 for transfem, with cyproterone on its own right-hand

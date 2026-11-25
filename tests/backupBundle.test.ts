@@ -33,6 +33,11 @@ import {
     type Tombstones,
 } from '../src/utils/syncMerge';
 import { normalizePlanItem, regimensFromPlan } from '../src/utils/plan';
+import { planCompleteBackup } from '../src/records';
+import { namespacesFor, type RecordScope } from '../src/records/scope';
+import type { RecordContext } from '../src/records/snapshot';
+import type { StoreSnapshots } from '../src/platform/contracts';
+import { WebRecordStore } from '../src/platform/web/recordStore';
 import { MemoryStorage } from './memoryStorage';
 
 /** Synthetic values only. No fixture contains real health data or secrets. */
@@ -177,6 +182,7 @@ const seed = (): MemoryStorage => {
     storage.setItem('hrt-cal-method', 'ekf');
     storage.setItem('hrt-cal-history-mode', 'forward');
     storage.setItem('app-theme', 'dark');
+    storage.setItem('app-palette', 'plum');
     storage.setItem('hrt-lang', 'en');
     storage.setItem('app-show-prediction', 'true');
     storage.setItem('app-hide-site-label', 'false');
@@ -223,6 +229,15 @@ const build = (storage: MemoryStorage, mode: ModeKey = 'transfem'): CompleteBack
 const buildReport = (storage: MemoryStorage, mode: ModeKey = 'transfem') =>
     buildCompleteBackupBundleReportFromStorage(storage, OWNER, mode, activeFrom(storage, mode), CREATED_AT, NOW);
 
+/** A record context built from the real web store over the given storage. */
+const planningContext = async (store: WebRecordStore): Promise<RecordContext> => {
+    await store.initialize();
+    const scope: RecordScope = { backend: 'offline', owner: OWNER, mode: 'transfem' };
+    const snapshots: Record<string, StoreSnapshots[string]> = {};
+    for (const namespace of namespacesFor(scope)) snapshots[namespace] = await store.read(namespace);
+    return { scope, snapshots };
+};
+
 describe('complete backup bundle data layer', () => {
     it('round-trips both modes, all Supply.pack branches, calibration, scalars, and preferences', () => {
         const source = seed();
@@ -250,6 +265,7 @@ describe('complete backup bundle data layer', () => {
         expect(bundle.pkParamsUpdatedAt).toBe(2222);
         expect(bundle.preferences).toEqual({
             'app-theme': 'dark',
+            'app-palette': 'plum',
             'hrt-lang': 'en',
             'app-show-prediction': true,
             'app-hide-site-label': false,
@@ -456,6 +472,7 @@ describe('complete backup bundle data layer', () => {
     it('exports and applies only the confirmed preference whitelist', () => {
         const sanitized = sanitizePortablePreferences({
             'app-theme': 'dark',
+            'app-palette': 'teal',
             'hrt-lang': 'en',
             'app-show-prediction': true,
             'app-hide-site-label': false,
@@ -470,6 +487,7 @@ describe('complete backup bundle data layer', () => {
         });
         expect(sanitized.values).toEqual({
             'app-theme': 'dark',
+            'app-palette': 'teal',
             'hrt-lang': 'en',
             'app-show-prediction': true,
             'app-hide-site-label': false,
@@ -488,9 +506,12 @@ describe('complete backup bundle data layer', () => {
         );
         expect(sanitized.invalid).toEqual([]);
         expect(sanitizePortablePreferences({ 'hrt-supply-lead-days': 0 }).invalid).toEqual(['hrt-supply-lead-days']);
+        expect(sanitizePortablePreferences({ 'app-palette': 'chartreuse' }).invalid).toEqual(['app-palette']);
+        expect(sanitizePortablePreferences({ 'app-palette': 42 }).invalid).toEqual(['app-palette']);
 
         const storage = new MemoryStorage();
         storage.setItem('app-theme', 'mono');
+        storage.setItem('app-palette', 'teal');
         storage.setItem('hrt-lang', 'tr');
         storage.setItem('app-show-prediction', 'false');
         storage.setItem('app-hide-site-label', 'true');
@@ -499,6 +520,7 @@ describe('complete backup bundle data layer', () => {
         storage.setItem('auth_token', 'synthetic-token');
         expect(readPortablePreferences(storage)).toEqual({
             'app-theme': 'mono',
+            'app-palette': 'teal',
             'hrt-lang': 'tr',
             'app-show-prediction': false,
             'app-hide-site-label': true,
@@ -520,6 +542,55 @@ describe('complete backup bundle data layer', () => {
         expect(target.getItem('app-auto-backup')).toBeNull();
     });
 
+    it('carries a validated palette through merge and replace planning and keeps an old backup from overwriting one', async () => {
+        const bundle = build(seed());
+
+        const mergeStorage = new MemoryStorage();
+        const mergeStore = new WebRecordStore(mergeStorage, 'offline');
+        const merged = planCompleteBackup(await planningContext(mergeStore), bundle, 'merge', NOW);
+        await mergeStore.commit(merged.changes);
+        expect(merged.result.applied.preferences).toEqual(bundle.preferences);
+        expect(mergeStorage.getItem('app-palette')).toBe('plum');
+
+        const replaceStorage = new MemoryStorage();
+        replaceStorage.setItem('app-palette', 'teal');
+        const replaceStore = new WebRecordStore(replaceStorage, 'offline');
+        const replaced = planCompleteBackup(await planningContext(replaceStore), bundle, 'replace', NOW);
+        await replaceStore.commit(replaced.changes);
+        expect(replaced.result.applied.preferences).toEqual(bundle.preferences);
+        expect(replaceStorage.getItem('app-palette')).toBe('plum');
+
+        const older = structuredClone(bundle);
+        delete older.preferences['app-palette'];
+        for (const strategy of ['merge', 'replace'] as const) {
+            const keepStorage = new MemoryStorage();
+            keepStorage.setItem('app-palette', 'teal');
+            const keepStore = new WebRecordStore(keepStorage, 'offline');
+            const kept = planCompleteBackup(await planningContext(keepStore), older, strategy, NOW);
+            await keepStore.commit(kept.changes);
+            expect(kept.result.applied.preferences).not.toHaveProperty('app-palette');
+            expect(keepStorage.getItem('app-palette')).toBe('teal');
+        }
+    });
+
+    it('ignores and reports an invalid backup palette without writing it', async () => {
+        const bundle = build(seed());
+        const imported = { ...bundle, preferences: { ...bundle.preferences, 'app-palette': 'chartreuse' } };
+        const target = new MemoryStorage();
+        target.setItem('app-palette', 'plum');
+        const preview = inspectCompleteBackupBundle(imported, context(target));
+        expect(preview.ok).toBe(true);
+        expect(preview.preferences.invalid).toEqual(['app-palette']);
+        const result = mergeCompleteBackupBundleToStorage(imported, context(target));
+        expect(result.preferences).not.toHaveProperty('app-palette');
+        const keepStorage = new MemoryStorage();
+        keepStorage.setItem('app-palette', 'plum');
+        const keepStore = new WebRecordStore(keepStorage, 'offline');
+        const planned = planCompleteBackup(await planningContext(keepStore), imported, 'merge', NOW);
+        await keepStore.commit(planned.changes);
+        expect(keepStorage.getItem('app-palette')).toBe('plum');
+    });
+
     it('keeps credentials out of the exported JSON even when storage is seeded with them', () => {
         const bundle = build(seed());
         const serialized = JSON.stringify(bundle);
@@ -528,7 +599,14 @@ describe('complete backup bundle data layer', () => {
         expect(serialized).not.toContain('synthetic-passes');
         expect(serialized).not.toContain('synthetic-key');
         expect(Object.keys(bundle.preferences).sort()).toEqual(
-            ['app-hide-site-label', 'app-show-prediction', 'app-theme', 'hrt-lang', 'hrt-supply-lead-days'].sort(),
+            [
+                'app-hide-site-label',
+                'app-palette',
+                'app-show-prediction',
+                'app-theme',
+                'hrt-lang',
+                'hrt-supply-lead-days',
+            ].sort(),
         );
     });
 

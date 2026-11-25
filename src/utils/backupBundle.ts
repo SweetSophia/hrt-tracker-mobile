@@ -40,6 +40,7 @@ import {
     type PKCustomParams,
 } from '../domain/engine';
 import type { AppTheme } from '../constants';
+import { isColorPalette, type ColorPalette } from '../appearance/palettes';
 import type { Lang } from '../i18n/translations';
 import { legacyCpaItem, normalizePlanItem, type PlanItem } from './plan';
 import { normalizeSupply, type Pack, type Supply } from './regimen';
@@ -92,6 +93,7 @@ export const PARTIAL_WRITE_MESSAGE = 'Complete backup import failed; partial wri
  */
 export interface PortablePreferences {
     'app-theme'?: AppTheme;
+    'app-palette'?: ColorPalette;
     'hrt-lang'?: Lang;
     'app-show-prediction'?: boolean;
     'app-hide-site-label'?: boolean;
@@ -764,6 +766,10 @@ export function sanitizePortablePreferences(raw: unknown): {
                 if (isAppTheme(value)) values['app-theme'] = value;
                 else invalid.push(key);
                 break;
+            case 'app-palette':
+                if (isColorPalette(value)) values['app-palette'] = value;
+                else invalid.push(key);
+                break;
             case 'hrt-lang':
                 if (isLang(value)) values['hrt-lang'] = value;
                 else invalid.push(key);
@@ -794,6 +800,8 @@ export function readPortablePreferences(storage: StorageLike): PortablePreferenc
     const values: PortablePreferences = {};
     const theme = storage.getItem('app-theme');
     if (isAppTheme(theme)) values['app-theme'] = theme;
+    const palette = storage.getItem('app-palette');
+    if (isColorPalette(palette)) values['app-palette'] = palette;
     const lang = storage.getItem('hrt-lang');
     if (isLang(lang)) values['hrt-lang'] = lang;
     const prediction = storage.getItem('app-show-prediction');

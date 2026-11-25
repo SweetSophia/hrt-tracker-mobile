@@ -14,6 +14,7 @@ export const PREFERENCES_NAMESPACE = 'preferences:v1';
 export const DEVICE_PREFERENCES_NAMESPACE = 'device-preferences:v1';
 export const PORTABLE_PREFERENCE_KEYS = Object.freeze([
     'app-theme',
+    'app-palette',
     'hrt-lang',
     'app-show-prediction',
     'app-hide-site-label',

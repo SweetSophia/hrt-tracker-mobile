@@ -41,6 +41,7 @@
     --chart-second: oklch(72% 0.01 88);
     --chart-grid: oklch(94.5% 0.004 88);
     --chart-axis: oklch(51.7% 0.013 90);
+    --chart-faint: oklch(71.9% 0.0092 84.58);
     --chart-band: rgba(204, 120, 92, 0.1);
     --chart-lab: oklch(49% 0.105 37);
     --chart-dot: oklch(100% 0 0);
@@ -289,6 +290,7 @@
     --chart-second: oklch(60% 0.012 89);
     --chart-grid: oklch(28.5% 0.008 87);
     --chart-axis: oklch(72% 0.01 88);
+    --chart-faint: oklch(51.8% 0.0129 89.8);
     --chart-band: rgba(223, 143, 116, 0.12);
     --chart-lab: oklch(88.5% 0.055 42);
     --chart-dot: oklch(20.5% 0.006 90);

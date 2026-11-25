@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/oyama-tokens.css";
+@import "./styles/palettes.css";
 @import "./styles/motion.css";
 
 @variant dark (&:is(.dark *));
