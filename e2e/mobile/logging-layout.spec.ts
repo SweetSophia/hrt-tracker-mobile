@@ -27,6 +27,7 @@ async function expectFullText(locator: Locator) {
 }
 
 async function expectTouchSize(button: Locator) {
+    await expect(button).toHaveCount(1);
     await expect
         .poll(() =>
             button.evaluate(el => {
@@ -209,7 +210,7 @@ test('the logging forms give separate touch targets to their footer actions', as
     const labRow = page.getByRole('button', { name: /^31\.5 pmol\/L/ });
     await labRow.tap();
     await expect(labRow).toHaveAttribute('aria-expanded', 'true');
-    await expectTouchSize(page.locator('.main-view').getByRole('button', { name: 'Удалить', exact: true }));
+    await expectTouchSize(labRow.locator('xpath=..').getByRole('button', { name: 'Удалить', exact: true }));
 
     await openView(page, views[0]);
     const row = page.locator('[data-event-id="layout-dose-2"]');
