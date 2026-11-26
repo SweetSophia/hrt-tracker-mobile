@@ -10,6 +10,7 @@ import CustomSelect, { SelectChevron } from './CustomSelect';
 import Segmented from './Segmented';
 import { LOCALE_MAP } from '../utils/helpers';
 import { clinicalUnit } from '../utils/clinicalUnit';
+import { formatRecordDecimal, parseRecordDecimal, type RecordDecimal } from '../utils/recordDecimal';
 
 type LabUnit = LabResult['unit'];
 
@@ -40,10 +41,8 @@ const T_UNITS: LabUnit[] = ['ng/dl', 'nmol/l'];
 
 // A lab value worth saving: a real number above zero. Calibration drops a zero
 // anyway, so Save stays disabled rather than accepting one and doing nothing.
-const parseLabValue = (s: string): number | null => {
-    const n = parseFloat(s);
-    return s.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null;
-};
+const positiveLabValue = (parsed: RecordDecimal): number | null =>
+    parsed.kind === 'number' && parsed.value > 0 ? parsed.value : null;
 
 // The same value in the hormone's other unit, for display only. A number in
 // the wrong unit is 3.67× (estradiol) or 29× (testosterone) off, and seeing
@@ -65,11 +64,13 @@ const HormoneValueField: React.FC<{
     unit: LabUnit;
     onUnitChange: (u: LabUnit) => void;
     value: string;
+    amount: number | null;
+    error: string | null;
     onValueChange: (v: string) => void;
-}> = ({ label, units, unit, onUnitChange, value, onValueChange }) => {
+}> = ({ label, units, unit, onUnitChange, value, amount, error, onValueChange }) => {
     const id = useId();
-    const parsed = parseLabValue(value);
-    const reading = parsed !== null ? otherUnitReading(parsed, unit, units) : null;
+    const errorId = useId();
+    const reading = amount === null ? null : otherUnitReading(amount, unit, units);
     return (
         <div>
             <div className="flex items-center justify-between mb-3">
@@ -88,13 +89,13 @@ const HormoneValueField: React.FC<{
             <div className="relative">
                 <input
                     id={id}
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    min="0"
                     placeholder="0.0"
                     value={value}
                     onChange={e => onValueChange(e.target.value)}
-                    aria-invalid={value.trim() !== '' && parsed === null}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
                     className="input-base w-full text-[var(--text)] placeholder:text-[var(--text-muted)] tabular-nums"
                     style={{ fontSize: '16px', paddingInlineEnd: reading ? '7.5rem' : undefined }}
                 />
@@ -104,6 +105,11 @@ const HormoneValueField: React.FC<{
                     </span>
                 )}
             </div>
+            {error && (
+                <p id={errorId} className="field-hint is-error">
+                    {error}
+                </p>
+            )}
         </div>
     );
 };
@@ -118,6 +124,7 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
     defaultAssay,
 }) => {
     const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const { showDialog } = useDialog();
     const [dateStr, setDateStr] = useState('');
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -141,7 +148,7 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
             const d = new Date(resultToEdit.timeH * 3600000);
             const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             setDateStr(iso);
-            setEditValue(resultToEdit.concValue.toString());
+            setEditValue(formatRecordDecimal(resultToEdit.concValue, locale));
             setEditUnit(resultToEdit.unit);
             setAssay(resultToEdit.assay ?? 'unknown');
         } else {
@@ -151,15 +158,23 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
             setE2Value('');
             setTValue('');
         }
-    }, [resultToEdit]);
+    }, [resultToEdit, locale]);
 
-    const editNum = parseLabValue(editValue);
-    const e2Num = parseLabValue(e2Value);
-    const tNum = parseLabValue(tValue);
+    const editInput = parseRecordDecimal(editValue, locale);
+    const e2Input = parseRecordDecimal(e2Value, locale);
+    const tInput = parseRecordDecimal(tValue, locale);
+    const editNum = positiveLabValue(editInput);
+    const e2Num = positiveLabValue(e2Input);
+    const tNum = positiveLabValue(tInput);
+    const errorFor = (input: RecordDecimal): string | null => {
+        if (input.kind === 'invalid')
+            return t('error.decimalFormat').replace('{example}', formatRecordDecimal(1.5, locale));
+        return input.kind === 'number' && input.value <= 0 ? t('error.nonPositive') : null;
+    };
     // A field left empty is fine; one holding something that isn't a value
     // keeps Save disabled, rather than saving the other field and silently
     // dropping this one.
-    const addFieldsOk = (e2Value.trim() === '' || e2Num !== null) && (tValue.trim() === '' || tNum !== null);
+    const addFieldsOk = (e2Input.kind === 'empty' || e2Num !== null) && (tInput.kind === 'empty' || tNum !== null);
 
     const saving = useRef(false);
     useNativeBackOwner(() => {
@@ -192,7 +207,7 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
 
     const canSave = resultToEdit ? editNum !== null : addFieldsOk && (e2Num !== null || tNum !== null);
     const formatWhen = (d: Date) =>
-        d.toLocaleString(LOCALE_MAP[lang] || 'en-US', {
+        d.toLocaleString(locale, {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -239,6 +254,8 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                             unit={editUnit}
                             onUnitChange={setEditUnit}
                             value={editValue}
+                            amount={editNum}
+                            error={errorFor(editInput)}
                             onValueChange={setEditValue}
                         />
                     </div>
@@ -251,6 +268,8 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                                 unit={e2Unit}
                                 onUnitChange={setE2Unit}
                                 value={e2Value}
+                                amount={e2Num}
+                                error={errorFor(e2Input)}
                                 onValueChange={setE2Value}
                             />
                         </div>
@@ -261,6 +280,8 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                                 unit={tUnit}
                                 onUnitChange={setTUnit}
                                 value={tValue}
+                                amount={tNum}
+                                error={errorFor(tInput)}
                                 onValueChange={setTValue}
                             />
                         </div>

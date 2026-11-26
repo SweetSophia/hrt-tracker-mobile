@@ -10,9 +10,11 @@ import Doodle from '../components/Doodle';
 import { v4 as uuidv4 } from 'uuid';
 import { DoseEvent, Route, Ester, ExtraKey, getToE2Factor, isEstradiolEster, isTestosteroneEster } from '../../logic';
 import { patchRemovalPairs } from '../domain/shared/patch';
-import { formatTime, formatWearDays } from '../utils/helpers';
+import { LOCALE_MAP, formatTime, formatWearDays } from '../utils/helpers';
+import { formatRecordDecimal, recordDecimalValue } from '../utils/recordDecimal';
 import { drugLabel } from '../utils/regimenText';
 import { useDialog } from '../contexts/DialogContext';
+import { useTranslation } from '../contexts/LanguageContext';
 import DoseForm from '../components/DoseForm';
 import Stepper from '../components/Stepper';
 import LogDoodle from '../components/LogDoodle';
@@ -136,6 +138,8 @@ const History: React.FC<HistoryProps> = ({
     onOpenEditHandled,
 }) => {
     const { showDialog } = useDialog();
+    const { lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const isMounted = useMounted();
     const [editingId, setEditingId] = useState<string | null>(openEditId ?? null);
 
@@ -265,11 +269,27 @@ const History: React.FC<HistoryProps> = ({
         setBatchOn(false);
     };
 
+    const interval = recordDecimalValue(batchIntervalDays, locale);
+    const enteredCount = recordDecimalValue(batchCount, locale);
+    const count = Math.min(MAX_BATCH_COUNT, Math.floor(enteredCount));
+    const decimalError = t('error.decimalFormat').replace('{example}', formatRecordDecimal(1.5, locale));
+    const intervalError =
+        !Number.isFinite(interval) && batchIntervalDays.trim()
+            ? decimalError
+            : interval > 0
+              ? null
+              : t('error.nonPositive');
+    const countError =
+        !Number.isFinite(enteredCount) && batchCount.trim()
+            ? decimalError
+            : count >= 2
+              ? null
+              : t('timeline.batch_count_min');
+
     const handleQuickSave = async (e: DoseEvent, replacePreviousPatch = false) => {
-        const interval = parseFloat(batchIntervalDays);
-        const count = Math.min(MAX_BATCH_COUNT, Math.floor(parseFloat(batchCount)));
+        if (batchOn && (intervalError || countError)) return false;
         const list = [e];
-        if (batchOn && Number.isFinite(interval) && interval > 0 && Number.isFinite(count) && count > 1) {
+        if (batchOn) {
             for (let k = 1; k < count; k++) {
                 list.push({
                     ...e,
@@ -613,6 +633,8 @@ const History: React.FC<HistoryProps> = ({
                                         min={0.25}
                                         step={intervalStep}
                                         inputStep="0.25"
+                                        decimalLocale={locale}
+                                        error={intervalError}
                                     />
                                     <Stepper
                                         label={t('timeline.batch_count')}
@@ -622,6 +644,8 @@ const History: React.FC<HistoryProps> = ({
                                         max={MAX_BATCH_COUNT}
                                         step={() => 1}
                                         inputStep="1"
+                                        decimalLocale={locale}
+                                        error={countError}
                                     />
                                 </div>
                                 <p className={`mt-3 flex items-start gap-2 text-xs ${muted}`}>

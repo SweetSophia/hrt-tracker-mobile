@@ -37,6 +37,7 @@ import { useEscapeLayer, SelectChevron } from './CustomSelect';
 import GuideFold from './dose_form/GuideFold';
 import Tick from './Tick';
 import { cleanDoseMG } from '../utils/cleanDose';
+import { formatRecordDecimal, parseRecordDecimal, recordDecimalValue } from '../utils/recordDecimal';
 import { inertWhen } from '../utils/inert';
 
 export interface DoseTemplate {
@@ -96,10 +97,7 @@ interface DoseFormProps {
     events?: DoseEvent[];
 }
 
-// A stored dose as it is put back into a field: "12.5", not "12.500". Still
-// cut at three places, so a value an older version drifted (12.499934) comes
-// back as 12.5 rather than all its digits, and parses to the same number the
-// untrimmed string did.
+// Three decimal places for converted values and abbreviated dose summaries.
 const trimDose = (mg: number) => mg.toFixed(3).replace(/\.?0+$/, '');
 
 // The route menu in a fixed order, the most used first. The Route enum's own
@@ -139,6 +137,9 @@ const DoseForm: React.FC<DoseFormProps> = ({
     events = [],
 }) => {
     const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
+    const formatAmount = (value: number) => formatRecordDecimal(value, locale);
+    const formatMirror = (value: number) => formatAmount(Number(trimDose(value)));
     const { showDialog } = useDialog();
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     // The Time row and the picker under it. Escape folds the picker away,
@@ -231,7 +232,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
         if (!isKnownEster(preset.ester)) setForeignDrug({ route: preset.route, ester: preset.ester });
 
         if (withAmount) {
-            setRawDose(trimDose(preset.doseMG));
+            setRawDose(formatAmount(preset.doseMG));
             // Saved doses are in raw-ester mg, so mark the raw field as the
             // source of truth — otherwise handleSave would re-derive the dose from
             // the rounded E2-equivalent string and drift it (12.5 → 12.499934).
@@ -239,20 +240,20 @@ const DoseForm: React.FC<DoseFormProps> = ({
 
             const factor = getToE2Factor(preset.ester) || 1;
             const e2Val = preset.doseMG * factor;
-            setE2Dose(trimDose(e2Val));
+            setE2Dose(preset.ester === Ester.E2 ? formatAmount(preset.doseMG) : formatMirror(e2Val));
 
             // A patch saved by its total dose has no rate: open it in that mode,
             // or the dose would sit behind the empty rate field.
             if (preset.route === Route.patchApply) {
                 const rate = preset.extras[ExtraKey.releaseRateUGPerDay];
                 setPatchMode(rate ? 'rate' : 'dose');
-                if (rate) setPatchRate(rate.toString());
+                if (rate) setPatchRate(formatAmount(rate));
             }
         }
         if (preset.route === Route.patchApply) {
             const wearH = preset.extras[ExtraKey.patchWearH];
             setPatchWearDays(
-                typeof wearH === 'number' && Number.isFinite(wearH) && wearH > 0 ? (wearH / 24).toString() : '',
+                typeof wearH === 'number' && Number.isFinite(wearH) && wearH > 0 ? formatAmount(wearH / 24) : '',
             );
         }
 
@@ -264,7 +265,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                 const theta = preset.extras[ExtraKey.sublingualTheta];
                 const hold = Math.max(1, Math.min(60, holdFromTheta(typeof theta === 'number' ? theta : 0.11)));
                 setCustomHoldValue(hold);
-                setCustomHoldInput(hold.toString());
+                setCustomHoldInput(formatAmount(hold));
                 setUseCustomTheta(true);
             }
         }
@@ -288,22 +289,17 @@ const DoseForm: React.FC<DoseFormProps> = ({
 
             if (eventToEdit.route === Route.patchApply && eventToEdit.extras[ExtraKey.releaseRateUGPerDay]) {
                 setPatchMode('rate');
-                setPatchRate(eventToEdit.extras[ExtraKey.releaseRateUGPerDay].toString());
+                setPatchRate(formatAmount(eventToEdit.extras[ExtraKey.releaseRateUGPerDay]));
                 setE2Dose('');
                 setRawDose('');
             } else {
                 setPatchMode('dose');
                 const factor = getToE2Factor(eventToEdit.ester);
                 const e2Val = eventToEdit.doseMG * factor;
-                setE2Dose(trimDose(e2Val));
+                setE2Dose(eventToEdit.ester === Ester.E2 ? formatAmount(eventToEdit.doseMG) : formatMirror(e2Val));
 
-                if (eventToEdit.ester !== Ester.E2) {
-                    setRawDose(trimDose(eventToEdit.doseMG));
-                    setLastEditedField('raw');
-                } else {
-                    setRawDose(trimDose(eventToEdit.doseMG));
-                    setLastEditedField('bio');
-                }
+                setRawDose(formatAmount(eventToEdit.doseMG));
+                setLastEditedField(eventToEdit.ester === Ester.E2 ? 'bio' : 'raw');
             }
 
             if (eventToEdit.route === Route.sublingual) {
@@ -313,14 +309,14 @@ const DoseForm: React.FC<DoseFormProps> = ({
                     const tierKey = SL_TIER_ORDER[eventToEdit.extras[ExtraKey.sublingualTier]] || 'standard';
                     const hold = SublingualTierParams[tierKey]?.hold ?? 10;
                     setCustomHoldValue(hold);
-                    setCustomHoldInput(hold.toString());
+                    setCustomHoldInput(formatAmount(hold));
                 } else if (eventToEdit.extras[ExtraKey.sublingualTheta] !== undefined) {
                     const thetaVal = eventToEdit.extras[ExtraKey.sublingualTheta];
                     setUseCustomTheta(true);
                     const safeTheta = typeof thetaVal === 'number' && Number.isFinite(thetaVal) ? thetaVal : 0.11;
                     const hold = Math.max(1, Math.min(60, holdFromTheta(safeTheta)));
                     setCustomHoldValue(hold);
-                    setCustomHoldInput(hold.toString());
+                    setCustomHoldInput(formatAmount(hold));
                 } else {
                     setUseCustomTheta(false);
                     setCustomHoldValue(10);
@@ -345,7 +341,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                 Number.isFinite(wearH) &&
                 wearH > 0
             ) {
-                setPatchWearDays((wearH / 24).toString());
+                setPatchWearDays(formatAmount(wearH / 24));
             } else {
                 setPatchWearDays('');
             }
@@ -399,13 +395,11 @@ const DoseForm: React.FC<DoseFormProps> = ({
     const handleRawChange = (val: string) => {
         setRawDose(val);
         setLastEditedField('raw');
-        const v = parseFloat(val);
-        if (!isNaN(v)) {
+        const v = recordDecimalValue(val, locale);
+        if (Number.isFinite(v)) {
             const factor = getToE2Factor(ester) || 1;
             const e2Equivalent = v * factor;
-            // Mirrored in the same short form as the prefill (trimDose): the
-            // number parses the same, and the field reads 3.82, not 3.820.
-            setE2Dose(trimDose(e2Equivalent));
+            setE2Dose(ester === Ester.E2 ? formatAmount(v) : formatMirror(e2Equivalent));
         } else {
             setE2Dose('');
         }
@@ -414,13 +408,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
     const handleE2Change = (val: string) => {
         setE2Dose(val);
         setLastEditedField('bio');
-        const v = parseFloat(val);
-        if (!isNaN(v)) {
+        const v = recordDecimalValue(val, locale);
+        if (Number.isFinite(v)) {
             const factor = getToE2Factor(ester) || 1;
             if (ester === Ester.E2) {
-                setRawDose(trimDose(v));
+                setRawDose(formatAmount(v));
             } else {
-                setRawDose(trimDose(v / factor));
+                setRawDose(formatMirror(v / factor));
             }
         } else {
             setRawDose('');
@@ -443,12 +437,60 @@ const DoseForm: React.FC<DoseFormProps> = ({
         if (!isSavingRef.current) onCancel();
     });
 
-    // Why the last Save was refused, said under the dose fields instead of in
-    // a dialog that hid them. It stands until any of the values it was about
-    // changes, so it goes as soon as the field is fixed.
-    const valuesKey = [route, ester, patchMode, rawDose, e2Dose, patchRate, useCustomTheta, customHoldValue].join('|');
+    const patchByRate = route === Route.patchApply && patchMode === 'rate';
+    const useRawAmount = route === Route.patchApply || (ester !== Ester.E2 && lastEditedField === 'raw');
+    const amount = parseRecordDecimal(patchByRate ? patchRate : useRawAmount ? rawDose : e2Dose, locale);
+    const amountValue = amount.kind === 'number' ? amount.value : 0;
+    const factor = getToE2Factor(ester) || 1;
+    const doseMG =
+        route === Route.patchRemove || patchByRate
+            ? 0
+            : useRawAmount || ester === Ester.E2
+              ? amountValue
+              : amountValue / factor;
+    const patchWear = parseRecordDecimal(patchWearDays, locale);
+    const patchWearH = patchWear.kind === 'number' && patchWear.value > 0 ? patchWear.value * 24 : 0;
+    const customHold = parseRecordDecimal(customHoldInput, locale);
+    const hasCustomHold = route === Route.sublingual && useCustomTheta;
+    const invalidDecimal =
+        (route !== Route.patchRemove && amount.kind === 'invalid') ||
+        (route === Route.patchApply && (patchWear.kind === 'invalid' || !Number.isFinite(patchWearH))) ||
+        (hasCustomHold && customHold.kind === 'invalid') ||
+        !Number.isFinite(doseMG);
+
+    // A format error is visible while editing. Submit errors go away when
+    // the values they were about change.
+    const decimalError = t('error.decimalFormat').replace('{example}', formatAmount(1.5));
+    const valuesKey = [
+        route,
+        ester,
+        patchMode,
+        rawDose,
+        e2Dose,
+        patchRate,
+        patchWearDays,
+        useCustomTheta,
+        customHoldInput,
+    ].join('|');
     const [doseError, setDoseError] = useState<{ message: string; key: string } | null>(null);
-    const shownDoseError = doseError && doseError.key === valuesKey ? doseError.message : null;
+    const shownDoseError = invalidDecimal ? decimalError : doseError?.key === valuesKey ? doseError.message : null;
+
+    const validateDose = (allowEmptyAmount: boolean): string | null => {
+        if (invalidDecimal) return decimalError;
+        if (hasCustomHold && (customHold.kind !== 'number' || customHold.value < 1)) return t('error.slHoldMinOne');
+        if (route === Route.patchRemove || (allowEmptyAmount && amountValue === 0)) return null;
+        if (amount.kind === 'empty') return t('modal.dose.dose_required');
+        return (patchByRate ? amountValue : doseMG) > 0 ? null : t('error.nonPositive');
+    };
+
+    const doseExtras = (): DoseEvent['extras'] => {
+        const extras: DoseEvent['extras'] = slExtras ? { ...slExtras } : {};
+        if (patchByRate) extras[ExtraKey.releaseRateUGPerDay] = amountValue;
+        if (route === Route.patchApply && patchWearH > 0) extras[ExtraKey.patchWearH] = patchWearH;
+        if (route === Route.gel) extras[ExtraKey.gelSite] = gelSite;
+        return extras;
+    };
+
     const doseErrorId = React.useId();
     const fieldsRef = useRef<HTMLDivElement>(null);
     // Put the cursor in the field to fix: the first one marked, or for the
@@ -476,31 +518,20 @@ const DoseForm: React.FC<DoseFormProps> = ({
             return;
         }
 
+        const error = validateDose(true);
+        if (error) {
+            setDoseError({ message: error, key: valuesKey });
+            return;
+        }
         const template: DoseTemplate = {
             id: uuidv4(),
             name: templateName.trim(),
             route,
             ester,
-            doseMG: parseFloat(rawDose) || 0,
-            extras: {},
+            doseMG,
+            extras: doseExtras(),
             createdAt: Date.now(),
         };
-
-        if (route === Route.sublingual && slExtras) {
-            Object.assign(template.extras, slExtras);
-        }
-        if (route === Route.gel) {
-            template.extras[ExtraKey.gelSite] = gelSite;
-        }
-        if (route === Route.patchApply && patchMode === 'rate') {
-            template.extras[ExtraKey.releaseRateUGPerDay] = parseFloat(patchRate) || 0;
-        }
-        if (route === Route.patchApply) {
-            const wearDays = parseFloat(patchWearDays);
-            if (Number.isFinite(wearDays) && wearDays > 0) {
-                template.extras[ExtraKey.patchWearH] = wearDays * 24;
-            }
-        }
 
         if (!(await onSaveTemplate(template))) return;
         setShowSaveTemplateInput(false);
@@ -532,72 +563,10 @@ const DoseForm: React.FC<DoseFormProps> = ({
             timeH = new Date().getTime() / 3600000;
         }
 
-        let e2Equivalent = parseFloat(e2Dose);
-        if (isNaN(e2Equivalent)) e2Equivalent = 0;
-        let finalDose = 0;
-
-        const extras: any = {};
-        // An empty field asks for a dose; "greater than zero" is for a 0 typed.
-        const doseMsg = (typed: string) =>
-            typed.trim() === '' ? t('modal.dose.dose_required') : t('error.nonPositive');
-
-        if (route === Route.sublingual && useCustomTheta) {
-            if (!Number.isFinite(customHoldValue) || customHoldValue < 1) {
-                failSave(t('error.slHoldMinOne'));
-                return;
-            }
-        }
-
-        if (route === Route.patchApply && patchMode === 'rate') {
-            const rateVal = parseFloat(patchRate);
-            if (!Number.isFinite(rateVal) || rateVal <= 0) {
-                failSave(doseMsg(patchRate));
-                return;
-            }
-            finalDose = 0;
-            extras[ExtraKey.releaseRateUGPerDay] = rateVal;
-        } else if (route === Route.patchApply && patchMode === 'dose') {
-            const raw = parseFloat(rawDose);
-            if (!rawDose || rawDose.trim() === '' || !Number.isFinite(raw) || raw <= 0) {
-                failSave(doseMsg(rawDose));
-                return;
-            }
-            finalDose = raw;
-        } else if (route !== Route.patchRemove) {
-            const rawVal = parseFloat(rawDose);
-            if (ester !== Ester.E2 && lastEditedField === 'raw') {
-                // doseMG is stored in raw-ester mg, and the raw field is what the
-                // user typed (or a template/quick-dose filled). Use it directly:
-                // round-tripping through the E2-equivalent string loses precision
-                // to its toFixed(3) — e.g. 12.5 mg CPA saved as 12.499934.
-                if (!rawDose || rawDose.trim() === '' || !Number.isFinite(rawVal) || rawVal <= 0) {
-                    failSave(doseMsg(rawDose));
-                    return;
-                }
-                finalDose = rawVal;
-            } else {
-                if (!e2Dose || e2Dose.trim() === '' || !Number.isFinite(e2Equivalent) || e2Equivalent <= 0) {
-                    failSave(doseMsg(e2Dose));
-                    return;
-                }
-                const factor = getToE2Factor(ester) || 1;
-                finalDose = ester === Ester.E2 ? e2Equivalent : e2Equivalent / factor;
-            }
-        }
-
-        if (route === Route.sublingual && slExtras) {
-            Object.assign(extras, slExtras);
-        }
-
-        if (route === Route.gel) {
-            extras[ExtraKey.gelSite] = gelSite;
-        }
-
-        if (route === Route.patchApply) {
-            const wearDays = parseFloat(patchWearDays);
-            if (Number.isFinite(wearDays) && wearDays > 0) {
-                extras[ExtraKey.patchWearH] = wearDays * 24;
-            }
+        const error = validateDose(false);
+        if (error) {
+            failSave(error);
+            return;
         }
 
         const newEvent: DoseEvent = {
@@ -610,8 +579,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                         : Ester.E2
                     : ester,
             timeH,
-            doseMG: cleanDoseMG(finalDose),
-            extras,
+            doseMG: cleanDoseMG(doseMG),
+            extras: doseExtras(),
         };
 
         if (route === Route.patchRemove && eventToEdit?.route === Route.patchRemove) {
@@ -699,7 +668,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
         if (route === Route.patchApply && patchMode === 'dose' && cfg.requiresRate) {
             return { config: cfg, level: null, value: null, showRateHint: true as const };
         }
-        const rawVal = route === Route.patchApply ? parseFloat(patchRate) : parseFloat(e2Dose);
+        const rawVal = route === Route.patchApply || !useRawAmount ? amountValue : doseMG * factor;
         const value = Number.isFinite(rawVal) && rawVal > 0 ? rawVal : null;
         let level: DoseLevelKey | null = null;
         if (value !== null) {
@@ -711,7 +680,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
             else level = 'above';
         }
         return { config: cfg, level, value, showRateHint: false as const };
-    }, [route, patchMode, patchRate, e2Dose, ester, isTransmasc]);
+    }, [route, patchMode, amountValue, doseMG, factor, useRawAmount, ester, isTransmasc]);
 
     // Recent-use heads-up, based on doses already logged (not the still-unsaved
     // value being typed here). Covers CPA and injections too, which the static
@@ -988,8 +957,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     route={route}
                                     ester={ester}
                                     quickDoses={quickDoses}
-                                    currentDose={rawDose}
-                                    onSelectDose={val => handleRawChange(val.toString())}
+                                    currentDose={doseMG}
+                                    onSelectDose={val => handleRawChange(formatAmount(val))}
                                     onAddQuickDose={onAddQuickDose}
                                     onDeleteQuickDose={onDeleteQuickDose}
                                 />
@@ -1227,7 +1196,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                             dose to place: before that it was three lines of
                             "enter a dose" and bare thresholds on every new form. */}
                         {doseGuide &&
-                            (doseGuide.value !== null || (doseGuide.showRateHint && parseFloat(rawDose) > 0)) && (
+                            (doseGuide.value !== null ||
+                                (doseGuide.showRateHint && recordDecimalValue(rawDose, locale) > 0)) && (
                                 <div className="mt-2 pt-2 border-t-(length:--hairline) border-[var(--border)] flex gap-2">
                                     <span className="icon-line text-xs">
                                         <Info className="w-3.5 h-3.5 text-[var(--text-muted)]" />

@@ -350,6 +350,7 @@ export const TRANSLATIONS_BASE = {
         'timeline.batch_desc': '按固定间隔重复添加此剂量',
         'timeline.batch_interval': '间隔（天）',
         'timeline.batch_count': '次数',
+        'timeline.batch_count_min': '请至少输入 2 次。',
         'timeline.batch_hint': '从所选给药时间开始，每 {d} 天一条，共添加 {n} 条记录。',
         'timeline.future': '计划',
         'timeline.records': '条记录',
@@ -392,6 +393,7 @@ export const TRANSLATIONS_BASE = {
         'import.replace_complete_partial': '恢复没有完成，应用会重新加载，把这台设备还原成替换之前的样子。',
 
         'error.nonPositive': '不能输入小于等于 0 的值。',
+        'error.decimalFormat': '请按 {example} 的格式输入小数，整数部分直接连着输入。',
         'error.weightRange': '体重需在 20 到 400 公斤之间。',
         'error.birthYearRange': '出生年份需在 {min} 到 {max} 之间。',
         'error.slHoldMinOne': '含服时长需大于等于 1 分钟。',
@@ -1777,6 +1779,7 @@ export const TRANSLATIONS_BASE = {
         'timeline.batch_desc': 'Repeat this dose at a fixed interval',
         'timeline.batch_interval': 'Interval (days)',
         'timeline.batch_count': 'Count',
+        'timeline.batch_count_min': 'Enter at least 2 doses.',
         'timeline.batch_hint': 'Starting from the selected dose time, one entry every {d} days, {n} entries total.',
         'timeline.future': 'Planned',
         'timeline.records': 'Records',
@@ -1823,6 +1826,7 @@ export const TRANSLATIONS_BASE = {
             'The restore did not finish. The app will reload and put this device back the way it was.',
 
         'error.nonPositive': 'Value must be greater than zero.',
+        'error.decimalFormat': 'Use a single decimal mark, as in {example}. Keep the whole-number digits together.',
         'error.weightRange': 'Weight must be between 20 and 400 kg.',
         'error.birthYearRange': 'Year of birth must be between {min} and {max}.',
         'error.slHoldMinOne': 'Sublingual hold time must be at least 1 minute.',
@@ -3136,6 +3140,7 @@ const ZH_TW = {
     'timeline.batch_desc': '按固定間隔重複新增此劑量',
     'timeline.batch_interval': '間隔（天）',
     'timeline.batch_count': '次數',
+    'timeline.batch_count_min': '請至少輸入 2 次。',
     'timeline.batch_hint': '從所選給藥時間開始，每 {d} 天一筆，共新增 {n} 筆紀錄。',
     'timeline.future': '計劃',
     'timeline.records': '條記錄',
@@ -3167,6 +3172,7 @@ const ZH_TW = {
     'import.file_btn': '選擇檔案',
 
     'error.nonPositive': '不能輸入小於或等於 0 的值',
+    'error.decimalFormat': '請依照 {example} 的格式輸入小數，整數部分直接連著輸入。',
     'error.weightRange': '體重需在 20 到 400 公斤之間。',
     'error.birthYearRange': '出生年份需在 {min} 到 {max} 之間。',
     'error.slHoldMinOne': '含服時長需大於等於 1 分鐘',
@@ -4505,6 +4511,7 @@ export const TRANSLATIONS = {
         'timeline.batch_desc': '按固定間隔重複加呢個劑量',
         'timeline.batch_interval': '間隔（日）',
         'timeline.batch_count': '次數',
+        'timeline.batch_count_min': '請至少輸入 2 次。',
         'timeline.batch_hint': '由揀好嘅畀藥時間開始，每 {d} 日一條，總共加 {n} 條記錄。',
         'timeline.future': '計劃',
         'timeline.records': '條記錄',
@@ -4537,6 +4544,7 @@ export const TRANSLATIONS = {
         'import.file_btn': '揀檔案',
 
         'error.nonPositive': '唔可以輸入小於等於 0 嘅值',
+        'error.decimalFormat': '小數請跟 {example} 嘅格式，整數部分啲數字連埋一齊輸入。',
         'error.weightRange': '體重要喺 20 到 400 公斤之間。',
         'error.birthYearRange': '出生年份要喺 {min} 到 {max} 之間。',
         'error.slHoldMinOne': '含服時間要大於等於 1 分鐘',
@@ -5324,6 +5332,7 @@ export const TRANSLATIONS = {
         'timeline.batch_desc': '一定間隔でこの用量を繰り返し追加',
         'timeline.batch_interval': '間隔（日）',
         'timeline.batch_count': '回数',
+        'timeline.batch_count_min': '2 回以上入力してください。',
         'timeline.batch_hint': '選択した投与時刻から {d} 日ごとに1件、計 {n} 件追加します。',
         'timeline.future': '予定',
         'timeline.records': '件の記録',
@@ -5354,6 +5363,7 @@ export const TRANSLATIONS = {
         'import.file_btn': 'ファイルを選択',
 
         'error.nonPositive': '0 以下の値は入力できません。',
+        'error.decimalFormat': '小数は {example} のように入力し、整数部分の数字は続けて入力してください。',
         'error.weightRange': '体重は 20〜400 kg の範囲で入力してください。',
         'error.birthYearRange': '生まれ年は {min}〜{max} の範囲で入力してください。',
         'error.slHoldMinOne': '舌下保持時間は 1 分以上必要です。',
@@ -6528,6 +6538,7 @@ export const TRANSLATIONS = {
         'timeline.batch_desc': '일정 간격으로 이 용량을 반복 추가',
         'timeline.batch_interval': '간격 (일)',
         'timeline.batch_count': '횟수',
+        'timeline.batch_count_min': '2회 이상 입력하세요.',
         'timeline.batch_hint': '선택한 투여 시각부터 {d}일마다 1건씩, 총 {n}건 추가됩니다.',
         'timeline.future': '예정',
         'timeline.records': '건',
@@ -6654,6 +6665,7 @@ export const TRANSLATIONS = {
         'import.file_btn': '파일 선택',
 
         'error.nonPositive': '값은 0보다 커야 합니다.',
+        'error.decimalFormat': '소수는 {example}처럼 입력하고, 정수 부분의 숫자는 이어서 입력하세요.',
         'error.weightRange': '몸무게는 20~400kg 사이여야 합니다.',
         'error.birthYearRange': '출생 연도는 {min}~{max} 사이여야 합니다.',
         'error.slHoldMinOne': '설하 유지 시간은 최소 1분 이상이어야 합니다.',
@@ -7758,6 +7770,7 @@ export const TRANSLATIONS = {
         'timeline.batch_desc': 'Bu dozu sabit aralıkla tekrarla',
         'timeline.batch_interval': 'Aralık (gün)',
         'timeline.batch_count': 'Adet',
+        'timeline.batch_count_min': 'En az 2 doz girin.',
         'timeline.batch_hint': 'Seçilen doz zamanından başlayarak her {d} günde bir, toplam {n} kayıt eklenir.',
         'timeline.future': 'Planlı',
         'timeline.records': 'Kayıt',
@@ -7884,6 +7897,8 @@ export const TRANSLATIONS = {
         'import.file_btn': 'Dosya seç',
 
         'error.nonPositive': 'Değer sıfırdan büyük olmalıdır.',
+        'error.decimalFormat':
+            'Ondalık sayıları {example} biçiminde girin. Tam sayı kısmındaki rakamları bitişik yazın.',
         'error.weightRange': 'Kilo 20 ile 400 kg arasında olmalıdır.',
         'error.birthYearRange': 'Doğum yılı {min} ile {max} arasında olmalıdır.',
         'error.slHoldMinOne': 'Dil altı tutma süresi en az 1 dakika olmalıdır.',

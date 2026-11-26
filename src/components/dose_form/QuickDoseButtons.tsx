@@ -17,7 +17,7 @@ interface QuickDoseButtonsProps {
     route: Route;
     ester: Ester;
     quickDoses: QuickDose[];
-    currentDose: string;
+    currentDose: number;
     onSelectDose: (value: number) => void;
     onAddQuickDose: (dose: QuickDose) => Promise<boolean>;
     onDeleteQuickDose: (id: string) => Promise<boolean>;
@@ -43,7 +43,7 @@ const QuickDoseButtons: React.FC<QuickDoseButtonsProps> = ({
         .sort((a, b) => a.value - b.value);
 
     const handleAdd = () => {
-        const val = parseFloat(currentDose);
+        const val = currentDose;
         if (!Number.isFinite(val) || val <= 0) {
             showDialog('alert', t('quickdose.empty_input'));
             return;

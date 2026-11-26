@@ -5,6 +5,8 @@ import { NativeBackScope } from '../../hooks/useNativeBackOwner';
 import { inertWhen } from '../../utils/inert';
 import { GEL_PRESETS, convertGelAmount, formatGelMG, type GelPreset } from '../../utils/gelUnits';
 import CustomSelect from '../CustomSelect';
+import { LOCALE_MAP } from '../../utils/helpers';
+import { formatRecordDecimal, parseRecordDecimal } from '../../utils/recordDecimal';
 
 /** One counted unit, singular: the packs' own word for a ruler, pump or sachet. */
 const unitLabel = (preset: GelPreset, t: (key: string) => string) => t(preset.unitKey).replace(/s$/, '');
@@ -16,7 +18,8 @@ const unitLabel = (preset: GelPreset, t: (key: string) => string) => t(preset.un
  * changes; only the arithmetic that used to be done on paper moves in here.
  */
 const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const [open, setOpen] = React.useState(false);
     const [presetId, setPresetId] = React.useState(GEL_PRESETS[0].id);
     const [amount, setAmount] = React.useState('');
@@ -26,12 +29,25 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
     const amountId = React.useId();
     const customMGId = React.useId();
     const customUnitId = React.useId();
+    const formatErrorId = React.useId();
 
     const preset = GEL_PRESETS.find(p => p.id === presetId);
     const isCustom = presetId === 'custom';
-    const mgPerUnit = isCustom ? parseFloat(customMG) : preset?.mgPerUnit;
-    const result = mgPerUnit === undefined ? null : convertGelAmount(parseFloat(amount), mgPerUnit);
-    const shownResult = result === null ? null : formatGelMG(result);
+    const enteredAmount = parseRecordDecimal(amount, locale);
+    const enteredStrength = parseRecordDecimal(customMG, locale);
+    const mgPerUnit = isCustom
+        ? enteredStrength.kind === 'number'
+            ? enteredStrength.value
+            : undefined
+        : preset?.mgPerUnit;
+    const result =
+        enteredAmount.kind === 'number' && mgPerUnit !== undefined
+            ? convertGelAmount(enteredAmount.value, mgPerUnit)
+            : null;
+    const rounded = result === null ? null : Number(formatGelMG(result));
+    const shownResult = rounded === null ? null : formatRecordDecimal(rounded, locale);
+    const invalidAmount = enteredAmount.kind === 'invalid';
+    const invalidStrength = isCustom && enteredStrength.kind === 'invalid';
     const unit = isCustom ? customUnit.trim() || t('gel.convert.unit_default') : preset ? unitLabel(preset, t) : '';
 
     const options = [
@@ -81,13 +97,13 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                         </label>
                                         <input
                                             id={customMGId}
-                                            type="number"
+                                            type="text"
                                             inputMode="decimal"
-                                            min="0"
-                                            step="0.001"
                                             value={customMG}
+                                            aria-invalid={invalidStrength || undefined}
+                                            aria-describedby={invalidStrength ? formatErrorId : undefined}
                                             onChange={e => setCustomMG(e.target.value)}
-                                            className="input-base w-full text-[var(--text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="input-base w-full text-[var(--text)]"
                                             placeholder="0.6"
                                         />
                                     </div>
@@ -114,13 +130,13 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                 <div className="flex items-baseline gap-2">
                                     <input
                                         id={amountId}
-                                        type="number"
+                                        type="text"
                                         inputMode="decimal"
-                                        min="0"
-                                        step="0.25"
                                         value={amount}
+                                        aria-invalid={invalidAmount || undefined}
+                                        aria-describedby={invalidAmount ? formatErrorId : undefined}
                                         onChange={e => setAmount(e.target.value)}
-                                        className="input-base min-w-0 flex-1 text-[var(--text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="input-base min-w-0 flex-1 text-[var(--text)]"
                                         placeholder="1"
                                     />
                                     <span className="shrink-0 text-sm text-[var(--text-muted)]">{unit}</span>
@@ -133,7 +149,7 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                 </p>
                                 <button
                                     type="button"
-                                    disabled={shownResult === null || Number(shownResult) <= 0}
+                                    disabled={rounded === null || rounded <= 0}
                                     onClick={() => {
                                         if (shownResult === null) return;
                                         onApply(shownResult);
@@ -145,6 +161,11 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                 </button>
                             </div>
 
+                            {(invalidAmount || invalidStrength) && (
+                                <p id={formatErrorId} className="field-hint is-error" role="alert">
+                                    {t('error.decimalFormat').replace('{example}', formatRecordDecimal(1.5, locale))}
+                                </p>
+                            )}
                             <p className="field-hint">{t('gel.convert.note')}</p>
                         </div>
                     </NativeBackScope>

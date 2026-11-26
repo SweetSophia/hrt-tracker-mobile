@@ -5,6 +5,8 @@ import { useHRTMode } from '../../contexts/HRTModeContext';
 import CustomSelect from '../CustomSelect';
 import GelDoseConverter from './GelDoseConverter';
 import { refusedFieldProps } from './refusedField';
+import { LOCALE_MAP } from '../../utils/helpers';
+import { recordDecimalValue } from '../../utils/recordDecimal';
 
 interface GelFieldsProps {
     ester: Ester;
@@ -28,13 +30,14 @@ const GelFields: React.FC<GelFieldsProps> = ({
     invalid,
     errorId,
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const { isTransmasc } = useHRTMode();
     // What goes in is the estradiol in the gel, not grams of gel or pumps,
     // and not an "equivalent" to convert to: the label says so.
     const equivLabelKey = isTransmasc ? 'field.dose_t' : 'field.gel_e2_applied';
 
-    const appliedVal = parseFloat(e2Dose);
+    const appliedVal = recordDecimalValue(e2Dose, locale);
     const hasDose = Number.isFinite(appliedVal) && appliedVal > 0;
     const absorbed = hasDose && bioMultiplier ? appliedVal * bioMultiplier : null;
     const bioPct = bioMultiplier ? bioMultiplier * 100 : null;
@@ -67,13 +70,11 @@ const GelFields: React.FC<GelFieldsProps> = ({
                 <input
                     id={doseId}
                     {...refusedFieldProps(e2Dose, invalid, errorId)}
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    min="0"
-                    step="0.001"
                     value={e2Dose}
                     onChange={e => onE2Change(e.target.value)}
-                    className="input-base w-full text-[var(--text)] font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="input-base w-full text-[var(--text)] font-medium"
                     placeholder="0.0"
                     style={{ fontSize: '16px' }}
                 />

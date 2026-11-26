@@ -3,6 +3,8 @@ import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, SL_TIER_ORDER, SublingualTierParams } from '../../../logic';
 import CustomSelect from '../CustomSelect';
 import { refusedFieldProps } from './refusedField';
+import { LOCALE_MAP } from '../../utils/helpers';
+import { formatRecordDecimal, recordDecimalValue } from '../../utils/recordDecimal';
 
 interface SublingualFieldsProps {
     ester: Ester;
@@ -44,7 +46,8 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
     invalid,
     errorId,
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const tierLabelId = React.useId();
     const holdLabelId = React.useId();
     const holdId = React.useId();
@@ -53,7 +56,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
 
     const handleCustomHoldChange = (str: string) => {
         setCustomHoldInput(str);
-        const val = parseFloat(str);
+        const val = recordDecimalValue(str, locale);
         if (Number.isFinite(val) && val >= 1) {
             setCustomHoldValue(val);
         }
@@ -100,13 +103,12 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         <div className="flex items-center gap-2">
                             <input
                                 id={holdId}
-                                type="number"
+                                {...refusedFieldProps(customHoldInput, invalid, errorId)}
+                                type="text"
                                 inputMode="decimal"
-                                min="1"
-                                max="60"
                                 value={customHoldInput}
                                 onChange={e => handleCustomHoldChange(e.target.value)}
-                                className="input-base w-16 h-9 text-center text-sm font-medium text-[var(--text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                className="input-base w-16 h-9 text-center text-sm font-medium text-[var(--text)]"
                                 style={{ fontSize: '16px' }}
                             />
                             <span className="text-xs text-[var(--text-muted)]">{t('unit.min_short')}</span>
@@ -119,7 +121,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                                 onChange={e => {
                                     const v = parseInt(e.target.value);
                                     setCustomHoldValue(v);
-                                    setCustomHoldInput(v.toString());
+                                    setCustomHoldInput(formatRecordDecimal(v, locale));
                                 }}
                                 className="flex-1 h-1 accent-[var(--accent)]"
                             />
@@ -142,13 +144,11 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         <input
                             id={rawId}
                             {...refusedFieldProps(rawDose, invalid, errorId)}
-                            type="number"
+                            type="text"
                             inputMode="decimal"
-                            min="0"
-                            step="0.001"
                             value={rawDose}
                             onChange={e => onRawChange(e.target.value)}
-                            className="input-base w-full text-[var(--text)] font-medium text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="input-base w-full text-[var(--text)] font-medium text-sm"
                             placeholder="0.0"
                             style={{ fontSize: '16px' }}
                         />
@@ -163,13 +163,11 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         <input
                             id={e2Id}
                             {...refusedFieldProps(e2Dose, invalid, errorId)}
-                            type="number"
+                            type="text"
                             inputMode="decimal"
-                            min="0"
-                            step="0.001"
                             value={e2Dose}
                             onChange={e => onE2Change(e.target.value)}
-                            className="input-base w-full text-[var(--text)] font-medium text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="input-base w-full text-[var(--text)] font-medium text-sm"
                             placeholder="0.0"
                             style={{ fontSize: '16px' }}
                         />

@@ -354,6 +354,7 @@ export const RU = {
     'timeline.batch_desc': 'Повторять эту дозу с постоянным интервалом',
     'timeline.batch_interval': 'Интервал (дни)',
     'timeline.batch_count': 'Количество',
+    'timeline.batch_count_min': 'Введите как минимум 2 дозы.',
     'timeline.batch_hint': 'Начиная с выбранного времени дозы, одна запись каждые {d} дн., всего записей: {n}.',
     'timeline.future': 'Запланировано',
     'timeline.records': 'Записи',
@@ -397,6 +398,7 @@ export const RU = {
     'import.replace_complete_partial':
         'Восстановление не завершилось. Приложение перезагрузится и вернёт устройство в прежнее состояние.',
     'error.nonPositive': 'Значение должно быть больше нуля.',
+    'error.decimalFormat': 'Введите число в формате {example}. Цифры целой части вводите слитно.',
     'error.weightRange': 'Вес должен быть от 20 до 400 кг.',
     'error.birthYearRange': 'Год рождения должен быть от {min} до {max}.',
     'error.slHoldMinOne': 'Время под языком должно быть не меньше 1 минуты.',
