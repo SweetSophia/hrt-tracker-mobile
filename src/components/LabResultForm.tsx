@@ -347,7 +347,7 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                         onClick={() =>
                             showDialog(
                                 'confirm',
-                                `${resultToEdit.concValue} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
+                                `${formatRecordDecimal(resultToEdit.concValue, lang === 'de' ? locale : 'en-US')} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
                                 async () => {
                                     if (!(await onDelete(resultToEdit.id))) return;
                                     onCancel();

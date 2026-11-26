@@ -101,6 +101,27 @@ export const MOBILE_CREDITS: Record<Lang, MobileCreditsCopy> = {
         'mobileCredits.guide': 'Contributing guide',
         'mobileCredits.issue': 'Open an issue',
     },
+    de: {
+        'mobileCredits.title': 'Mitwirkende',
+        'mobileCredits.upstream_developers': 'Entwicklung von Oyamas HRT Tracker',
+        'mobileCredits.mobile_developers': 'Entwicklung von HRT Tracker Mobile',
+        'mobileCredits.maintainer': 'Betreuung der mobilen App',
+        'mobileCredits.bio':
+            'Betreut die mobile Version auf Basis von Oyamas HRT Tracker. Fachinformatik für Systemintegration.',
+        'mobileCredits.focus_label': 'Schwerpunkt',
+        'mobileCredits.focus': 'Portierung auf Android',
+        'mobileCredits.languages': 'Sprachen',
+        'mobileCredits.repository': 'GitHub-Repository der mobilen App',
+        'mobileCredits.join': 'Mitmachen',
+        'mobileCredits.web_project': 'Oyamas HRT Tracker (Webversion)',
+        'mobileCredits.mobile_project': 'HRT Tracker Mobile (Android)',
+        'mobileCredits.web_invite':
+            'Hilf mit, die ursprüngliche Webversion zu verbessern. Beiträge zu Fehlerberichten, Übersetzungen, Design, Dokumentation, Tests und Code sind willkommen.',
+        'mobileCredits.mobile_invite':
+            'Beiträge zur mobilen App sind willkommen. Teste auf einem Android-Gerät, melde Fehler, hilf bei Übersetzungen, Barrierefreiheit, Dokumentation, Design oder Code.',
+        'mobileCredits.guide': 'Leitfaden zum Mitmachen',
+        'mobileCredits.issue': 'Problem melden',
+    },
     ja: {
         'mobileCredits.title': 'クレジット',
         'mobileCredits.upstream_developers': "Oyama's HRT Tracker 開発者",

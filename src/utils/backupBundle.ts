@@ -361,6 +361,7 @@ const isLang = (value: unknown): value is Lang =>
     value === 'zh-TW' ||
     value === 'yue' ||
     value === 'en' ||
+    value === 'de' ||
     value === 'ja' ||
     value === 'ko' ||
     value === 'tr' ||

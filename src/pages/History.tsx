@@ -151,6 +151,11 @@ const History: React.FC<HistoryProps> = ({
     const { showDialog } = useDialog();
     const { lang } = useTranslation();
     const locale = LOCALE_MAP[lang] ?? 'en-US';
+    const recordLocale = lang === 'de' ? locale : 'en-US';
+    const formatDoseAmount = (value: number) => {
+        const amount = value.toFixed(2);
+        return lang === 'de' ? amount.replace('.', ',') : amount;
+    };
     const isMounted = useMounted();
     const quickAddId = React.useId();
     const [headerHeight, setHeaderHeight] = useState<number>();
@@ -449,19 +454,19 @@ const History: React.FC<HistoryProps> = ({
                                 <span className="truncate">{t(`route.${ev.route}`)}</span>
                                 {ev.extras[ExtraKey.releaseRateUGPerDay] ? (
                                     <>
-                                        <span className="text-[var(--text)]">{`${ev.extras[ExtraKey.releaseRateUGPerDay]} µg/d`}</span>
+                                        <span className="text-[var(--text)]">{`${formatRecordDecimal(ev.extras[ExtraKey.releaseRateUGPerDay], recordLocale)} µg/d`}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="text-[var(--text)] font-medium">{`${ev.doseMG.toFixed(2)} mg`}</span>
+                                        <span className="text-[var(--text)] font-medium">{`${formatDoseAmount(ev.doseMG)} mg`}</span>
                                         {ev.ester !== Ester.E2 && isEstradiolEster(ev.ester) && (
                                             <span className="opacity-70">
-                                                {`(${t('label.e2')} eq: ${(ev.doseMG * getToE2Factor(ev.ester)).toFixed(2)} mg)`}
+                                                {`(${t('label.e2')} eq: ${formatDoseAmount(ev.doseMG * getToE2Factor(ev.ester))} mg)`}
                                             </span>
                                         )}
                                         {isTestosteroneEster(ev.ester) && ev.ester !== Ester.T && (
                                             <span className="opacity-70">
-                                                {`(${t('label.t')} eq: ${(ev.doseMG * getToE2Factor(ev.ester)).toFixed(2)} mg)`}
+                                                {`(${t('label.t')} eq: ${formatDoseAmount(ev.doseMG * getToE2Factor(ev.ester))} mg)`}
                                             </span>
                                         )}
                                     </>

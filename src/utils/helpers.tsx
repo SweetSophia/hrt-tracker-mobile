@@ -5,6 +5,7 @@ export const LOCALE_MAP: Record<Lang, string> = {
     'zh-TW': 'zh-TW',
     yue: 'zh-HK',
     en: 'en-US',
+    de: 'de-DE',
     ja: 'ja-JP',
     ko: 'ko-KR',
     tr: 'tr-TR',

@@ -1,9 +1,10 @@
 import { APPEARANCE_COPY } from './appearanceCopy';
+import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { RU } from './ru';
 import { UK } from './uk';
 
-export type Lang = 'zh' | 'zh-TW' | 'yue' | 'en' | 'ja' | 'ko' | 'tr' | 'ru' | 'uk';
+export type Lang = 'zh' | 'zh-TW' | 'yue' | 'en' | 'de' | 'ja' | 'ko' | 'tr' | 'ru' | 'uk';
 
 export const TRANSLATIONS_BASE = {
     zh: {
@@ -5096,6 +5097,11 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.en,
         ...APPEARANCE_COPY.en,
         'app.title': 'HRT Tracker',
+    },
+    de: {
+        ...DE,
+        ...MOBILE_CREDITS.de,
+        ...APPEARANCE_COPY.de,
     },
     ja: {
         ...MOBILE_CREDITS.ja,

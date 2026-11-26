@@ -138,6 +138,81 @@ const en: ShareCopy = {
 
 const copy: Record<Lang, ShareCopy> = {
     en,
+    de: {
+        action: 'Teilen',
+        modalTitle: 'Dosierungsdaten teilen',
+        modalDescription: 'Erstelle eine schreibgeschützte Momentaufnahme mit Dosierungsdiagramm und -verlauf.',
+        snapshotNote:
+            'Deine Dosiseinträge, die Modellkurve und deine Zeitzone werden auf diesem Gerät verschlüsselt, bevor sie hochgeladen werden. Sie bleiben gespeichert, bis der Link abläuft. Der Schlüssel steckt im Link. Der Dienst kann die Daten daher nicht lesen. Spätere Änderungen erscheinen im Link nicht. Laborwerte, Gewicht, Profil- und Kontodaten werden nicht geteilt.',
+        liveSnapshotNote:
+            'Solange du angemeldet bist und HRT Tracker geöffnet ist, werden spätere Änderungen an den Dosiseinträgen verschlüsselt und über diesen Link bereitgestellt. Der Schlüssel steckt im Link. Der Dienst kann die Daten daher nicht lesen. Laborwerte, Gewicht, Profil- und Kontodaten werden nicht geteilt.',
+        liveToggle: 'Link aktuell halten',
+        liveBadge: 'Live',
+        updatedOn: 'Aktualisiert',
+        passwordToggle: 'Mit Passwort schützen',
+        passwordLabel: 'Passwort für den Link',
+        passwordPlaceholder: 'Mindestens 8 Zeichen',
+        passwordHint: 'Sende das Passwort getrennt vom Link.',
+        expiryLabel: 'Ablaufdatum',
+        expiryHint: 'Nach diesem Zeitpunkt funktioniert der Link nicht mehr.',
+        create: 'Link erstellen',
+        creating: 'Wird erstellt …',
+        created: 'Dein Freigabelink ist bereit',
+        copy: 'Link kopieren',
+        copied: 'Kopiert',
+        createError: 'Der Link konnte nicht erstellt werden. Versuche es erneut.',
+        tooLarge: 'Dieser Verlauf ist zu groß für einen einzelnen Freigabelink.',
+        limitReached:
+            'Du hast die Höchstzahl aktiver Links erreicht. Versuche es erneut, sobald ein älterer Link abgelaufen ist.',
+        invalidExpiry: 'Wähle einen Ablaufzeitpunkt in der Zukunft.',
+        expiryTooFar: 'Freigabelinks können höchstens bis Ende 2100 gültig sein.',
+        expiryLongWarning:
+            'Über 365 Tage hinaus lässt sich die Sicherheit nicht garantieren. Bis zum Ablauf kann jede Person mit dem Link ihn öffnen.',
+        publicTitle: 'Geteilter Dosierungsverlauf',
+        sharedOn: 'Geteilt',
+        expiresOn: 'Läuft ab',
+        neverExpires: 'Läuft nie ab',
+        protected: 'Passwortgeschützt',
+        chartTitle: 'Dosierungsdiagramm',
+        historyTitle: 'Dosierungsverlauf',
+        records: 'Einträge',
+        disclaimer:
+            'Das Diagramm zeigt eine Modellschätzung auf Grundlage der erfassten Dosen. Sie dient nicht als medizinischer Rat und ersetzt weder Blutuntersuchungen noch ärztliche Betreuung.',
+        loading: 'Geteilter Verlauf wird geöffnet …',
+        unlockTitle: 'Dieser Verlauf ist geschützt',
+        unlockDescription: 'Gib das Passwort ein, das du von der Person erhalten hast, die den Link geteilt hat.',
+        unlock: 'Verlauf ansehen',
+        unlocking: 'Wird geprüft …',
+        wrongPassword: 'Das Passwort ist falsch.',
+        unavailableTitle: 'Dieser geteilte Verlauf ist nicht verfügbar',
+        unavailableDescription: 'Der Link ist möglicherweise ungültig, wurde entfernt oder ist nicht mehr erreichbar.',
+        expiredTitle: 'Dieser Freigabelink ist abgelaufen',
+        expiredDescription: 'Bitte die Person, die den Link geteilt hat, einen neuen zu erstellen.',
+        manageTitle: 'Aktive Freigabelinks',
+        manageDescription:
+            'Du kannst einen Link jederzeit widerrufen. Aus Sicherheitsgründen kann ein vorhandener Link nicht erneut angezeigt werden.',
+        noneActive: 'Keine aktiven Links',
+        revoke: 'Widerrufen',
+        revokeConfirm:
+            'Diesen Freigabelink widerrufen? Alle Personen, die ihn verwenden, verlieren sofort den Zugriff.',
+        revokeError: 'Der Link konnte nicht widerrufen werden. Versuche es erneut.',
+        liveNeedsKey:
+            'Entsperre zuerst die Cloud-Synchronisierung auf der Kontoseite mit deinem Kontopasswort, um den Link aktuell zu halten.',
+        notEncrypted: 'Unverschlüsselt',
+        legacyHint:
+            'Als „Unverschlüsselt“ markierte Links wurden vor Einführung der Verschlüsselung erstellt. Der Dienst kann sie lesen. Widerrufe sie und erstelle neue Links, damit sie verschlüsselt sind.',
+        keyInvalidDescription:
+            'Der Link scheint unvollständig zu sein. Kopiere den gesamten Link einschließlich aller Zeichen nach dem #.',
+        rateLimitedTitle: 'Zu viele Anfragen',
+        rateLimitedDescription: 'Zu viele Versuche. Warte kurz und versuche es erneut.',
+        rateLimitedRetry: 'Ab {time} erneut versuchen',
+        passwordLocked: 'Zu viele falsche Passwortversuche für diesen Link. Versuche es ab {time} erneut.',
+        entropyLabel: 'Geschätzte Entropie',
+        entropyUnit: 'Bit',
+        entropyFormula: 'Für rein zufällige Zeichen gilt H = {length} × log₂({charset}) ≈ {bits} {unit}',
+        entropyAssumptions:
+            'Die Theorie geht von gleichverteiltem Zufall aus. Die Schätzung berücksichtigt auch häufige Wörter und Muster. Wie lange das Knacken des Passworts dauert, lässt sich daraus nicht zuverlässig ableiten.',
+    },
     zh: {
         ...en,
         action: '分享',

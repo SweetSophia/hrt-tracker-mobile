@@ -17,7 +17,7 @@ import {
     rawModelAtLab,
 } from '../../logic';
 import { Lang } from '../i18n/translations';
-import { formatDate, formatTime } from '../utils/helpers';
+import { formatDate, formatTime, LOCALE_MAP } from '../utils/helpers';
 import LabResultForm from '../components/LabResultForm';
 import VialDoodle from '../components/VialDoodle';
 import CalibrationPlot from '../components/CalibrationPlot';
@@ -31,6 +31,7 @@ import { AddCancelLabel, SwapLabel } from '../components/StableLabel';
 import { CopyTick } from '../components/Tick';
 import { scrollParent } from '../utils/scrollParent';
 import { inertWhen } from '../utils/inert';
+import { formatRecordDecimal } from '../utils/recordDecimal';
 
 interface LabProps {
     t: (key: string) => string;
@@ -67,6 +68,7 @@ const Lab: React.FC<LabProps> = ({
     lang,
 }) => {
     const isMounted = useMounted();
+    const recordLocale = lang === 'de' ? LOCALE_MAP.de : 'en-US';
     const quickAddId = React.useId();
     const [editingLabId, setEditingLabId] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
@@ -290,7 +292,8 @@ const Lab: React.FC<LabProps> = ({
                                                 <span className="flex items-center justify-between mb-1">
                                                     <span className="text-sm">
                                                         <span className={`font-medium tabular-nums ${on}`}>
-                                                            {res.concValue} {clinicalUnit(res.unit)}
+                                                            {formatRecordDecimal(res.concValue, recordLocale)}{' '}
+                                                            {clinicalUnit(res.unit)}
                                                         </span>
                                                         <span className={muted}>
                                                             {', '}

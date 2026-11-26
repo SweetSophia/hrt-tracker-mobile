@@ -129,6 +129,7 @@ const NOTICE_LANGS: { id: 'default' | Lang; label: string }[] = [
     { id: 'zh-TW', label: '繁體中文' },
     { id: 'yue', label: '粵語' },
     { id: 'en', label: 'English' },
+    { id: 'de', label: 'Deutsch' },
     { id: 'ja', label: '日本語' },
     { id: 'ko', label: '한국어' },
     { id: 'tr', label: 'Türkçe' },

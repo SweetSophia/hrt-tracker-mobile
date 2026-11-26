@@ -526,11 +526,14 @@ describe('complete backup bundle data layer', () => {
             'app-hide-site-label': true,
             'hrt-supply-lead-days': 30,
         });
+        storage.setItem('hrt-lang', 'de');
+        expect(readPortablePreferences(storage)['hrt-lang']).toBe('de');
 
         const bundle = build(seed());
         const imported = JSON.parse(JSON.stringify(bundle)) as CompleteBackupBundle;
         imported.preferences = {
             ...imported.preferences,
+            'hrt-lang': 'de',
             auth_token: 'synthetic-token',
             'app-auto-backup': true,
         } as CompleteBackupBundle['preferences'];
@@ -538,13 +541,17 @@ describe('complete backup bundle data layer', () => {
         const result = mergeCompleteBackupBundleToStorage(imported, context(target));
         expect(result.preferences).not.toHaveProperty('auth_token');
         expect(result.preferences).not.toHaveProperty('app-auto-backup');
+        expect(result.preferences['hrt-lang']).toBe('de');
         expect(target.getItem('auth_token')).toBeNull();
         expect(target.getItem('app-auto-backup')).toBeNull();
     });
 
     it('round-trips portable preferences and keeps the saved palette when an older backup omits it', async () => {
-        const bundle = build(seed());
+        const source = seed();
+        source.setItem('hrt-lang', 'de');
+        const bundle = build(source);
         expect(Object.keys(bundle.preferences).sort()).toEqual([...PORTABLE_PREFERENCE_KEYS].sort());
+        expect(bundle.preferences['hrt-lang']).toBe('de');
 
         const mergeStorage = new MemoryStorage();
         const mergeStore = new WebRecordStore(mergeStorage, 'offline');
@@ -552,6 +559,7 @@ describe('complete backup bundle data layer', () => {
         await mergeStore.commit(merged.changes);
         expect(merged.result.applied.preferences).toEqual(bundle.preferences);
         expect(mergeStorage.getItem('app-palette')).toBe('plum');
+        expect(mergeStorage.getItem('hrt-lang')).toBe('de');
 
         const replaceStorage = new MemoryStorage();
         replaceStorage.setItem('app-palette', 'teal');

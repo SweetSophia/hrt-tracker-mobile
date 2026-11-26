@@ -3,7 +3,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { APP_THEMES } from '../src/constants';
+import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
+import { DE } from '../src/i18n/de';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
+import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
 
 // A language pack may start from another one with a spread, but a spread
@@ -12,6 +15,8 @@ import { TRANSLATIONS } from '../src/i18n/translations';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/i18n/translations.ts'), 'utf8').split('\n');
+const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
+const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
 describe('language packs', () => {
     it('spread a base pack only before their own strings', () => {
@@ -35,7 +40,7 @@ describe('language packs', () => {
     });
 
     it('has a label for every display mode in each supported locale', () => {
-        for (const locale of Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[]) {
+        for (const locale of locales) {
             for (const mode of APP_THEMES) {
                 const key = `theme.${mode}` as const;
                 expect(TRANSLATIONS[locale][key]?.trim(), `${locale} ${key}`).toBeTruthy();
@@ -54,8 +59,6 @@ describe('language packs', () => {
 });
 
 describe('loading copy', () => {
-    const locales = ['en', 'zh', 'zh-TW', 'yue', 'ja', 'ko', 'tr', 'ru', 'uk'] as const;
-
     for (const lang of locales) {
         it(`${lang} has a loading label`, () => {
             const pack = TRANSLATIONS[lang] as Record<string, string>;
@@ -65,8 +68,6 @@ describe('loading copy', () => {
 });
 
 describe('age model copy', () => {
-    const locales = ['en', 'zh', 'zh-TW', 'yue', 'ja', 'ko', 'tr', 'ru', 'uk'] as const;
-
     for (const lang of locales) {
         it(`${lang} has age band and warning copy`, () => {
             const pack = TRANSLATIONS[lang] as Record<string, string>;
@@ -82,15 +83,19 @@ describe('age model copy', () => {
     }
 });
 
-describe('Russian and Ukrainian', () => {
+describe('complete language packs', () => {
     const en = TRANSLATIONS.en as Record<string, string>;
-    const placeholders = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
+    const authored = {
+        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de },
+        ru: TRANSLATIONS.ru,
+        uk: TRANSLATIONS.uk,
+    };
 
-    for (const lang of ['ru', 'uk'] as const) {
-        const pack = TRANSLATIONS[lang] as Record<string, string>;
+    for (const [lang, directCopy] of Object.entries(authored)) {
+        const pack: Record<string, string> = directCopy;
 
-        it(`${lang} has every English key and no others`, () => {
-            expect(Object.keys(en).filter(k => !(k in pack))).toEqual([]);
+        it(`${lang} authors nonempty text for every English key and no others`, () => {
+            expect(Object.keys(en).filter(k => !pack[k]?.trim())).toEqual([]);
             expect(Object.keys(pack).filter(k => !(k in en))).toEqual([]);
         });
 
@@ -98,5 +103,15 @@ describe('Russian and Ukrainian', () => {
             const off = Object.keys(en).filter(k => placeholders(en[k]).join() !== placeholders(pack[k] ?? '').join());
             expect(off).toEqual([]);
         });
+    }
+});
+
+it('German share copy keeps every placeholder used by its English counterpart', () => {
+    const en = getShareCopy('en');
+    const de = getShareCopy('de');
+    expect(de.modalTitle).toBe('Dosierungsdaten teilen');
+    for (const key of Object.keys(en) as (keyof ShareCopy)[]) {
+        expect(de[key].trim(), key).toBeTruthy();
+        expect(placeholders(de[key]), key).toEqual(placeholders(en[key]));
     }
 });
