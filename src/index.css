@@ -223,10 +223,9 @@ h1.font-sans {
 }
 
 .scroll-pb-nav {
-    /* Where the browser stops when it scrolls a focused element into view:
-       clear of the sticky page header and History's day label under it
-       (5rem + 2.75rem), and of the floating nav. */
-    scroll-padding-top: 7.75rem;
+    /* Give focused content room below the header and History's day label,
+       and above the floating nav. Logging headers supply their measured height. */
+    scroll-padding-top: calc(var(--page-header-h, 5rem) + 2.75rem);
     scroll-padding-bottom: calc(var(--nav-clearance) + env(safe-area-inset-bottom, 0px));
 }
 /* The floating nav's clearance as a last item rather than padding: Safari
@@ -267,6 +266,10 @@ h1.font-sans {
    nothing moves. Whatever sits above or below has to keep clear of that 44px,
    or one tap lands on two. Any touch screen counts, a touch laptop's too. */
 @media (any-pointer: coarse) {
+    .logging-touch-target {
+        min-inline-size: 48px;
+        min-block-size: 48px;
+    }
     .tap-target {
         position: relative;
     }

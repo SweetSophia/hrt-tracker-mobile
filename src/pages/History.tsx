@@ -2,7 +2,7 @@ import { NativeBackScope, useNativeBackOwner } from '../hooks/useNativeBackOwner
 import { useMounted } from '../hooks/useMounted';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AddCancelLabel } from '../components/StableLabel';
-import PageHeader, { PAGE_COLUMN, headerAction } from '../components/PageHeader';
+import PageHeader, { PAGE_COLUMN, loggingHeaderAction } from '../components/PageHeader';
 import { Trash, Select, Repeat, ChevronDown } from '../components/icons';
 import Tick from '../components/Tick';
 import Switch from '../components/Switch';
@@ -31,13 +31,10 @@ const hoursNow = () => Date.now() / 3600000;
 
 const muted = 'text-[var(--text-muted)]';
 const on = 'text-[var(--text)]';
-const headerBtn = headerAction;
+const headerBtn = `${loggingHeaderAction} hover:bg-[var(--surface-hover)]`;
 
-// On a phone, Select and Select all are only their icon, and Delete only its
-// word. Spelled out in full they cut an English title to "Dose Hist…", and in
-// select mode to "D…" with the count wrapping under it, which grew the header
-// past the 5rem the day labels are pinned at. The rest comes back once there
-// is room, and an icon-only button keeps its words as its aria-label.
+// Keep the selection actions compact on narrow screens. Icon-only buttons
+// keep their accessible names.
 const iconOnNarrow = 'max-sm:w-11 max-sm:justify-center max-sm:px-0';
 const labelOnWide = 'max-sm:hidden';
 
@@ -51,10 +48,23 @@ const SAVED_MARK_MS = 1500;
 // rubbed out before the tick is unmounted.
 const SAVED_FADE_MS = 400;
 
-// Brings a row to the middle of the screen, in one jump with reduced motion.
-const centerRow = (row: HTMLElement) => {
+const scrollBounds = (row: HTMLElement) => {
+    const scroller = row.closest('.main-view');
+    if (!scroller) return { top: 0, bottom: window.innerHeight };
+    const viewport = scroller.getBoundingClientRect();
+    const { scrollPaddingTop, scrollPaddingBottom } = getComputedStyle(scroller);
+    return {
+        top: viewport.top + (parseFloat(scrollPaddingTop) || 0),
+        bottom: viewport.bottom - (parseFloat(scrollPaddingBottom) || 0),
+    };
+};
+
+// Start tall rows below the sticky headings so their first line stays visible.
+const revealRow = (row: HTMLElement) => {
     const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    row.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' });
+    const { top, bottom } = scrollBounds(row);
+    const block = row.getBoundingClientRect().height > bottom - top ? 'start' : 'center';
+    row.scrollIntoView({ block, behavior: still ? 'auto' : 'smooth' });
 };
 
 // A day's label, held under the page header while its rows scroll by. It
@@ -63,26 +73,27 @@ const centerRow = (row: HTMLElement) => {
 // short fade under it lets the rows passing beneath dissolve rather than be
 // sliced through a line of text. A marker at the day's top says when it is
 // held: gone above the label's own offset, the label has caught on the header.
-const PinnedDayLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PinnedDayLabel: React.FC<{ children: React.ReactNode; headerHeight?: number }> = ({ children, headerHeight }) => {
     const [marker, setMarker] = useState<HTMLDivElement | null>(null);
     const [held, setHeld] = useState(false);
     useEffect(() => {
         const label = marker?.nextElementSibling;
         if (!marker || !label || typeof IntersectionObserver === 'undefined') return;
-        const top = parseFloat(getComputedStyle(label).top) || 0;
+        const top = headerHeight ?? (parseFloat(getComputedStyle(label).top) || 0);
         const io = new IntersectionObserver(
             ([entry]) => setHeld(!entry.isIntersecting && entry.boundingClientRect.top < (entry.rootBounds?.top ?? 0)),
-            { rootMargin: `-${top}px 0px 0px 0px` },
+            { root: marker.closest('.main-view'), rootMargin: `-${top}px 0px 0px 0px` },
         );
         io.observe(marker);
         return () => io.disconnect();
-    }, [marker]);
+    }, [marker, headerHeight]);
     return (
         <>
             <div ref={setMarker} aria-hidden="true" className="h-0" />
             <div
                 data-held={held}
-                className="sticky top-[5rem] z-10 -mx-6 px-6 md:-mx-8 md:px-8 bg-[var(--bg)] pt-2 pb-1 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-[linear-gradient(var(--bg),transparent)] after:opacity-0 after:content-[''] data-[held=true]:after:opacity-100"
+                className="sticky z-10 -mx-6 px-6 md:-mx-8 md:px-8 bg-[var(--bg)] pt-2 pb-1 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-3 after:bg-[linear-gradient(var(--bg),transparent)] after:opacity-0 after:content-[''] data-[held=true]:after:opacity-100"
+                style={{ top: 'var(--page-header-h, 5rem)' }}
             >
                 {children}
             </div>
@@ -141,6 +152,7 @@ const History: React.FC<HistoryProps> = ({
     const { lang } = useTranslation();
     const locale = LOCALE_MAP[lang] ?? 'en-US';
     const isMounted = useMounted();
+    const [headerHeight, setHeaderHeight] = useState<number>();
     const [editingId, setEditingId] = useState<string | null>(openEditId ?? null);
 
     // Batch add: repeat the quick-add dose at a fixed interval.
@@ -179,7 +191,7 @@ const History: React.FC<HistoryProps> = ({
         const timers = [
             window.setTimeout(() => {
                 const row = savedRowRef.current;
-                if (row) centerRow(row);
+                if (row) revealRow(row);
                 // Focus goes on to the row the save made, so the next Tab
                 // starts from there. Only while the form's Save button has left
                 // it nowhere: anything focused since is left where it is.
@@ -196,7 +208,7 @@ const History: React.FC<HistoryProps> = ({
     const allEvents = useMemo(() => groupedEvents.flatMap(g => g.events), [groupedEvents]);
 
     // Sent here to edit one dose: its form is already open (editingId starts
-    // on it), and its row is brought to the middle of the screen, with the
+    // on it), and its row is brought into view, with the
     // planned section unfolded first if that's where it sits. The request is
     // taken in hand at once, not when the row is reached: leaving within the
     // fold left it standing, and the form opened again on the next visit. So
@@ -215,7 +227,7 @@ const History: React.FC<HistoryProps> = ({
         window.clearTimeout(centerTimer.current);
         centerTimer.current = window.setTimeout(() => {
             const row = document.querySelector<HTMLElement>(`[data-event-id="${CSS.escape(openEditId)}"]`);
-            if (row) centerRow(row);
+            if (row) revealRow(row);
         }, FOLD_MS);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [openEditId]);
@@ -248,17 +260,16 @@ const History: React.FC<HistoryProps> = ({
     };
 
     // Cancel hands focus back to the row. Cancel sits at the foot of a form
-    // that can run past the screen, so the row may be out of sight above it
-    // (under the 5rem header counts); then it is brought back to the middle,
-    // or focus would land on something no one can see.
+    // that can run past the screen. Bring the row into view if it sits
+    // beneath the sticky headings or the bottom navigation.
     const closeEdit = () => {
         const row = editingRowRef.current;
         setEditingId(null);
         if (!row) return;
         row.focus({ preventScroll: true });
         const { top, bottom } = row.getBoundingClientRect();
-        const headerPx = 5 * parseFloat(getComputedStyle(document.documentElement).fontSize);
-        if (top < headerPx || bottom > window.innerHeight) centerRow(row);
+        const visible = scrollBounds(row);
+        if (top < visible.top || bottom > visible.bottom) revealRow(row);
     };
 
     // Batch add is a choice for one save, not a mode the form stays in: left
@@ -410,17 +421,13 @@ const History: React.FC<HistoryProps> = ({
                     ) : null}
                     <Doodle name={ev.route} size={1.75} asleep={isFuture} />
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                            {/* Room kept for the tick while it shows, so it never sits on a long name.
-                                A long name wraps rather than being cut: beside the doodle and the
-                                chevron, a 320px phone has room for about 15 Latin letters, and a
-                                cut "Patch Re…" no longer says it is a removal. */}
-                            <div className={`flex flex-wrap items-baseline gap-x-2 min-w-0 ${isSaved ? 'pe-5' : ''}`}>
+                        <div className="flex flex-wrap items-center gap-x-2">
+                            <div className="flex min-w-0 flex-auto flex-wrap items-baseline gap-x-2">
                                 <span className="font-medium text-[var(--text)] [overflow-wrap:anywhere] text-sm">
                                     {isRemoval ? t('route.patchRemove') : drugLabel(ev.ester, t)}
                                 </span>
                                 {wornH !== undefined && (
-                                    <span className={`shrink-0 text-xs ${muted}`}>
+                                    <span className={`text-xs [overflow-wrap:anywhere] ${muted}`}>
                                         {t('timeline.patch_worn').replace(
                                             '{d}',
                                             `${formatWearDays(wornH / 24)} ${t('unit.day_short')}`,
@@ -428,12 +435,8 @@ const History: React.FC<HistoryProps> = ({
                                     </span>
                                 )}
                             </div>
-                            <span className="relative text-xs tabular-nums text-[var(--text-muted)] shrink-0">
-                                {isSaved && (
-                                    <span className="absolute inset-y-0 end-full me-1 flex items-center">
-                                        <Tick on={savedMarkOn} size={14} />
-                                    </span>
-                                )}
+                            <span className="ms-auto inline-flex shrink-0 items-center gap-1 text-xs tabular-nums text-[var(--text-muted)]">
+                                {isSaved && <Tick on={savedMarkOn} size={14} />}
                                 {formatTime(new Date(ev.timeH * 3600000))}
                             </span>
                         </div>
@@ -526,7 +529,7 @@ const History: React.FC<HistoryProps> = ({
         return (
             <div key={key} className="mb-4 last:mb-0">
                 {pinned ? (
-                    <PinnedDayLabel>{text}</PinnedDayLabel>
+                    <PinnedDayLabel headerHeight={headerHeight}>{text}</PinnedDayLabel>
                 ) : (
                     <div className="bg-[var(--bg)] pt-2 pb-1">{text}</div>
                 )}
@@ -538,18 +541,15 @@ const History: React.FC<HistoryProps> = ({
     return (
         <div className="relative md:pb-32">
             <PageHeader
+                reflow
+                onHeightChange={setHeaderHeight}
                 title={t('timeline.title')}
-                // Always one line: wrapped, it grew the header past the 5rem
-                // the day labels are pinned at. In select mode it counts the
-                // selection, which is what the page is about to act on.
                 subtitle={
-                    <span className="block truncate">
-                        {selectMode
-                            ? t('timeline.selected').replace('{n}', String(selectedIds.size))
-                            : totalRecords === 1
-                              ? t('timeline.records_one')
-                              : t('timeline.records_n').replace('{n}', String(totalRecords))}
-                    </span>
+                    selectMode
+                        ? t('timeline.selected').replace('{n}', String(selectedIds.size))
+                        : totalRecords === 1
+                          ? t('timeline.records_one')
+                          : t('timeline.records_n').replace('{n}', String(totalRecords))
                 }
                 actions={
                     selectMode ? (
@@ -558,7 +558,7 @@ const History: React.FC<HistoryProps> = ({
                                 type="button"
                                 onClick={toggleSelectAll}
                                 aria-label={t('timeline.select_all')}
-                                className={`${headerBtn} ${muted} ${iconOnNarrow} tap-target`}
+                                className={`${headerBtn} ${muted} ${iconOnNarrow}`}
                             >
                                 <Select size={15} strokeWidth={1.5} />
                                 <span className={labelOnWide}>{t('timeline.select_all')}</span>
@@ -567,7 +567,7 @@ const History: React.FC<HistoryProps> = ({
                                 type="button"
                                 onClick={handleDeleteSelected}
                                 disabled={!selectedIds.size}
-                                className={`${headerBtn} text-[var(--danger)] disabled:opacity-40 tap-target`}
+                                className={`${headerBtn} text-[var(--danger)] disabled:opacity-40`}
                             >
                                 <Trash size={15} strokeWidth={1.5} className={labelOnWide} />
                                 <span>
@@ -575,11 +575,7 @@ const History: React.FC<HistoryProps> = ({
                                     {selectedIds.size ? ` (${selectedIds.size})` : ''}
                                 </span>
                             </button>
-                            <button
-                                type="button"
-                                onClick={exitSelectMode}
-                                className={`${headerBtn} ${muted} tap-target`}
-                            >
+                            <button type="button" onClick={exitSelectMode} className={`${headerBtn} ${muted}`}>
                                 <span>{t('btn.cancel')}</span>
                             </button>
                         </>
@@ -590,7 +586,7 @@ const History: React.FC<HistoryProps> = ({
                                     type="button"
                                     onClick={enterSelectMode}
                                     aria-label={t('timeline.select')}
-                                    className={`${headerBtn} ${muted} ${iconOnNarrow} tap-target`}
+                                    className={`${headerBtn} ${muted} ${iconOnNarrow}`}
                                 >
                                     <Select size={15} strokeWidth={1.5} />
                                     <span className={labelOnWide}>{t('timeline.select')}</span>
@@ -600,9 +596,14 @@ const History: React.FC<HistoryProps> = ({
                                 type="button"
                                 onClick={() => (isQuickAddOpen ? closeQuickAdd() : setIsQuickAddOpen(true))}
                                 aria-expanded={isQuickAddOpen}
-                                className={`${headerBtn} text-[var(--accent-ink)] tap-target`}
+                                className={`${loggingHeaderAction} text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]`}
                             >
-                                <AddCancelLabel open={isQuickAddOpen} add={t('btn.add')} cancel={t('btn.cancel')} />
+                                <AddCancelLabel
+                                    wrap
+                                    open={isQuickAddOpen}
+                                    add={t('btn.add')}
+                                    cancel={t('btn.cancel')}
+                                />
                             </button>
                         </>
                     )
@@ -690,7 +691,11 @@ const History: React.FC<HistoryProps> = ({
                     <LogDoodle className="w-24 h-auto mb-6" />
                     <p className={`text-sm font-semibold ${on} mb-1`}>{t('home.empty_title')}</p>
                     <p className={`text-sm ${muted} mb-6 max-w-xs text-balance`}>{t('home.empty_subtitle')}</p>
-                    <button type="button" onClick={() => setIsQuickAddOpen(true)} className="btn-primary">
+                    <button
+                        type="button"
+                        onClick={() => setIsQuickAddOpen(true)}
+                        className="btn-primary h-auto min-h-9 max-w-full py-2 [overflow-wrap:anywhere] logging-touch-target"
+                    >
                         {t('home.empty_cta')}
                     </button>
                 </div>

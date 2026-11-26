@@ -15,13 +15,9 @@ interface NavTab {
  * simply there; nothing else in the bar moves, and nothing does on the first
  * render.
  *
- * Labels stay on one line: a wrapped one raised its icon above the rest and
- * grew the island past the scroller's bottom padding. Below 340px they drop to
- * 10px rather than being cut off, and the packs keep them short enough for
- * that. The longest, Turkish Genel bakış, is the name that pack's other
- * strings give the page, so it stays, and its tab takes a few pixels more
- * than the rest. Each tab is rounded so the focus ring nests in the island
- * instead of cutting a square into the next tab's pill.
+ * Labels wrap within equal-width tabs, and the icons stay aligned at the
+ * top. The measured --nav-h keeps content clear of the taller bar. Rounded
+ * tabs keep each focus ring within its own cell.
  *
  * Reading down a long page, the bar slides out of the way so it no longer
  * sits over what's being read; a short scroll back up, the top of the page or
@@ -117,7 +113,7 @@ const BottomNav: React.FC<{
                             key={id}
                             onClick={() => onSelect(id)}
                             aria-current={isActive ? 'page' : undefined}
-                            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1 rounded-[var(--radius-lg)] transition-none ${isActive ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}
+                            className={`min-w-0 flex-1 flex flex-col items-center justify-start gap-0.5 py-1 rounded-[var(--radius-lg)] transition-none ${isActive ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}
                         >
                             {/* Above the pill, which is positioned too. */}
                             <span
@@ -128,7 +124,9 @@ const BottomNav: React.FC<{
                             >
                                 <TabIcon size={22} strokeWidth={isActive ? 2 : 1.75} />
                             </span>
-                            <span className="whitespace-nowrap text-xs leading-4 font-medium">{label}</span>
+                            <span className="self-stretch break-words px-0.5 text-center text-xs leading-4 font-medium">
+                                {label}
+                            </span>
                         </button>
                     );
                 })}

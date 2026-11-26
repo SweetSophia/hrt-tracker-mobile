@@ -336,8 +336,9 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                 {!resultToEdit && <p className="text-xs text-[var(--text-muted)] pt-2">{t('lab.dual_hint')}</p>}
             </div>
 
-            {/* Footer */}
-            <div className="pt-4 flex items-center justify-between shrink-0">
+            {/* Footer. Cancel and Save share the row at rest; at the largest
+                text sizes they wrap onto full-width rows rather than clip. */}
+            <div className="pt-4 flex flex-wrap items-center justify-between gap-y-2 shrink-0">
                 <div className="flex items-center gap-2">
                     {resultToEdit && onDelete && (
                         <button
@@ -363,14 +364,18 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                     )}
                 </div>
 
-                <div className="flex gap-2 ml-auto">
+                <div className="flex flex-wrap gap-x-2 gap-y-2 ml-auto grow justify-end sm:grow-0">
                     <button
                         onClick={onCancel}
-                        className="min-w-[88px] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-md flex items-center justify-center"
+                        className="logging-touch-target flex-1 sm:flex-none sm:min-w-[88px] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-md flex items-center justify-center"
                     >
                         {t('btn.cancel')}
                     </button>
-                    <button onClick={handleSave} disabled={!canSave || !dateStr} className="btn-primary min-w-[88px]">
+                    <button
+                        onClick={handleSave}
+                        disabled={!canSave || !dateStr}
+                        className="btn-primary logging-touch-target flex-1 sm:flex-none sm:min-w-[88px]"
+                    >
                         <Check size={14} />
                         {t('btn.save')}
                     </button>
