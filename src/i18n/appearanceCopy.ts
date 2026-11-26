@@ -40,6 +40,15 @@ export const APPEARANCE_COPY: Record<Lang, Record<AppearanceKey, string>> = {
         'appearance.palette.plum': 'Plum',
         'appearance.palette.teal': 'Teal',
     },
+    de: {
+        'appearance.display_mode': 'Darstellungsmodus',
+        'appearance.color_theme': 'Farbschema',
+        'appearance.color_theme_mono':
+            'Wenn du zu einem anderen Darstellungsmodus wechselst, wird dein gespeichertes Farbschema wieder verwendet.',
+        'appearance.palette.terracotta': 'Terrakotta',
+        'appearance.palette.plum': 'Pflaumenviolett',
+        'appearance.palette.teal': 'Petrol',
+    },
     ja: {
         'appearance.display_mode': '表示モード',
         'appearance.color_theme': 'カラーテーマ',

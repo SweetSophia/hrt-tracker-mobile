@@ -6,7 +6,8 @@ import ResultChart from '../components/ResultChart';
 import { useTranslation } from '../contexts/LanguageContext';
 import { getShareCopy } from '../i18n/share';
 import { LOCALE_MAP, formatWearDays } from '../utils/helpers';
-import { drugLabel } from '../utils/regimenText';
+import { formatRecordSummary } from '../utils/recordDecimal';
+import { drugLabel, fill } from '../utils/regimenText';
 import {
     LockedShare,
     SHARE_KEY_INVALID,
@@ -527,7 +528,8 @@ const SharedRecord = ({ details }: { details: ShareDetails }) => {
 
 /** A record as the History tab shows it, without the editing. */
 const DoseHistoryRow = ({ event, time, wornH }: { event: DoseEvent; time: string; wornH?: number }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang];
     const isRemoval = event.route === Route.patchRemove;
     const releaseRate = event.extras[ExtraKey.releaseRateUGPerDay];
     const wearHours = event.extras[ExtraKey.patchWearH];
@@ -545,7 +547,7 @@ const DoseHistoryRow = ({ event, time, wornH }: { event: DoseEvent; time: string
                             <span className="shrink-0 text-xs text-muted">
                                 {t('timeline.patch_worn').replace(
                                     '{d}',
-                                    `${formatWearDays(wornH / 24)} ${t('unit.day_short')}`,
+                                    `${formatWearDays(wornH / 24, locale)} ${t('unit.day_short')}`,
                                 )}
                             </span>
                         )}
@@ -558,26 +560,37 @@ const DoseHistoryRow = ({ event, time, wornH }: { event: DoseEvent; time: string
                     <div className="mt-1 flex flex-wrap items-baseline gap-x-3 text-xs tabular-nums text-muted">
                         <span>{t(`route.${event.route}`)}</span>
                         {releaseRate ? (
-                            <span className="text-body">{releaseRate} µg/d</span>
+                            <span className="text-body">{formatRecordSummary(releaseRate, locale)} µg/d</span>
                         ) : (
                             <>
-                                <span className="font-medium text-body">{event.doseMG.toFixed(2)} mg</span>
+                                <span className="font-medium text-body">
+                                    {formatRecordSummary(event.doseMG.toFixed(2), locale)} mg
+                                </span>
                                 {event.ester !== Ester.E2 && isEstradiolEster(event.ester) && (
                                     <span className="opacity-70">
-                                        ({t('label.e2')} eq: {(event.doseMG * getToE2Factor(event.ester)).toFixed(2)}{' '}
+                                        ({fill(t('label.equivalent'), { hormone: t('label.e2') })}{' '}
+                                        {formatRecordSummary(
+                                            (event.doseMG * getToE2Factor(event.ester)).toFixed(2),
+                                            locale,
+                                        )}{' '}
                                         mg)
                                     </span>
                                 )}
                                 {isTestosteroneEster(event.ester) && event.ester !== Ester.T && (
                                     <span className="opacity-70">
-                                        ({t('label.t')} eq: {(event.doseMG * getToE2Factor(event.ester)).toFixed(2)} mg)
+                                        ({fill(t('label.equivalent'), { hormone: t('label.t') })}{' '}
+                                        {formatRecordSummary(
+                                            (event.doseMG * getToE2Factor(event.ester)).toFixed(2),
+                                            locale,
+                                        )}{' '}
+                                        mg)
                                     </span>
                                 )}
                             </>
                         )}
                         {event.route === Route.patchApply && typeof wearHours === 'number' && wearHours > 0 && (
                             <span className="text-body">
-                                {formatWearDays(wearHours / 24)} {t('unit.day_short')}
+                                {formatWearDays(wearHours / 24, locale)} {t('unit.day_short')}
                             </span>
                         )}
                     </div>

@@ -389,6 +389,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
             { value: 'zh-TW', label: '正體中文' },
             { value: 'yue', label: '廣東話' },
             { value: 'en', label: 'English' },
+            { value: 'de', label: 'Deutsch' },
             { value: 'ja', label: '日本語' },
             { value: 'ko', label: '한국어' },
             { value: 'tr', label: 'Türkçe' },

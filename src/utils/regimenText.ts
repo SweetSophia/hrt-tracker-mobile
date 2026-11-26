@@ -4,6 +4,7 @@ import { Pack, Supply, packUnitMG } from './regimen';
 import { Lang } from '../i18n/translations';
 import { LOCALE_MAP } from './helpers';
 import { appLocale } from '../i18n/locale';
+import { formatRecordSummary } from './recordDecimal';
 
 type T = (key: string) => string;
 
@@ -21,7 +22,7 @@ export const fillNodes = (template: string, vars: Record<string, React.ReactNode
             return m && m[1] in vars ? React.createElement(React.Fragment, { key: i }, vars[m[1]]) : part;
         });
 
-const trimNum = (n: number, maxDecimals = 2) => String(Number(n.toFixed(maxDecimals)));
+const trimNum = (n: number, maxDecimals = 2) => formatRecordSummary(Number(n.toFixed(maxDecimals)), appLocale());
 
 /** "戊酸雌二醇 (EV)". A code this build doesn't know (a newer version's drug) reads as itself, not as a missing key. */
 export const drugLabel = (ester: Ester, t: T) => (isKnownEster(ester) ? t(`ester.${ester}`) : ester);
@@ -175,22 +176,24 @@ export function dueLabel(atH: number, lang: Lang, withTime = true, nowH = Date.n
 const LONG_WEEKDAY: ReadonlySet<Lang> = new Set<Lang>(['ja', 'ko', 'tr', 'ru', 'uk']);
 
 // Two words every language needs here and nowhere else.
-const T_TODAY: Partial<Record<Lang, string>> & { en: string } = {
+const T_TODAY: Record<Lang, string> = {
     zh: '今天',
     'zh-TW': '今天',
     yue: '今日',
     en: 'Today',
+    de: 'Heute',
     ja: '今日',
     ko: '오늘',
     tr: 'Bugün',
     ru: 'Сегодня',
     uk: 'Сьогодні',
 };
-const T_TOMORROW: Partial<Record<Lang, string>> & { en: string } = {
+const T_TOMORROW: Record<Lang, string> = {
     zh: '明天',
     'zh-TW': '明天',
     yue: '聽日',
     en: 'Tomorrow',
+    de: 'Morgen',
     ja: '明日',
     ko: '내일',
     tr: 'Yarın',

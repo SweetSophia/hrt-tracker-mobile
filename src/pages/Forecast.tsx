@@ -29,6 +29,8 @@ import type { ForecastCompute, ForecastRequest } from '../application/forecastPr
 import { useForecastProjection } from '../hooks/useForecastProjection';
 import type { AppModelStatus } from '../hooks/appModelTypes';
 import { regimenLabel, intervalLabel, dueLabel, fill } from '../utils/regimenText';
+import { LOCALE_MAP } from '../utils/helpers';
+import { formatRecordPercent, formatRecordSummary } from '../utils/recordDecimal';
 
 const on = 'text-[var(--text)]';
 const muted = 'text-[var(--text-muted)]';
@@ -259,20 +261,29 @@ const Forecast: React.FC<ForecastProps> = ({
     };
 
     const habits = main ? adherenceOf(main, events) : { missRate: 0, jitterSdH: 0 };
+    const locale = LOCALE_MAP[lang];
     const jitter =
-        habits.jitterSdH < 1 ? `${Math.round(habits.jitterSdH * 60)} min` : `${habits.jitterSdH.toFixed(1)} h`;
-    const calText = `×${calibration.scale.toFixed(2)}${Math.abs(calibration.halfLifeDeltaPct) >= 1 ? ` (t½ ${calibration.halfLifeDeltaPct > 0 ? '+' : ''}${calibration.halfLifeDeltaPct.toFixed(0)}%)` : ''}`;
+        habits.jitterSdH < 1
+            ? `${Math.round(habits.jitterSdH * 60)} min`
+            : `${formatRecordSummary(habits.jitterSdH.toFixed(1), locale)} h`;
+    const halfLife = calibration.halfLifeDeltaPct;
+    const halfLifeText =
+        Math.abs(halfLife) >= 1
+            ? ` (t½ ${halfLife > 0 ? '+' : ''}${formatRecordPercent(halfLife.toFixed(0), locale)})`
+            : '';
+    const calText = `×${formatRecordSummary(calibration.scale.toFixed(2), locale)}${halfLifeText}`;
+    const miss = formatRecordPercent(Math.round(habits.missRate * 100), locale);
     const hasCal = modelReady && !isTransmasc && labResults.length > 0 && calibration.fitErrPct !== null;
     const runs = (results[active.id] ?? current)?.runs ?? 48;
     const methodText = hasCal
         ? fill(t('forecast.method'), {
               cal: calText,
-              miss: `${Math.round(habits.missRate * 100)}%`,
+              miss,
               jitter,
-              err: `${calibration.fitErrPct!.toFixed(0)}%`,
+              err: formatRecordPercent(calibration.fitErrPct!.toFixed(0), locale),
               runs,
           })
-        : fill(t('forecast.method_nocal'), { miss: `${Math.round(habits.missRate * 100)}%`, jitter, runs });
+        : fill(t('forecast.method_nocal'), { miss, jitter, runs });
 
     const planName = (i: number) => fill(t('forecast.plan_n'), { n: LETTERS[i] });
     const lines: ChartLine[] = [
@@ -304,7 +315,7 @@ const Forecast: React.FC<ForecastProps> = ({
         if (key === 'inRange') {
             return (
                 <span className={`${cell} tabular-nums ${on}`}>
-                    {sc.stats.inRange === null ? '—' : `${Math.round(sc.stats.inRange * 100)}%`}
+                    {sc.stats.inRange === null ? '—' : formatRecordPercent(Math.round(sc.stats.inRange * 100), locale)}
                 </span>
             );
         }

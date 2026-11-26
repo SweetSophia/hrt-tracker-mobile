@@ -38,8 +38,20 @@ export function parseRecordDecimal(text: string, locale: string): RecordDecimal 
 }
 
 /** Keep the stored number's precision and never add group separators. */
-export function formatRecordDecimal(value: number, locale: string): string {
+export function formatRecordDecimal(value: number | string, locale: string): string {
     return String(value).replace('.', numberSeparators(locale).decimal);
+}
+
+const isGermanLocale = (locale: string) => locale.split('-')[0].toLowerCase() === 'de';
+
+/** German summaries use the app's decimal marker. Earlier locales use canonical record notation. */
+export function formatRecordSummary(value: number | string, locale = 'en-US'): string {
+    return formatRecordDecimal(value, isGermanLocale(locale) ? locale : 'en-US');
+}
+
+/** Accept an already rounded percent value, so each display keeps its precision. */
+export function formatRecordPercent(value: number | string, locale = 'en-US'): string {
+    return `${formatRecordSummary(value, locale)}${isGermanLocale(locale) ? '\u00a0' : ''}%`;
 }
 
 /** For previews and controls that only need a complete number. */

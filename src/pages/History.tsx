@@ -11,8 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { DoseEvent, Route, Ester, ExtraKey, getToE2Factor, isEstradiolEster, isTestosteroneEster } from '../../logic';
 import { patchRemovalPairs } from '../domain/shared/patch';
 import { LOCALE_MAP, formatTime, formatWearDays } from '../utils/helpers';
-import { formatRecordDecimal, parseRecordDecimal } from '../utils/recordDecimal';
-import { drugLabel } from '../utils/regimenText';
+import { formatRecordDecimal, formatRecordSummary, parseRecordDecimal } from '../utils/recordDecimal';
+import { drugLabel, fill } from '../utils/regimenText';
 import { useDialog } from '../contexts/DialogContext';
 import { useTranslation } from '../contexts/LanguageContext';
 import DoseForm from '../components/DoseForm';
@@ -432,7 +432,7 @@ const History: React.FC<HistoryProps> = ({
                                     <span className={`text-xs [overflow-wrap:anywhere] ${muted}`}>
                                         {t('timeline.patch_worn').replace(
                                             '{d}',
-                                            `${formatWearDays(wornH / 24)} ${t('unit.day_short')}`,
+                                            `${formatWearDays(wornH / 24, locale)} ${t('unit.day_short')}`,
                                         )}
                                     </span>
                                 )}
@@ -449,19 +449,19 @@ const History: React.FC<HistoryProps> = ({
                                 <span className="truncate">{t(`route.${ev.route}`)}</span>
                                 {ev.extras[ExtraKey.releaseRateUGPerDay] ? (
                                     <>
-                                        <span className="text-[var(--text)]">{`${ev.extras[ExtraKey.releaseRateUGPerDay]} µg/d`}</span>
+                                        <span className="text-[var(--text)]">{`${formatRecordSummary(ev.extras[ExtraKey.releaseRateUGPerDay], locale)} µg/d`}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="text-[var(--text)] font-medium">{`${ev.doseMG.toFixed(2)} mg`}</span>
+                                        <span className="text-[var(--text)] font-medium">{`${formatRecordSummary(ev.doseMG.toFixed(2), locale)} mg`}</span>
                                         {ev.ester !== Ester.E2 && isEstradiolEster(ev.ester) && (
                                             <span className="opacity-70">
-                                                {`(${t('label.e2')} eq: ${(ev.doseMG * getToE2Factor(ev.ester)).toFixed(2)} mg)`}
+                                                {`(${fill(t('label.equivalent'), { hormone: t('label.e2') })} ${formatRecordSummary((ev.doseMG * getToE2Factor(ev.ester)).toFixed(2), locale)} mg)`}
                                             </span>
                                         )}
                                         {isTestosteroneEster(ev.ester) && ev.ester !== Ester.T && (
                                             <span className="opacity-70">
-                                                {`(${t('label.t')} eq: ${(ev.doseMG * getToE2Factor(ev.ester)).toFixed(2)} mg)`}
+                                                {`(${fill(t('label.equivalent'), { hormone: t('label.t') })} ${formatRecordSummary((ev.doseMG * getToE2Factor(ev.ester)).toFixed(2), locale)} mg)`}
                                             </span>
                                         )}
                                     </>
@@ -470,7 +470,7 @@ const History: React.FC<HistoryProps> = ({
                                     typeof ev.extras[ExtraKey.patchWearH] === 'number' &&
                                     ev.extras[ExtraKey.patchWearH]! > 0 && (
                                         <>
-                                            <span className="text-[var(--text)]">{`${formatWearDays(ev.extras[ExtraKey.patchWearH]! / 24)} ${t('unit.day_short')}`}</span>
+                                            <span className="text-[var(--text)]">{`${formatWearDays(ev.extras[ExtraKey.patchWearH]! / 24, locale)} ${t('unit.day_short')}`}</span>
                                         </>
                                     )}
                             </div>

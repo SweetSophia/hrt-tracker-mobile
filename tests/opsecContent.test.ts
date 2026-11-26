@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import katex from 'katex';
-import { loadOpSecContent, type OpSecBlock, type OpSecContent } from '../src/content/opsec';
+import { loadOpSecContent, opSecContentLanguage, type OpSecBlock, type OpSecContent } from '../src/content/opsec';
 
 const LANGS = ['zh', 'zh-TW', 'yue', 'en', 'ja', 'ko', 'tr', 'ru', 'uk'] as const;
 
@@ -53,6 +53,11 @@ const strings = (content: OpSecContent): string[] => [
 ];
 
 describe('OpSec guide', () => {
+    it('uses the English article for the German interface', async () => {
+        expect(opSecContentLanguage('de')).toBe('en');
+        expect(await loadOpSecContent('de')).toBe(await loadOpSecContent('en'));
+    });
+
     it.each(LANGS)('%s has extended sections with renderable math', async lang => {
         const content = await loadOpSecContent(lang);
         expect(content.extendedHeading.length).toBeGreaterThan(0);

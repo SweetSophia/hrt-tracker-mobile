@@ -1,5 +1,14 @@
-import { describe, expect, it } from 'vitest';
-import { formatRecordDecimal, parseRecordDecimal } from '../src/utils/recordDecimal';
+import { describe, expect, it, vi } from 'vitest';
+import { Ester, Route } from '../logic';
+import * as locale from '../src/i18n/locale';
+import { sinceDoseLabel } from '../src/utils/labReport';
+import {
+    formatRecordDecimal,
+    formatRecordPercent,
+    formatRecordSummary,
+    parseRecordDecimal,
+} from '../src/utils/recordDecimal';
+import { frequencyLabel, regimenLabel } from '../src/utils/regimenText';
 
 describe('record decimal entry', () => {
     it.each([
@@ -44,6 +53,39 @@ describe('record decimal entry', () => {
 
     it('keeps a blank amount separate from unfinished or malformed input', () => {
         expect(parseRecordDecimal(' ', 'ru-RU')).toEqual({ kind: 'empty' });
+    });
+
+    it('keeps summary precision with a German decimal comma', () => {
+        expect(formatRecordSummary(34.125, 'de-DE')).toBe('34,125');
+        expect(formatRecordSummary('2.50', 'de')).toBe('2,50');
+    });
+
+    it('uses canonical summary notation when no locale is available', () => {
+        expect(formatRecordSummary('2.50')).toBe('2.50');
+        expect(formatRecordPercent(85, undefined)).toBe('85%');
+    });
+
+    it('keeps German percentage spacing consistent across summaries', () => {
+        expect(formatRecordPercent('5', 'de-DE')).toBe('5\u00a0%');
+        expect(formatRecordPercent(85, 'de')).toBe('85\u00a0%');
+        expect(formatRecordPercent(85, 'en-US')).toBe('85%');
+    });
+
+    it('formats German amounts and intervals in Plan and Forecast', () => {
+        const current = vi.spyOn(locale, 'appLocale').mockReturnValue('de-DE');
+        const strings: Record<string, string> = { 'regimen.every_days': 'alle {n} Tage' };
+        const t = (key: string) => strings[key] ?? key;
+        try {
+            const regimen = { ester: Ester.EV, route: Route.oral, doseMG: 2.5, extras: {} };
+            expect(regimenLabel(regimen, t)).toContain('2,5 mg');
+            expect(frequencyLabel({ everyDays: 3.5, timesPerDay: 1 }, t)).toContain('3,5 Tage');
+        } finally {
+            current.mockRestore();
+        }
+    });
+
+    it('uses German decimal commas for a draw time relative to the dose', () => {
+        expect(sinceDoseLabel(4.1, () => '{n} h', 'de-DE')).toBe('4,1 h');
     });
 
     it.each([

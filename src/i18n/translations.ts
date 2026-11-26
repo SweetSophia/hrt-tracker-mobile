@@ -1,9 +1,11 @@
 import { APPEARANCE_COPY } from './appearanceCopy';
+import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { RU } from './ru';
 import { UK } from './uk';
+import type { Lang } from './languages';
 
-export type Lang = 'zh' | 'zh-TW' | 'yue' | 'en' | 'ja' | 'ko' | 'tr' | 'ru' | 'uk';
+export type { Lang };
 
 export const TRANSLATIONS_BASE = {
     zh: {
@@ -173,6 +175,7 @@ export const TRANSLATIONS_BASE = {
         'status.level.low': '低于参考范围',
 
         'label.e2': '雌二醇',
+        'label.equivalent': '{hormone}当量：',
         'label.cpa_chart': '醋酸环丙孕酮',
         'label.t': '睾酮',
         'label.total_t': '总睾酮',
@@ -761,6 +764,7 @@ export const TRANSLATIONS_BASE = {
         'opsec.callout.important': '重要',
         'opsec.callout.warning': '注意',
         'opsec.callout.caution': '警告',
+        'opsec.english_fallback': '英文版',
         'pk_viz.subtitle': '用简化模型直观展示药物浓度随时间的变化',
         'pk_viz.model': '模型',
         'pk_viz.dose': '剂量',
@@ -1603,6 +1607,7 @@ export const TRANSLATIONS_BASE = {
         'status.level.low': 'Below reference range',
 
         'label.e2': 'Estradiol',
+        'label.equivalent': '{hormone} eq:',
         'label.cpa_chart': 'CPA',
         'label.t': 'Testosterone',
         'label.total_t': 'Total T',
@@ -2201,6 +2206,7 @@ export const TRANSLATIONS_BASE = {
         'opsec.callout.important': 'Important',
         'opsec.callout.warning': 'Warning',
         'opsec.callout.caution': 'Caution',
+        'opsec.english_fallback': 'English version',
         'pk_viz.subtitle': 'A simplified model of how a level changes over time',
         'pk_viz.model': 'Model',
         'pk_viz.dose': 'Dose',
@@ -4011,6 +4017,7 @@ const ZH_TW = {
     'supplies.lead': '提前提醒',
     'supplies.days': '{n} 天',
     'settings.show_intro': '重新看一遍新手導覽',
+    'label.equivalent': '{hormone}當量：',
     'label.t': '睪固酮',
     'label.total_t': '總睪固酮',
     'mode.transfem': '女性化 HRT',
@@ -5096,6 +5103,11 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.en,
         ...APPEARANCE_COPY.en,
         'app.title': 'HRT Tracker',
+    },
+    de: {
+        ...DE,
+        ...MOBILE_CREDITS.de,
+        ...APPEARANCE_COPY.de,
     },
     ja: {
         ...MOBILE_CREDITS.ja,
@@ -8771,4 +8783,4 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.uk,
         ...APPEARANCE_COPY.uk,
     },
-} as const;
+} as const satisfies Record<Lang, Record<string, string>>;

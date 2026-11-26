@@ -17,7 +17,7 @@ import {
     rawModelAtLab,
 } from '../../logic';
 import { Lang } from '../i18n/translations';
-import { formatDate, formatTime } from '../utils/helpers';
+import { formatDate, formatTime, LOCALE_MAP } from '../utils/helpers';
 import LabResultForm from '../components/LabResultForm';
 import VialDoodle from '../components/VialDoodle';
 import CalibrationPlot from '../components/CalibrationPlot';
@@ -31,6 +31,7 @@ import { AddCancelLabel, SwapLabel } from '../components/StableLabel';
 import { CopyTick } from '../components/Tick';
 import { scrollParent } from '../utils/scrollParent';
 import { inertWhen } from '../utils/inert';
+import { formatRecordPercent, formatRecordSummary } from '../utils/recordDecimal';
 
 interface LabProps {
     t: (key: string) => string;
@@ -126,6 +127,7 @@ const Lab: React.FC<LabProps> = ({
 
     const hasCal = modelReady && calibration.points.length > 0;
     const hormoneAdvisory = useMemo(() => getHormoneLevelAdvisory(labResults), [labResults]);
+    const locale = LOCALE_MAP[lang];
 
     // One-line summary of the active calibration for the settings entry row.
     // Before any usable labs exist there's no fit to show, so we fall back to
@@ -137,8 +139,10 @@ const Lab: React.FC<LabProps> = ({
               ? t(`cal.${calibrationMethod}`)
               : [
                     t(`cal.${calibrationMethod}`),
-                    `×${calibration.scale.toFixed(2)}`,
-                    calibration.fitErrPct !== null ? `±${calibration.fitErrPct.toFixed(0)}%` : null,
+                    `×${formatRecordSummary(calibration.scale.toFixed(2), locale)}`,
+                    calibration.fitErrPct !== null
+                        ? `±${formatRecordPercent(calibration.fitErrPct.toFixed(0), locale)}`
+                        : null,
                 ]
                     .filter(Boolean)
                     .join(', ');
@@ -290,7 +294,8 @@ const Lab: React.FC<LabProps> = ({
                                                 <span className="flex items-center justify-between mb-1">
                                                     <span className="text-sm">
                                                         <span className={`font-medium tabular-nums ${on}`}>
-                                                            {res.concValue} {clinicalUnit(res.unit)}
+                                                            {formatRecordSummary(res.concValue, locale)}{' '}
+                                                            {clinicalUnit(res.unit)}
                                                         </span>
                                                         <span className={muted}>
                                                             {', '}
@@ -309,7 +314,7 @@ const Lab: React.FC<LabProps> = ({
                                                     >
                                                         {formatDate(d, lang)}
                                                         {timing &&
-                                                            `, ${fill(t('lab.after_dose'), { when: sinceDoseLabel(timing.hoursBefore, t) })}`}
+                                                            `, ${fill(t('lab.after_dose'), { when: sinceDoseLabel(timing.hoursBefore, t, locale) })}`}
                                                     </span>
                                                     {/* Against the raw model, named as the plot names it, and
                                                         in words: "13% above" rather than a bare ×1.13. */}
@@ -326,7 +331,7 @@ const Lab: React.FC<LabProps> = ({
                                                                 }}
                                                             >
                                                                 {pct === 0
-                                                                    ? '±0%'
+                                                                    ? `±${formatRecordPercent(0, locale)}`
                                                                     : fill(
                                                                           t(
                                                                               pct > 0

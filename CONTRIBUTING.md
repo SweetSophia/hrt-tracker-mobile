@@ -310,11 +310,14 @@ covers them until someone translates it.
 
 ### Adding a new language 新增语言
 
-1. Add its code to the `Lang` type at the top of `translations.ts` and add a
-   block for it in `TRANSLATIONS`. Start by translating the keys you can; the
-   rest fall back.
+1. Add its code to `LANG_CODES` and its site-notice label to `LANG_LABELS` in
+   `src/i18n/languages.ts` (the `Lang` type in `translations.ts` derives from
+   `LANG_CODES`), and add a block for it in `TRANSLATIONS` in `translations.ts`.
+   Start by translating the keys you can; the rest fall back.
 
-   在 `translations.ts` 顶部的 `Lang` 类型中加入语言代码，并在 `TRANSLATIONS` 中添加对应区块。
+   在 `src/i18n/languages.ts` 的 `LANG_CODES` 中加入语言代码，并在 `LANG_LABELS` 中加入站点公告用的名称
+   （`translations.ts` 的 `Lang` 类型由 `LANG_CODES` 推导），再在 `translations.ts` 的 `TRANSLATIONS`
+   中添加对应区块。
    先翻译你能翻译的键，其余会自动回退。
 
 2. Add it to `LANG_LOCALE` and `FALLBACK` in `src/contexts/LanguageContext.tsx`
@@ -329,10 +332,12 @@ covers them until someone translates it.
    在 `src/utils/helpers.tsx` 的 `LOCALE_MAP`、`src/i18n/share.ts` 的分享页文案，以及
    `src/App.tsx` 的语言选择列表（`languageOptions`）中加入该语言。
 
-4. For site notices, add it to `noticeLangs` in `src/pages/Admin.tsx` and to
-   `NOTICE_LANGS` in `worker.ts`.
+4. Site notices in `src/pages/Admin.tsx` and `src/server/notice.ts`, and the
+   `hrt-lang` preference in complete backups, all read `LANG_CODES`, so step 1
+   covers them.
 
-   为了支持站点公告，在 `src/pages/Admin.tsx` 的 `noticeLangs` 与 `worker.ts` 的 `NOTICE_LANGS` 中加入该语言。
+   `src/pages/Admin.tsx` 与 `src/server/notice.ts` 的站点公告，以及完整备份里的 `hrt-lang` 偏好，
+   都读取 `LANG_CODES`，第 1 步已一并覆盖。
 
 The typechecker points out any `Record<Lang, …>` you missed, so run
 `npx tsc --noEmit` when you are done.

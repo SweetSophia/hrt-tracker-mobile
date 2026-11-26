@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { TRANSLATIONS, Lang } from '../i18n/translations';
+import { isLangCode } from '../i18n/languages';
 import { usePortablePreference } from './RecordsContext';
 import { setAppLocale } from '../i18n/locale';
 
@@ -18,6 +19,7 @@ const LANG_LOCALE: Record<Lang, string> = {
     'zh-TW': 'zh-TW',
     yue: 'zh-HK',
     en: 'en',
+    de: 'de-DE',
     ja: 'ja',
     ko: 'ko',
     tr: 'tr',
@@ -43,6 +45,7 @@ const FALLBACK: Record<Lang, readonly Lang[]> = {
     'zh-TW': ['zh', 'en'],
     yue: ['zh-TW', 'zh', 'en'],
     en: ['zh'],
+    de: ['en', 'zh'],
     ja: ['en', 'zh'],
     ko: ['en', 'zh'],
     tr: ['en', 'zh'],
@@ -51,7 +54,10 @@ const FALLBACK: Record<Lang, readonly Lang[]> = {
 };
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-    const [lang, setLang] = usePortablePreference<Lang>('hrt-lang', raw => (raw as Lang) || 'zh');
+    const [lang, setLang] = usePortablePreference<Lang>('hrt-lang', raw => {
+        if (!raw) return 'zh';
+        return isLangCode(raw) ? raw : 'en';
+    });
     setAppLocale(LANG_LOCALE[lang] ?? lang);
 
     useEffect(() => {

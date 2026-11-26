@@ -29,6 +29,7 @@ import { noticeService, NoticeLevel, SiteNotice } from '../services/notice';
 import { donationService, DonationAddresses } from '../services/donation';
 import { apiEndpoint } from '../services/apiClient';
 import { Lang } from '../i18n/translations';
+import { LANG_CODES, LANG_LABELS } from '../i18n/languages';
 import { BusyLabel } from '../components/StableLabel';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import Tabs, { useSwitchAnimation } from '../components/Tabs';
@@ -125,15 +126,7 @@ const formatWhen = (value: string) =>
 
 const NOTICE_LANGS: { id: 'default' | Lang; label: string }[] = [
     { id: 'default', label: 'Default' },
-    { id: 'zh', label: '简体中文' },
-    { id: 'zh-TW', label: '繁體中文' },
-    { id: 'yue', label: '粵語' },
-    { id: 'en', label: 'English' },
-    { id: 'ja', label: '日本語' },
-    { id: 'ko', label: '한국어' },
-    { id: 'tr', label: 'Türkçe' },
-    { id: 'ru', label: 'Русский' },
-    { id: 'uk', label: 'Українська' },
+    ...LANG_CODES.map(code => ({ id: code, label: LANG_LABELS[code] })),
 ];
 
 /** A user's picture, or their first two letters when they have none. */

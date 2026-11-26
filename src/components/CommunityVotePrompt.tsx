@@ -14,6 +14,7 @@ const LOCALE: Record<Lang, string> = {
     'zh-TW': 'zh-TW',
     yue: 'zh-HK',
     en: 'en',
+    de: 'de-DE',
     ja: 'ja',
     ko: 'ko',
     tr: 'tr',

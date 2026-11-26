@@ -33,3 +33,26 @@ for (const testCase of CASES) {
         }
     });
 }
+
+test('the German OpSec heading stays localized when the English guide loads', async ({ page, context }) => {
+    await seedStorage(context, baseStorage({ 'hrt-lang': 'de' }));
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
+    await page.getByRole('tab', { name: 'Über', exact: true }).click();
+    await page.getByRole('button', { name: 'Alltagssicherheit', exact: true }).click();
+
+    const guide = page.locator('[lang="en"]').filter({ has: page.locator('article.opsec-prose') });
+    await expect(guide).toBeVisible();
+    const marker = page.getByText('Englische Fassung', { exact: true });
+    await expect(marker).toBeVisible();
+    // The marker stays outside the English body so screen readers announce
+    // it in German before the English guide.
+    await expect(guide.getByText('Englische Fassung')).toHaveCount(0);
+    expect(
+        await marker.evaluate(el => {
+            const article = document.querySelector('[lang="en"] article.opsec-prose');
+            return !!article && !!(el.compareDocumentPosition(article) & Node.DOCUMENT_POSITION_FOLLOWING);
+        }),
+    ).toBe(true);
+    await expect(page.getByText('Alltagssicherheit', { exact: true })).toBeVisible();
+});

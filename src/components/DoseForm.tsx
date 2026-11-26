@@ -38,7 +38,12 @@ import { useEscapeLayer, SelectChevron } from './CustomSelect';
 import GuideFold from './dose_form/GuideFold';
 import Tick from './Tick';
 import { cleanDoseMG } from '../utils/cleanDose';
-import { formatRecordDecimal, parseRecordDecimal, recordDecimalValue } from '../utils/recordDecimal';
+import {
+    formatRecordDecimal,
+    formatRecordSummary,
+    parseRecordDecimal,
+    recordDecimalValue,
+} from '../utils/recordDecimal';
 import { inertWhen } from '../utils/inert';
 
 export interface DoseTemplate {
@@ -76,10 +81,10 @@ const LEVEL_BADGE_STYLES: Record<DoseLevelKey, string> = {
     above: 'text-[var(--danger)]',
 };
 
-const formatGuideNumber = (val: number) => {
+const formatGuideNumber = (val: number, locale: string) => {
     if (Number.isInteger(val)) return val.toString();
     const rounded = val < 1 ? val.toFixed(2) : val.toFixed(1);
-    return rounded.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+    return formatRecordSummary(rounded.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1'), locale);
 };
 
 interface DoseFormProps {
@@ -723,7 +728,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
 
     const guideUnitLabel = doseGuide?.config ? t(`dose.guide.unit.${doseGuide.config.unitKey}`) : '';
     const guideRangeText = doseGuide?.config
-        ? `${doseGuide.config.thresholds.map(threshold => `≤ ${formatGuideNumber(threshold)}`).join(', ')} ${guideUnitLabel}`
+        ? `${doseGuide.config.thresholds.map(threshold => `≤ ${formatGuideNumber(threshold, locale)}`).join(', ')} ${guideUnitLabel}`
         : '';
     const guideBadgeClass = doseGuide?.level ? LEVEL_BADGE_STYLES[doseGuide.level] : '';
     // The record a delete confirm is about, as its row reads: what, how much,
@@ -734,7 +739,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
         const what =
             ev.route === Route.patchRemove
                 ? t('route.patchRemove')
-                : doseOf(rate ? `${rate} µg/d` : `${trimDose(ev.doseMG)} mg`, drugLabel(ev.ester, t), t);
+                : doseOf(
+                      rate
+                          ? `${formatRecordSummary(rate, locale)} µg/d`
+                          : `${formatRecordSummary(trimDose(ev.doseMG), locale)} mg`,
+                      drugLabel(ev.ester, t),
+                      t,
+                  );
         const when = new Date(ev.timeH * 3600000).toLocaleString(LOCALE_MAP[lang] || 'en-US', {
             month: 'short',
             day: 'numeric',
@@ -822,8 +833,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                             <span className="block">{t(`route.${template.route}`)}</span>
                                             <span className="block">
                                                 {template.extras[ExtraKey.releaseRateUGPerDay]
-                                                    ? `${template.extras[ExtraKey.releaseRateUGPerDay]} µg/d`
-                                                    : `${trimDose(template.doseMG)} mg`}
+                                                    ? `${formatRecordSummary(template.extras[ExtraKey.releaseRateUGPerDay], locale)} µg/d`
+                                                    : `${formatRecordSummary(trimDose(template.doseMG), locale)} mg`}
                                             </span>
                                         </div>
                                     </button>
@@ -1250,7 +1261,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                         <p className="text-xs text-[var(--text-muted)]">
                                             {t('dose.guide.current')}:{' '}
                                             {doseGuide.value !== null
-                                                ? `${formatGuideNumber(doseGuide.value)} ${guideUnitLabel}`
+                                                ? `${formatGuideNumber(doseGuide.value, locale)} ${guideUnitLabel}`
                                                 : t('dose.guide.current_blank')}
                                         </p>
                                         {guideRangeText && (
