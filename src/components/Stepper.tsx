@@ -23,8 +23,10 @@ const Stepper: React.FC<{
     const errorId = React.useId();
     const n = decimalLocale ? recordDecimalValue(value, decimalLocale) : parseFloat(value);
     const hasNumber = Number.isFinite(n);
-    const current = hasNumber ? n : min;
+    const current = hasNumber || decimalLocale ? n : min;
+    const canNudge = Number.isFinite(current);
     const nudge = (dir: 1 | -1) => {
+        if (!canNudge) return;
         const next = Math.min(max, Math.max(min, current + dir * step(current, dir)));
         const rounded = Math.round(next * 100) / 100;
         onChange(decimalLocale ? formatRecordDecimal(rounded, decimalLocale) : String(rounded));
@@ -40,7 +42,7 @@ const Stepper: React.FC<{
                 <button
                     type="button"
                     onClick={() => nudge(-1)}
-                    disabled={current <= min}
+                    disabled={!canNudge || current <= min}
                     aria-label={`${label} −`}
                     className={btn}
                 >
@@ -75,7 +77,7 @@ const Stepper: React.FC<{
                 <button
                     type="button"
                     onClick={() => nudge(1)}
-                    disabled={current >= max}
+                    disabled={!canNudge || current >= max}
                     aria-label={`${label} +`}
                     className={btn}
                 >

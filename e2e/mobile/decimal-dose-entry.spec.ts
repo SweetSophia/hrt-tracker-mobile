@@ -146,9 +146,16 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
     await expect(interval).not.toHaveAttribute('aria-invalid', 'true');
     await expect(interval).not.toHaveAttribute('aria-valuenow');
     await expect(interval).toHaveAttribute('aria-valuetext', '1,');
+    await interval.press('ArrowUp');
+    await expect(interval).toHaveValue('1,');
+    await interval.press('ArrowDown');
+    await expect(interval).toHaveValue('1,');
+    await expect(page.getByRole('button', { name: 'Interval (days) +', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Interval (days) −', exact: true })).toBeDisabled();
     await expect(save).toBeDisabled();
     await expect(save).toHaveAccessibleDescription('Check the batch interval and count before saving.');
-    await interval.pressSequentially('5');
+    await page.keyboard.press('End');
+    await page.keyboard.type('5');
 
     const count = page.getByRole('spinbutton', { name: 'Count' });
     await enterText(page, count, '1,234');
