@@ -115,8 +115,11 @@ language, export/import, sharing, transparency, and the optional hrt:// pairing
 controls. Language changes apply immediately and are stored with your local
 settings.
 
-Appearance settings include the theme. The app respects the system preference
-where the browser exposes it.
+In Appearance, choose a display mode and a color theme. The app respects the
+system preference where the browser exposes it. The color theme offers
+Terracotta, Plum, and Teal for the accent and the estimated curve in the
+charts. Black & white pauses the palette. The saved palette returns when you
+switch display modes.
 
 ## Administrators
 

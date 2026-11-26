@@ -3,7 +3,7 @@ import { COLOR_PALETTES, type ColorPalette } from '../appearance/palettes';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import Tick from '../components/Tick';
 import { useTranslation } from '../contexts/LanguageContext';
-import type { AppTheme } from '../constants';
+import { APP_THEMES, type AppTheme } from '../constants';
 
 interface AppearanceSettingsProps {
     theme: AppTheme;
@@ -13,7 +13,6 @@ interface AppearanceSettingsProps {
     onBack: () => void;
 }
 
-const MODE_OPTIONS = ['light', 'dark', 'system', 'mono'] as const;
 const ROW =
     'flex min-h-12 w-full items-center justify-between gap-3 border-b-(length:--hairline) border-[var(--border)] py-3 text-start text-sm text-[var(--text)] last:border-b-0';
 
@@ -30,7 +29,7 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({ theme, setTheme
                     <h2 className="group-heading" id="appearance-display-mode">
                         {t('appearance.display_mode')}
                     </h2>
-                    {MODE_OPTIONS.map(value => (
+                    {APP_THEMES.map(value => (
                         <button
                             key={value}
                             type="button"
@@ -56,26 +55,29 @@ const AppearanceSettings: React.FC<AppearanceSettingsProps> = ({ theme, setTheme
                             {t('appearance.color_theme_mono')}
                         </p>
                     )}
-                    {COLOR_PALETTES.map(value => (
-                        <button
-                            key={value}
-                            type="button"
-                            onClick={() => setPalette(value)}
-                            aria-pressed={palette === value}
-                            disabled={paletteDisabled}
-                            className={`${ROW} disabled:text-[var(--text-muted)]`}
-                        >
-                            <span className={`flex items-center gap-3 ${palette === value ? 'font-semibold' : ''}`}>
-                                <span
-                                    aria-hidden="true"
-                                    className="size-4 shrink-0 rounded-full"
-                                    style={{ backgroundColor: `var(--palette-swatch-${value})` }}
-                                />
-                                {t(`appearance.palette.${value}`)}
-                            </span>
-                            <Tick on={palette === value} />
-                        </button>
-                    ))}
+                    {COLOR_PALETTES.map(value => {
+                        const selected = !paletteDisabled && palette === value;
+                        return (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => setPalette(value)}
+                                aria-pressed={paletteDisabled ? undefined : selected}
+                                disabled={paletteDisabled}
+                                className={`${ROW} disabled:text-[var(--text-muted)]`}
+                            >
+                                <span className={`flex items-center gap-3 ${selected ? 'font-semibold' : ''}`}>
+                                    <span
+                                        aria-hidden="true"
+                                        className="size-4 shrink-0 rounded-full"
+                                        style={{ backgroundColor: `var(--palette-swatch-${value})` }}
+                                    />
+                                    {t(`appearance.palette.${value}`)}
+                                </span>
+                                <Tick on={selected} />
+                            </button>
+                        );
+                    })}
                 </section>
             </div>
         </div>

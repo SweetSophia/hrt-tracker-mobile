@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { baseStorage, gotoApp, seedStorage } from './helpers';
+import { COLOR_PALETTES } from '../src/appearance/palettes';
+import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
 
 async function openAppearance(page: Page) {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
@@ -69,10 +71,46 @@ test('Black & white keeps its legacy look and remembers the last color theme', a
     await mono.click();
     await expect(root).toHaveCSS('filter', 'grayscale(1)');
     await expect.poll(() => accent(page)).toBe(monoAccent);
+    await expect(teal).toBeDisabled();
+    await expect(teal).not.toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('region', { name: 'Color theme' })).toHaveAccessibleDescription(
+        'Your saved color theme returns when you switch to another display mode.',
+    );
 
+    await page.reload();
+    await openAppearance(page);
+    await expect(mono).toHaveAttribute('aria-pressed', 'true');
+    await expect(teal).toBeDisabled();
     await light.click();
     await expect(teal).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => accent(page)).toBe(tealAccent);
+});
+
+test('each registered palette paints a distinct swatch and accent in Light and Dark', async ({ page, context }) => {
+    await seedStorage(context, baseStorage());
+    await gotoApp(page);
+    await openAppearance(page);
+
+    const themeGroup = page.getByRole('region', { name: 'Color theme' });
+    for (const mode of ['Light', 'Dark']) {
+        const modeButton = page.getByRole('button', { name: mode, exact: true });
+        await modeButton.click();
+        await expect(modeButton).toHaveAttribute('aria-pressed', 'true');
+        const swatches = new Set<string>();
+        const accents = new Set<string>();
+        for (const palette of COLOR_PALETTES) {
+            const label = APPEARANCE_COPY.en[`appearance.palette.${palette}`];
+            const choice = themeGroup.getByRole('button', { name: label, exact: true });
+            const swatch = choice.locator('span[aria-hidden="true"]');
+            await expect(swatch).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+            swatches.add(await swatch.evaluate(element => getComputedStyle(element).backgroundColor));
+            await choice.click();
+            await expect(choice).toHaveAttribute('aria-pressed', 'true');
+            accents.add(await accent(page));
+        }
+        expect(swatches.size).toBe(COLOR_PALETTES.length);
+        expect(accents.size).toBe(COLOR_PALETTES.length);
+    }
 });
 
 test('a color theme recolors the main trends while the comparison series keeps its color', async ({

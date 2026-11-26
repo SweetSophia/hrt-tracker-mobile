@@ -19,7 +19,7 @@ export const PORTABLE_PREFERENCE_KEYS = Object.freeze([
     'app-show-prediction',
     'app-hide-site-label',
     'hrt-supply-lead-days',
-]);
+] as const);
 const DEVICE_PREFERENCE_KEYS = Object.freeze(['hrt-mode']);
 const DEVICE_MODES: readonly string[] = Object.freeze(['transfem', 'transmasc']);
 const MODE_SUFFIXES = [

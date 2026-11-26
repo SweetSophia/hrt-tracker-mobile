@@ -13,7 +13,7 @@ import { HRTModeProvider, useHRTMode } from './contexts/HRTModeContext';
 import { PixelCatProvider } from './contexts/PixelCatContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoading from './components/PageLoading';
-import { AppTheme } from './constants';
+import { isAppTheme, type AppTheme } from './constants';
 import { isColorPalette, type ColorPalette } from './appearance/palettes';
 import { DoseEvent, decompressData, encryptData, decryptData } from '../logic';
 import { v4 as uuidv4 } from 'uuid';
@@ -303,7 +303,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
     // --- Site label: the host name strip above the mobile view. Switched off
     // from Settings while developer mode is on, and kept off after that. ---
     const [hideSiteLabel, setHideSiteLabel] = usePortablePreference('app-hide-site-label', raw => raw === 'true');
-    const [theme, setTheme] = usePortablePreference<AppTheme>('app-theme', raw => (raw as AppTheme) || 'system');
+    const [theme, setTheme] = usePortablePreference<AppTheme>('app-theme', raw => (isAppTheme(raw) ? raw : 'system'));
     const [palette, setPalette] = usePortablePreference<ColorPalette>('app-palette', raw =>
         isColorPalette(raw) ? raw : 'terracotta',
     );
@@ -349,8 +349,8 @@ const AppContent = ({ session }: { session: UiSession }) => {
         modelSettings,
     });
 
-    // --- Theme Effect ---
-    useEffect(() => {
+    // Apply the stored appearance before the first app frame is painted.
+    useLayoutEffect(() => {
         const root = window.document.documentElement;
 
         const applyTheme = (isDark: boolean) => {

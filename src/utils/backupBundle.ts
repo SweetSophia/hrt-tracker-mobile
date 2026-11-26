@@ -39,7 +39,7 @@ import {
     type LabResult,
     type PKCustomParams,
 } from '../domain/engine';
-import type { AppTheme } from '../constants';
+import { isAppTheme, type AppTheme } from '../constants';
 import { isColorPalette, type ColorPalette } from '../appearance/palettes';
 import type { Lang } from '../i18n/translations';
 import { legacyCpaItem, normalizePlanItem, type PlanItem } from './plan';
@@ -355,9 +355,6 @@ const readStampString = (value: string | null): number | undefined => {
 
 const isIsoDate = (value: unknown): value is string =>
     typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
-
-const isAppTheme = (value: unknown): value is AppTheme =>
-    value === 'light' || value === 'dark' || value === 'system' || value === 'mono';
 
 const isLang = (value: unknown): value is Lang =>
     value === 'zh' ||
