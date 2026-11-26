@@ -1,7 +1,7 @@
 import { NativeBackScope } from '../hooks/useNativeBackOwner';
 import { useMounted } from '../hooks/useMounted';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import PageHeader, { PAGE_COLUMN, loggingHeaderAction } from '../components/PageHeader';
+import PageHeader, { PAGE_COLUMN, loggingHeaderActionAccent } from '../components/PageHeader';
 import { ChevronRight } from '../components/icons';
 import {
     LabResult,
@@ -67,6 +67,7 @@ const Lab: React.FC<LabProps> = ({
     lang,
 }) => {
     const isMounted = useMounted();
+    const quickAddId = React.useId();
     const [editingLabId, setEditingLabId] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const { isTransmasc } = useHRTMode();
@@ -152,7 +153,8 @@ const Lab: React.FC<LabProps> = ({
                     <button
                         onClick={() => setIsQuickAddLabOpen(!isQuickAddLabOpen)}
                         aria-expanded={isQuickAddLabOpen}
-                        className={`${loggingHeaderAction} text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]`}
+                        aria-controls={quickAddId}
+                        className={loggingHeaderActionAccent}
                     >
                         <AddCancelLabel
                             wrap
@@ -165,7 +167,12 @@ const Lab: React.FC<LabProps> = ({
             />
 
             {/* Expandable add form */}
-            <div className="disclosure" data-open={isQuickAddLabOpen} {...inertWhen(!isQuickAddLabOpen)}>
+            <div
+                id={quickAddId}
+                className="disclosure"
+                data-open={isQuickAddLabOpen}
+                {...inertWhen(!isQuickAddLabOpen)}
+            >
                 <div className="disclosure-inner">
                     <div className={`${PAGE_COLUMN} mb-6`}>
                         <NativeBackScope active={isQuickAddLabOpen}>
@@ -307,7 +314,7 @@ const Lab: React.FC<LabProps> = ({
                                                     {/* Against the raw model, named as the plot names it, and
                                                         in words: "13% above" rather than a bare ×1.13. */}
                                                     {cmp && (
-                                                        <span className="flex max-w-full flex-wrap items-center gap-1.5 text-xs tabular-nums [overflow-wrap:anywhere]">
+                                                        <span className="ms-auto flex max-w-full flex-wrap items-center justify-end gap-1.5 text-end text-xs tabular-nums [overflow-wrap:anywhere]">
                                                             <span className={muted}>
                                                                 {t('cal.plot.before')} {Math.round(cmp.pred)}
                                                             </span>
@@ -376,9 +383,7 @@ const Lab: React.FC<LabProps> = ({
                                 onClick={copyDetails}
                                 className="logging-touch-target inline-flex max-w-full items-center gap-1 text-start text-sm font-medium text-[var(--accent-ink)] [overflow-wrap:anywhere]"
                             >
-                                <span className="shrink-0">
-                                    <CopyTick copied={copied} size={14} />
-                                </span>
+                                <CopyTick copied={copied} size={14} />
                                 <SwapLabel show={copied} off={t('lab.copy_details')} on={t('lab.copied')} />
                             </button>
                             <button

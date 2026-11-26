@@ -16,8 +16,7 @@ async function openView(page: Page, view: (typeof views)[number]) {
 }
 
 async function enlargeText(page: Page) {
-    // Exercise reflow at twice the base rem size. Android's native font setting
-    // is exercised separately in the installed preview.
+    // Exercise reflow at twice the base rem size. The installed preview uses Android font scaling.
     await page.evaluate(() => (document.documentElement.style.fontSize = '32px'));
 }
 
@@ -61,6 +60,9 @@ test.beforeEach(async ({ page, context }) => {
         }),
     );
     await page.goto('/');
+    expect(await page.evaluate(() => matchMedia('(any-pointer: coarse)').matches), 'Expected a coarse pointer').toBe(
+        true,
+    );
 });
 
 for (const view of views) {
@@ -87,15 +89,29 @@ for (const view of views) {
             .toBe(true);
         await expectTouchSize(add);
         const addWidth = await add.evaluate(el => el.getBoundingClientRect().width);
+        const panelId = await add.getAttribute('aria-controls');
+        expect(panelId).toBeTruthy();
+        const panel = page.locator(`[id=${JSON.stringify(panelId)}]`);
+        await expect(panel).toHaveAttribute('data-open', 'false');
         await add.tap();
-        await expect(page.locator('.main-view .disclosure[data-open="true"]').first()).toBeVisible();
+        await expect(panel).toHaveAttribute('data-open', 'true');
         const cancel = header.getByRole('button', { name: 'Отмена', exact: true });
         await expectTouchSize(cancel);
         await expect.poll(() => cancel.evaluate(el => el.getBoundingClientRect().width)).toBeLessThan(addWidth);
         await cancel.tap();
+        await expect(panel).toHaveAttribute('data-open', 'false');
         await expect(add).toBeVisible();
     });
 }
+
+test('the outgoing Add label does not wrap into Cancel during the crossfade', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const { header } = await openView(page, views[1]);
+    await enlargeText(page);
+    await header.getByRole('button', { name: views[1].add, exact: true }).tap();
+    const outgoing = header.locator('.swap-label-wrap > [data-shown="false"]').filter({ hasText: views[1].add });
+    await expect(outgoing).toHaveCSS('white-space', 'nowrap');
+});
 
 test('History follows the actual sticky header when it grows', async ({ page }) => {
     const { header } = await openView(page, views[0]);
@@ -121,8 +137,19 @@ test('the date and model comparison fit inside a lab row at enlarged text size',
     await openView(page, views[1]);
     await enlargeText(page);
     const row = page.getByRole('button', { name: /^31\.5 pmol\/L/ });
-    await expect(row.getByText(/Исходная модель \d/)).toBeVisible();
+    const model = row.getByText(/Исходная модель \d/);
+    await expect(model).toBeVisible();
     await expectFullText(row);
+    await expect
+        .poll(() =>
+            model.evaluate(el => {
+                const line = el.parentElement?.parentElement;
+                const badge = el.nextElementSibling;
+                if (!badge || !line) return Infinity;
+                return Math.abs(line.getBoundingClientRect().right - badge.getBoundingClientRect().right);
+            }),
+        )
+        .toBeLessThan(2);
 });
 
 test('large bottom labels stay inside four independently tappable tabs', async ({ page }) => {
@@ -182,6 +209,7 @@ test('the logging forms give separate touch targets to their footer actions', as
     const doseCancel = doseForm.getByRole('button', { name: 'Отмена', exact: true }).filter({ hasText: /^Отмена$/ });
     await expectTouchSize(doseSave);
     await expectTouchSize(doseCancel);
+    await expectTouchSize(doseForm.getByRole('button', { name: 'Удалить', exact: true }));
     await doseCancel.tap();
     await expect(rowButton).toBeFocused();
 });

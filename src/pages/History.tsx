@@ -2,7 +2,7 @@ import { NativeBackScope, useNativeBackOwner } from '../hooks/useNativeBackOwner
 import { useMounted } from '../hooks/useMounted';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AddCancelLabel } from '../components/StableLabel';
-import PageHeader, { PAGE_COLUMN, loggingHeaderAction } from '../components/PageHeader';
+import PageHeader, { PAGE_COLUMN, loggingHeaderAction, loggingHeaderActionAccent } from '../components/PageHeader';
 import { Trash, Select, Repeat, ChevronDown } from '../components/icons';
 import Tick from '../components/Tick';
 import Switch from '../components/Switch';
@@ -152,6 +152,7 @@ const History: React.FC<HistoryProps> = ({
     const { lang } = useTranslation();
     const locale = LOCALE_MAP[lang] ?? 'en-US';
     const isMounted = useMounted();
+    const quickAddId = React.useId();
     const [headerHeight, setHeaderHeight] = useState<number>();
     const [editingId, setEditingId] = useState<string | null>(openEditId ?? null);
 
@@ -421,6 +422,7 @@ const History: React.FC<HistoryProps> = ({
                     ) : null}
                     <Doodle name={ev.route} size={1.75} asleep={isFuture} />
                     <div className="flex-1 min-w-0">
+                        {/* Let the time move down when a large label needs the full line. */}
                         <div className="flex flex-wrap items-center gap-x-2">
                             <div className="flex min-w-0 flex-auto flex-wrap items-baseline gap-x-2">
                                 <span className="font-medium text-[var(--text)] [overflow-wrap:anywhere] text-sm">
@@ -596,7 +598,8 @@ const History: React.FC<HistoryProps> = ({
                                 type="button"
                                 onClick={() => (isQuickAddOpen ? closeQuickAdd() : setIsQuickAddOpen(true))}
                                 aria-expanded={isQuickAddOpen}
-                                className={`${loggingHeaderAction} text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]`}
+                                aria-controls={quickAddId}
+                                className={loggingHeaderActionAccent}
                             >
                                 <AddCancelLabel
                                     wrap
@@ -616,7 +619,7 @@ const History: React.FC<HistoryProps> = ({
             </p>
 
             {/* Inert while closed, so a keyboard does not tab through a form it cannot see. */}
-            <div className="disclosure mt-4" data-open={isQuickAddOpen} {...inertWhen(!isQuickAddOpen)}>
+            <div id={quickAddId} className="disclosure mt-4" data-open={isQuickAddOpen} {...inertWhen(!isQuickAddOpen)}>
                 <div className="disclosure-inner">
                     <div className={`${PAGE_COLUMN} mb-6`}>
                         <div className="flex items-center justify-between py-3">

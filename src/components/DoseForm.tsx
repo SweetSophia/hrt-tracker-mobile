@@ -1402,7 +1402,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     },
                                 );
                             }}
-                            className="p-2 text-[var(--text-muted)] hover:text-[var(--danger)] rounded flex items-center justify-center"
+                            className="logging-touch-target p-2 text-[var(--text-muted)] hover:text-[var(--danger)] rounded flex items-center justify-center"
                             title={t('btn.delete')}
                             aria-label={t('btn.delete')}
                         >

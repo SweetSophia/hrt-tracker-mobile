@@ -17,8 +17,11 @@ export const headerAction =
 export const headerActionAccent =
     'inline-flex h-8 items-center gap-1 px-2.5 text-sm font-medium rounded-full text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]';
 
+/** A logging action with room for wrapped text and a 48px touch target. */
 export const loggingHeaderAction =
     'logging-touch-target inline-flex min-h-8 max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium leading-snug [overflow-wrap:anywhere]';
+
+export const loggingHeaderActionAccent = `${loggingHeaderAction} text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]`;
 
 const on = 'text-[var(--text)]';
 const muted = 'text-[var(--text-muted)]';
@@ -46,6 +49,7 @@ const PageHeader: React.FC<{
     actions?: React.ReactNode;
     columnClassName?: string;
     reflow?: boolean;
+    /** A stable listener for the sticky bar's rendered height. */
     onHeightChange?: (height: number) => void;
 }> = ({ title, subtitle, onBack, actions, columnClassName = PAGE_COLUMN, reflow = false, onHeightChange }) => {
     const { t } = useTranslation();
