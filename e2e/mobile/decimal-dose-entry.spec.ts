@@ -31,6 +31,32 @@ test('manual dose entry stores a comma decimal at its entered precision', async 
     await expect.poll(async () => (await storedEvents(page))[0]?.doseMG).toBe(0.0375);
 });
 
+test('Russian dose entry accepts a comma keystroke and shows the exact quick dose', async ({ page, context }) => {
+    await seedStorage(context, baseStorage({ 'hrt-lang': 'ru' }));
+    await page.goto('/');
+    await page.getByRole('button', { name: 'История', exact: true }).click();
+    await page.getByRole('button', { name: 'Добавить дозу', exact: true }).first().click();
+    const form = page.locator('.disclosure[data-open="true"] form');
+    const amount = form.getByRole('textbox', { name: 'Доза (мг)', exact: true });
+
+    await amount.focus();
+    await page.keyboard.type('0,');
+    await expect(amount).toHaveValue('0,');
+    await expect(amount).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(form.getByRole('alert')).toHaveCount(0);
+    await page.keyboard.type('0375');
+    await expect(amount).toHaveValue('0,0375');
+    await form.getByRole('button', { name: 'Сохранить текущую дозу как быструю' }).click();
+    const quickDose = form.getByRole('button', { name: '0,0375 mg', exact: true });
+    await expect(quickDose).toBeVisible();
+    await amount.clear();
+    await quickDose.click();
+    await expect(amount).toHaveValue('0,0375');
+    await form.getByRole('button', { name: 'Сохранить', exact: true }).click();
+
+    await expect.poll(async () => (await storedEvents(page))[0]?.doseMG).toBe(0.0375);
+});
+
 test('saving an edited dose preserves a previously stored amount beyond three decimal places', async ({
     page,
     context,
@@ -69,16 +95,31 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
     await expect(wear).toHaveAttribute('aria-invalid', 'true');
     await save.click();
     expect(await storedEvents(page)).toHaveLength(0);
+    await wear.fill('3,');
+    await expect(wear).not.toHaveAttribute('aria-invalid', 'true');
+    await save.click();
+    await expect(wear).toHaveAttribute('aria-invalid', 'true');
+    expect(await storedEvents(page)).toHaveLength(0);
     await enterText(page, wear, '3,5');
 
     await page.getByRole('switch', { name: 'Batch add' }).click();
-    await enterText(page, page.getByLabel('Interval (days)', { exact: true }), '1,5');
-    const count = page.getByLabel('Count', { exact: true });
+    const interval = page.getByRole('spinbutton', { name: 'Interval (days)' });
+    await enterText(page, interval, '1,');
+    await expect(interval).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(save).toBeDisabled();
+    await expect(save).toHaveAccessibleDescription('Check the batch interval and count before saving.');
+    await interval.pressSequentially('5');
+
+    const count = page.getByRole('spinbutton', { name: 'Count' });
     await enterText(page, count, '1,234');
     await expect(count).toHaveAttribute('aria-invalid', 'true');
-    await save.click();
+    await expect(save).toBeDisabled();
     expect(await storedEvents(page)).toHaveLength(0);
-    await count.fill('2');
+    await count.fill('2.9');
+    await expect(page.getByText(/one entry every 1\.5 days, 2 entries total/)).toBeVisible();
+    await count.fill('3');
+    await count.press('ArrowDown');
+    await expect(count).toHaveValue('2');
     await save.click();
 
     await expect.poll(async () => (await storedEvents(page)).length).toBe(2);

@@ -89,6 +89,7 @@ interface DoseFormProps {
     onDeleteTemplate: (id: string) => Promise<boolean>;
     isInline?: boolean;
     hideHeader?: boolean;
+    saveBlockedReason?: string;
     quickDoses?: QuickDose[];
     onAddQuickDose?: (dose: QuickDose) => Promise<boolean>;
     onDeleteQuickDose?: (id: string) => Promise<boolean>;
@@ -131,6 +132,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
     onDeleteTemplate,
     isInline = false,
     hideHeader = false,
+    saveBlockedReason,
     quickDoses,
     onAddQuickDose,
     onDeleteQuickDose,
@@ -457,6 +459,10 @@ const DoseForm: React.FC<DoseFormProps> = ({
         (route === Route.patchApply && (patchWear.kind === 'invalid' || !Number.isFinite(patchWearH))) ||
         (hasCustomHold && customHold.kind === 'invalid') ||
         !Number.isFinite(doseMG);
+    const incompleteDecimal =
+        (route !== Route.patchRemove && amount.kind === 'incomplete') ||
+        (route === Route.patchApply && patchWear.kind === 'incomplete') ||
+        (hasCustomHold && customHold.kind === 'incomplete');
 
     // A format error is visible while editing. Submit errors go away when
     // the values they were about change.
@@ -473,10 +479,11 @@ const DoseForm: React.FC<DoseFormProps> = ({
         customHoldInput,
     ].join('|');
     const [doseError, setDoseError] = useState<{ message: string; key: string } | null>(null);
-    const shownDoseError = invalidDecimal ? decimalError : doseError?.key === valuesKey ? doseError.message : null;
+    const refusedDose = doseError?.key === valuesKey;
+    const shownDoseError = invalidDecimal ? decimalError : refusedDose ? doseError.message : null;
 
     const validateDose = (allowEmptyAmount: boolean): string | null => {
-        if (invalidDecimal) return decimalError;
+        if (invalidDecimal || incompleteDecimal) return decimalError;
         if (hasCustomHold && (customHold.kind !== 'number' || customHold.value < 1)) return t('error.slHoldMinOne');
         if (route === Route.patchRemove || (allowEmptyAmount && amountValue === 0)) return null;
         if (amount.kind === 'empty') return t('modal.dose.dose_required');
@@ -492,6 +499,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
     };
 
     const doseErrorId = React.useId();
+    const saveBlockedReasonId = React.useId();
     const fieldsRef = useRef<HTMLDivElement>(null);
     // Put the cursor in the field to fix: the first one marked, or for the
     // hold time (not a dose) the first field there is.
@@ -550,7 +558,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
         // handler nets out to no visible change, so the disabled prop never
         // engaged and a double-click/double-tap could add the dose twice
         // (each click mints a fresh uuid in add mode).
-        if (isSavingRef.current) return;
+        if (isSavingRef.current || saveBlockedReason) return;
         isSavingRef.current = true;
         setIsSaving(true);
         const failSave = (msg: string) => {
@@ -957,7 +965,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     route={route}
                                     ester={ester}
                                     quickDoses={quickDoses}
-                                    currentDose={doseMG}
+                                    currentDose={cleanDoseMG(doseMG)}
                                     onSelectDose={val => handleRawChange(formatAmount(val))}
                                     onAddQuickDose={onAddQuickDose}
                                     onDeleteQuickDose={onDeleteQuickDose}
@@ -974,7 +982,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     onRawChange={handleRawChange}
                                     onE2Change={handleE2Change}
                                     route={route}
-                                    invalid={!!shownDoseError}
+                                    invalid={refusedDose}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -987,7 +995,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     onRawChange={handleRawChange}
                                     onE2Change={handleE2Change}
                                     route={route}
-                                    invalid={!!shownDoseError}
+                                    invalid={refusedDose}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1009,7 +1017,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     setCustomHoldValue={setCustomHoldValue}
                                     thetaFromHold={thetaFromHold}
                                     route={route}
-                                    invalid={!!shownDoseError}
+                                    invalid={refusedDose}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1022,7 +1030,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     e2Dose={e2Dose}
                                     onE2Change={handleE2Change}
                                     bioMultiplier={bioMultiplier}
-                                    invalid={!!shownDoseError}
+                                    invalid={refusedDose}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1037,7 +1045,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     onRawChange={handleRawChange}
                                     patchWearDays={patchWearDays}
                                     setPatchWearDays={setPatchWearDays}
-                                    invalid={!!shownDoseError}
+                                    invalid={refusedDose}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1253,6 +1261,11 @@ const DoseForm: React.FC<DoseFormProps> = ({
             <div
                 className={`flex flex-wrap gap-x-2 gap-y-2 justify-between items-center shrink-0 border-t-(length:--hairline) border-[var(--border)] ${!isInline ? 'px-6 py-3' : hideHeader ? 'py-2' : 'py-3'}`}
             >
+                {saveBlockedReason && (
+                    <p id={saveBlockedReasonId} className="basis-full text-xs text-[var(--danger)]">
+                        {saveBlockedReason}
+                    </p>
+                )}
                 {/* Says what the tick shows, for anyone who can't see it. */}
                 <span role="status" className="sr-only">
                     {templateTick === 'saved'
@@ -1386,7 +1399,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                     )}
                     <button
                         type="submit"
-                        disabled={isSaving}
+                        disabled={isSaving || Boolean(saveBlockedReason)}
+                        aria-describedby={saveBlockedReason ? saveBlockedReasonId : undefined}
                         className="btn-primary flex-1 sm:flex-none sm:min-w-[88px]"
                     >
                         {isSaving ? (

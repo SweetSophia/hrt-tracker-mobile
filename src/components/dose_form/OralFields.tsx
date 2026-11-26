@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, isUnmodelledDrug } from '../../../logic';
 import { refusedFieldProps } from './refusedField';
+import { LOCALE_MAP } from '../../utils/helpers';
 
 interface OralFieldsProps {
     ester: Ester;
@@ -25,7 +26,8 @@ const OralFields: React.FC<OralFieldsProps> = ({
     invalid,
     errorId,
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     // Cyproterone and the unmodelled drugs have no estradiol equivalent: their own dose is all there is.
     const rawOnly = ester === Ester.CPA || isUnmodelledDrug(ester);
     const rawId = React.useId();
@@ -42,7 +44,7 @@ const OralFields: React.FC<OralFieldsProps> = ({
                     </label>
                     <input
                         id={rawId}
-                        {...refusedFieldProps(rawDose, invalid, errorId)}
+                        {...refusedFieldProps(rawDose, locale, invalid, errorId)}
                         type="text"
                         inputMode="decimal"
                         value={rawDose}
@@ -61,7 +63,7 @@ const OralFields: React.FC<OralFieldsProps> = ({
                     </label>
                     <input
                         id={e2Id}
-                        {...refusedFieldProps(e2Dose, invalid, errorId)}
+                        {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
                         type="text"
                         inputMode="decimal"
                         value={e2Dose}

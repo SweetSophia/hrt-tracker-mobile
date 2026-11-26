@@ -22,7 +22,8 @@ const Stepper: React.FC<{
     const id = React.useId();
     const errorId = React.useId();
     const n = decimalLocale ? recordDecimalValue(value, decimalLocale) : parseFloat(value);
-    const current = Number.isFinite(n) ? n : min;
+    const hasNumber = Number.isFinite(n);
+    const current = hasNumber ? n : min;
     const nudge = (dir: 1 | -1) => {
         const next = Math.min(max, Math.max(min, current + dir * step(current, dir)));
         const rounded = Math.round(next * 100) / 100;
@@ -52,10 +53,25 @@ const Stepper: React.FC<{
                     min={decimalLocale ? undefined : min}
                     max={!decimalLocale && Number.isFinite(max) ? max : undefined}
                     step={decimalLocale ? undefined : inputStep}
+                    role={decimalLocale ? 'spinbutton' : undefined}
+                    aria-valuemin={decimalLocale ? min : undefined}
+                    aria-valuemax={decimalLocale && Number.isFinite(max) ? max : undefined}
+                    aria-valuenow={decimalLocale && hasNumber ? Math.min(max, Math.max(min, n)) : undefined}
+                    aria-valuetext={decimalLocale && hasNumber ? formatRecordDecimal(n, decimalLocale) : undefined}
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? errorId : undefined}
                     value={value}
                     onChange={e => onChange(e.target.value)}
+                    onKeyDown={
+                        decimalLocale
+                            ? e => {
+                                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      nudge(e.key === 'ArrowUp' ? 1 : -1);
+                                  }
+                              }
+                            : undefined
+                    }
                     className="input-base min-w-0 flex-1 text-center text-sm font-medium tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button

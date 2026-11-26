@@ -32,8 +32,6 @@ const WEAR_PRESETS: { days: number; labelKey: string }[] = [
     { days: 7, labelKey: 'patch.wear.weekly' },
 ];
 
-const formatNum = (val: number) => String(val);
-
 const chipCls = (active: boolean) =>
     `inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
         active
@@ -82,7 +80,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         </label>
                         <input
                             id={rateId}
-                            {...refusedFieldProps(patchRate, invalid, errorId)}
+                            {...refusedFieldProps(patchRate, locale, invalid, errorId)}
                             type="text"
                             inputMode="decimal"
                             value={patchRate}
@@ -104,7 +102,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                                         Number.isFinite(currentRate) && Math.abs(currentRate - r) < 1e-6,
                                     )}
                                 >
-                                    {formatNum(r)} µg/d
+                                    {formatRecordDecimal(r, locale)} µg/d
                                 </button>
                             ))}
                         </div>
@@ -116,7 +114,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         </label>
                         <input
                             id={rawId}
-                            {...refusedFieldProps(rawDose, invalid, errorId)}
+                            {...refusedFieldProps(rawDose, locale, invalid, errorId)}
                             type="text"
                             inputMode="decimal"
                             value={rawDose}
@@ -137,7 +135,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                 </label>
                 <input
                     id={wearId}
-                    {...refusedFieldProps(patchWearDays, invalid, errorId, true)}
+                    {...refusedFieldProps(patchWearDays, locale, invalid, errorId, true)}
                     type="text"
                     inputMode="decimal"
                     value={patchWearDays}
@@ -154,7 +152,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                             onClick={() => setPatchWearDays(formatRecordDecimal(w.days, locale))}
                             className={chipCls(Number.isFinite(currentWear) && Math.abs(currentWear - w.days) < 1e-6)}
                         >
-                            {t(w.labelKey)} ({formatNum(w.days)} d)
+                            {t(w.labelKey)} ({formatRecordDecimal(w.days, locale)} d)
                         </button>
                     ))}
                     <button

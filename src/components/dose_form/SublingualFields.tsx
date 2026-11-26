@@ -103,7 +103,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         <div className="flex items-center gap-2">
                             <input
                                 id={holdId}
-                                {...refusedFieldProps(customHoldInput, invalid, errorId)}
+                                {...refusedFieldProps(customHoldInput, locale, invalid, errorId)}
                                 type="text"
                                 inputMode="decimal"
                                 value={customHoldInput}
@@ -143,7 +143,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         </label>
                         <input
                             id={rawId}
-                            {...refusedFieldProps(rawDose, invalid, errorId)}
+                            {...refusedFieldProps(rawDose, locale, invalid, errorId)}
                             type="text"
                             inputMode="decimal"
                             value={rawDose}
@@ -162,7 +162,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         </label>
                         <input
                             id={e2Id}
-                            {...refusedFieldProps(e2Dose, invalid, errorId)}
+                            {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
                             type="text"
                             inputMode="decimal"
                             value={e2Dose}

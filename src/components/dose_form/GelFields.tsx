@@ -6,7 +6,7 @@ import CustomSelect from '../CustomSelect';
 import GelDoseConverter from './GelDoseConverter';
 import { refusedFieldProps } from './refusedField';
 import { LOCALE_MAP } from '../../utils/helpers';
-import { recordDecimalValue } from '../../utils/recordDecimal';
+import { formatRecordDecimal, recordDecimalValue } from '../../utils/recordDecimal';
 
 interface GelFieldsProps {
     ester: Ester;
@@ -69,7 +69,7 @@ const GelFields: React.FC<GelFieldsProps> = ({
                 </label>
                 <input
                     id={doseId}
-                    {...refusedFieldProps(e2Dose, invalid, errorId)}
+                    {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
                     type="text"
                     inputMode="decimal"
                     value={e2Dose}
@@ -84,13 +84,13 @@ const GelFields: React.FC<GelFieldsProps> = ({
                         {t('gel.bioavailability')}: {bioPct.toFixed(0)}%
                         {absorbed !== null && (
                             <>
-                                , {t('gel.absorbed')} ≈ {absorbed.toFixed(3).replace(/\.?0+$/, '')} mg
+                                , {t('gel.absorbed')} ≈ {formatRecordDecimal(Number(absorbed.toFixed(3)), locale)} mg
                             </>
                         )}
                     </p>
                 )}
                 {/* Gel is sold by rulers and pumps, but the model takes mg. */}
-                {ester === Ester.E2 && <GelDoseConverter onApply={onE2Change} />}
+                {ester === Ester.E2 && <GelDoseConverter onApply={mg => onE2Change(formatRecordDecimal(mg, locale))} />}
             </div>
         </div>
     );

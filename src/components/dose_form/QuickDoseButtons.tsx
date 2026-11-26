@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { useDialog } from '../../contexts/DialogContext';
 import { Route, Ester } from '../../../logic';
+import { LOCALE_MAP } from '../../utils/helpers';
+import { formatRecordDecimal } from '../../utils/recordDecimal';
 
 export interface QuickDose {
     id: string;
@@ -34,8 +36,10 @@ const QuickDoseButtons: React.FC<QuickDoseButtonsProps> = ({
     onDeleteQuickDose,
     unit = 'mg',
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const { showDialog } = useDialog();
+    const formatValue = (value: number) => formatRecordDecimal(value, locale);
 
     // Filter quick doses for current route + ester combination
     const filteredDoses = quickDoses
@@ -72,13 +76,6 @@ const QuickDoseButtons: React.FC<QuickDoseButtonsProps> = ({
             },
             { danger: true, title: t('quickdose.delete_confirm'), confirmLabel: t('btn.delete') },
         );
-    };
-
-    const formatValue = (val: number): string => {
-        if (Number.isInteger(val)) return val.toString();
-        // Remove trailing zeros
-        const str = val.toFixed(3);
-        return str.replace(/\.?0+$/, '');
     };
 
     return (

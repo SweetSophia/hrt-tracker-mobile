@@ -1,10 +1,11 @@
-export type RecordDecimal = { kind: 'empty' } | { kind: 'invalid' } | { kind: 'number'; value: number };
+export type RecordDecimal = { kind: 'empty' | 'incomplete' | 'invalid' } | { kind: 'number'; value: number };
 
 type NumberSeparators = { decimal: '.' | ','; group?: string };
 
 const separators = new Map<string, NumberSeparators>();
 const completeNumber = /^[+-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)(?:e[+-]?\d+)?$/i;
-const possibleGrouping = /^[+-]?[1-9]\d{0,2}[.,]\d{3}$/;
+const incompleteNumber = /^(?:[+-]|[+-]?\d*[.,]|[+-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)e[+-]?)$/i;
+const possibleGrouping = /^[+-]?[1-9]\d{0,2}[.,]\d{3}(?:e[+-]?\d+)?$/i;
 
 function numberSeparators(locale: string): NumberSeparators {
     const cached = separators.get(locale);
@@ -21,7 +22,9 @@ function numberSeparators(locale: string): NumberSeparators {
 export function parseRecordDecimal(text: string, locale: string): RecordDecimal {
     const input = text.trim();
     if (!input) return { kind: 'empty' };
-    if (!completeNumber.test(input)) return { kind: 'invalid' };
+    if (!completeNumber.test(input)) {
+        return { kind: incompleteNumber.test(input) ? 'incomplete' : 'invalid' };
+    }
 
     const { decimal, group } = numberSeparators(locale);
     // An alternate mark can be a decimal from a different keyboard, or the

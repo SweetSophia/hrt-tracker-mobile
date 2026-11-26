@@ -7,6 +7,8 @@ describe('record decimal entry', () => {
         ['en-US', '1.5', 1.5],
         ['en-US', '1,5', 1.5],
         ['ru-RU', '1.234', 1.234],
+        ['ru-RU', '1,234', 1.234],
+        ['uk-UA', '1.234e-5', 1.234e-5],
         ['tr-TR', ',5', 0.5],
         ['de-DE', '0.125', 0.125],
         ['de-DE', '1,234', 1.234],
@@ -22,14 +24,13 @@ describe('record decimal entry', () => {
 
     it.each([
         ['en-US', '1,234'],
+        ['en-US', '1,234e5'],
         ['de-DE', '1.234'],
         ['tr-TR', '12.345'],
+        ['tr-TR', '1.234e-5'],
         ['en-US', '1.2,3'],
         ['en-US', '1,234,567'],
         ['ru-RU', '1 234,5'],
-        ['ru-RU', '1,'],
-        ['en-US', '-'],
-        ['en-US', '1e'],
         ['en-US', '1e999'],
         ['en-US', 'Infinity'],
         ['en-US', '1.5 mg'],
@@ -37,9 +38,12 @@ describe('record decimal entry', () => {
         expect(parseRecordDecimal(input, locale)).toEqual({ kind: 'invalid' });
     });
 
-    it('distinguishes an omitted amount from malformed input', () => {
+    it.each(['0,', '.', ',', '-', '1e', '1,5e-', '1.5e+'])('recognizes %s as unfinished entry', input => {
+        expect(parseRecordDecimal(input, 'ru-RU')).toEqual({ kind: 'incomplete' });
+    });
+
+    it('keeps a blank amount separate from unfinished or malformed input', () => {
         expect(parseRecordDecimal(' ', 'ru-RU')).toEqual({ kind: 'empty' });
-        expect(parseRecordDecimal(',', 'ru-RU')).toEqual({ kind: 'invalid' });
     });
 
     it.each([

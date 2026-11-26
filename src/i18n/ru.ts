@@ -355,6 +355,7 @@ export const RU = {
     'timeline.batch_interval': 'Интервал (дни)',
     'timeline.batch_count': 'Количество',
     'timeline.batch_count_min': 'Введите как минимум 2 дозы.',
+    'timeline.batch_check_fields': 'Перед сохранением проверьте интервал и количество доз.',
     'timeline.batch_hint': 'Начиная с выбранного времени дозы, одна запись каждые {d} дн., всего записей: {n}.',
     'timeline.future': 'Запланировано',
     'timeline.records': 'Записи',

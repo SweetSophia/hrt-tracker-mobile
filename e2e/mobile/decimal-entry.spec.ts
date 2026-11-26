@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { baseStorage, seedStorage, type LabFixture } from '../helpers';
+import { baseStorage, nowHours, seedStorage, type LabFixture } from '../helpers';
 
 /**
  * Stage 1 decimal entry for Labs. The browser locale stays the Playwright
@@ -73,4 +73,56 @@ test('invalid text in the optional second hormone blocks the save', async ({ pag
 
     expect(await labs(page)).toEqual([]);
     await expect(field(page, copy.en.t)).toBeVisible();
+});
+
+test('typing a comma prefix stays silent until the value is complete', async ({ page }) => {
+    await openLabForm(page, 'ru');
+    const estradiol = field(page, copy.ru.e2);
+    await estradiol.focus();
+    await page.keyboard.type('0,');
+    await expect(estradiol).toHaveValue('0,');
+    await expect(estradiol).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('.field-hint.is-error')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: copy.ru.save, exact: true })).toBeDisabled();
+    expect(await labs(page)).toEqual([]);
+
+    // Leaving the field unfinished explains the disabled Save with the same
+    // format hint, but only after the focused prefix was checked to be quiet.
+    await estradiol.blur();
+    await expect(estradiol).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('.field-hint.is-error')).toContainText('1,5');
+
+    await estradiol.focus();
+    await page.keyboard.press('End');
+    await page.keyboard.type('5');
+    await expect(estradiol).toHaveValue('0,5');
+    await page.getByRole('button', { name: copy.ru.save, exact: true }).click();
+
+    await expect.poll(() => labs(page)).toHaveLength(1);
+    const [saved] = await labs(page);
+    expect(saved.concValue).toBe(0.5);
+    expect(saved.unit).toBe('pmol/l');
+});
+
+test('the alternate-unit preview formats with the app locale', async ({ page }) => {
+    await openLabForm(page, 'ru');
+    const estradiol = field(page, copy.ru.e2);
+    // 150 pmol/L ≈ 40.9 pg/mL; ru renders the mark as a comma.
+    await estradiol.pressSequentially('150');
+    await expect(page.getByText('≈ 40,9 pg/mL')).toBeVisible();
+});
+
+test('an edited lab reopens with the stored value in the app locale', async ({ page, context }) => {
+    const priorLab: LabFixture = { id: 'lab-ru', timeH: nowHours() - 1, concValue: 1.5, unit: 'pmol/l' };
+    await seedStorage(context, baseStorage({ 'hrt-lab-results': JSON.stringify([priorLab]), 'hrt-lang': 'ru' }));
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await page.getByRole('button', { name: copy.ru.labs, exact: true }).click();
+    await page.getByRole('button', { name: /1\.5/ }).click();
+    // Scope to the row's own drawer: the collapsed quick-add form shares the label.
+    const drawer = page
+        .locator('div')
+        .filter({ has: page.getByRole('button', { name: /1\.5/, expanded: true }) })
+        .last();
+    await expect(drawer.getByLabel(copy.ru.e2).and(page.locator('input'))).toHaveValue('1,5');
 });

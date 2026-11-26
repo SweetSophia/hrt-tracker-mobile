@@ -354,6 +354,7 @@ export const UK = {
     'timeline.batch_interval': 'Інтервал (дні)',
     'timeline.batch_count': 'Кількість',
     'timeline.batch_count_min': 'Введіть щонайменше 2 дози.',
+    'timeline.batch_check_fields': 'Перед збереженням перевірте інтервал і кількість доз.',
     'timeline.batch_hint': 'Починаючи з вибраного часу дози, один запис кожні {d} дн., усього записів: {n}.',
     'timeline.future': 'Заплановано',
     'timeline.records': 'Записи',

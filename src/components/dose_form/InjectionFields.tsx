@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, isTestosteroneEster, isUnmodelledDrug } from '../../../logic';
 import { refusedFieldProps } from './refusedField';
+import { LOCALE_MAP } from '../../utils/helpers';
 
 interface InjectionFieldsProps {
     ester: Ester;
@@ -25,7 +26,8 @@ const InjectionFields: React.FC<InjectionFieldsProps> = ({
     invalid,
     errorId,
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const isT = isTestosteroneEster(ester);
     const equivLabelKey = isT ? 'field.dose_t' : 'field.dose_e2';
     // Cyproterone and the unmodelled drugs have no estradiol equivalent: their own dose is all there is.
@@ -44,7 +46,7 @@ const InjectionFields: React.FC<InjectionFieldsProps> = ({
                     </label>
                     <input
                         id={rawId}
-                        {...refusedFieldProps(rawDose, invalid, errorId)}
+                        {...refusedFieldProps(rawDose, locale, invalid, errorId)}
                         type="text"
                         inputMode="decimal"
                         value={rawDose}
@@ -62,7 +64,7 @@ const InjectionFields: React.FC<InjectionFieldsProps> = ({
                     </label>
                     <input
                         id={e2Id}
-                        {...refusedFieldProps(e2Dose, invalid, errorId)}
+                        {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
                         type="text"
                         inputMode="decimal"
                         value={e2Dose}

@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DoseEvent, Route, Ester, ExtraKey, getToE2Factor, isEstradiolEster, isTestosteroneEster } from '../../logic';
 import { patchRemovalPairs } from '../domain/shared/patch';
 import { LOCALE_MAP, formatTime, formatWearDays } from '../utils/helpers';
-import { formatRecordDecimal, recordDecimalValue } from '../utils/recordDecimal';
+import { formatRecordDecimal, parseRecordDecimal } from '../utils/recordDecimal';
 import { drugLabel } from '../utils/regimenText';
 import { useDialog } from '../contexts/DialogContext';
 import { useTranslation } from '../contexts/LanguageContext';
@@ -269,25 +269,27 @@ const History: React.FC<HistoryProps> = ({
         setBatchOn(false);
     };
 
-    const interval = recordDecimalValue(batchIntervalDays, locale);
-    const enteredCount = recordDecimalValue(batchCount, locale);
-    const count = Math.min(MAX_BATCH_COUNT, Math.floor(enteredCount));
+    const parsedInterval = parseRecordDecimal(batchIntervalDays, locale);
+    const parsedCount = parseRecordDecimal(batchCount, locale);
+    const interval = parsedInterval.kind === 'number' ? parsedInterval.value : 0;
+    const count = parsedCount.kind === 'number' ? Math.min(MAX_BATCH_COUNT, Math.floor(parsedCount.value)) : 0;
+    const batchIsValid = interval > 0 && count >= 2;
     const decimalError = t('error.decimalFormat').replace('{example}', formatRecordDecimal(1.5, locale));
     const intervalError =
-        !Number.isFinite(interval) && batchIntervalDays.trim()
+        parsedInterval.kind === 'invalid'
             ? decimalError
-            : interval > 0
-              ? null
-              : t('error.nonPositive');
+            : parsedInterval.kind === 'number' && interval <= 0
+              ? t('error.nonPositive')
+              : null;
     const countError =
-        !Number.isFinite(enteredCount) && batchCount.trim()
+        parsedCount.kind === 'invalid'
             ? decimalError
-            : count >= 2
-              ? null
-              : t('timeline.batch_count_min');
+            : parsedCount.kind === 'number' && count < 2
+              ? t('timeline.batch_count_min')
+              : null;
 
     const handleQuickSave = async (e: DoseEvent, replacePreviousPatch = false) => {
-        if (batchOn && (intervalError || countError)) return false;
+        if (batchOn && !batchIsValid) return false;
         const list = [e];
         if (batchOn) {
             for (let k = 1; k < count; k++) {
@@ -358,8 +360,8 @@ const History: React.FC<HistoryProps> = ({
     };
 
     const batchHint = t('timeline.batch_hint')
-        .replace('{d}', batchIntervalDays || '?')
-        .replace('{n}', batchCount || '?');
+        .replace('{d}', interval > 0 ? formatRecordDecimal(interval, locale) : '?')
+        .replace('{n}', count >= 2 ? formatRecordDecimal(count, locale) : '?');
 
     const renderRow = (ev: DoseEvent) => {
         const isEditing = editingId === ev.id;
@@ -667,6 +669,9 @@ const History: React.FC<HistoryProps> = ({
                                 templates={doseTemplates}
                                 onSaveTemplate={onSaveTemplate}
                                 onDeleteTemplate={onDeleteTemplate}
+                                saveBlockedReason={
+                                    batchOn && !batchIsValid ? t('timeline.batch_check_fields') : undefined
+                                }
                                 isInline={true}
                                 events={events ?? allEvents}
                                 quickDoses={quickDoses}

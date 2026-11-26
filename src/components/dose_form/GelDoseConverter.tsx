@@ -17,7 +17,7 @@ const unitLabel = (preset: GelPreset, t: (key: string) => string) => t(preset.un
  * them. The field stays the one source of truth, so nothing about a saved dose
  * changes; only the arithmetic that used to be done on paper moves in here.
  */
-const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply }) => {
+const GelDoseConverter: React.FC<{ onApply: (mg: number) => void }> = ({ onApply }) => {
     const { t, lang } = useTranslation();
     const locale = LOCALE_MAP[lang] ?? 'en-US';
     const [open, setOpen] = React.useState(false);
@@ -25,6 +25,7 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
     const [amount, setAmount] = React.useState('');
     const [customMG, setCustomMG] = React.useState('');
     const [customUnit, setCustomUnit] = React.useState('');
+    const [focusedDecimal, setFocusedDecimal] = React.useState<'amount' | 'strength' | null>(null);
     const bodyId = React.useId();
     const amountId = React.useId();
     const customMGId = React.useId();
@@ -46,8 +47,12 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
             : null;
     const rounded = result === null ? null : Number(formatGelMG(result));
     const shownResult = rounded === null ? null : formatRecordDecimal(rounded, locale);
-    const invalidAmount = enteredAmount.kind === 'invalid';
-    const invalidStrength = isCustom && enteredStrength.kind === 'invalid';
+    const invalidAmount =
+        enteredAmount.kind === 'invalid' || (enteredAmount.kind === 'incomplete' && focusedDecimal !== 'amount');
+    const invalidStrength =
+        isCustom &&
+        (enteredStrength.kind === 'invalid' ||
+            (enteredStrength.kind === 'incomplete' && focusedDecimal !== 'strength'));
     const unit = isCustom ? customUnit.trim() || t('gel.convert.unit_default') : preset ? unitLabel(preset, t) : '';
 
     const options = [
@@ -102,6 +107,8 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                             value={customMG}
                                             aria-invalid={invalidStrength || undefined}
                                             aria-describedby={invalidStrength ? formatErrorId : undefined}
+                                            onFocus={() => setFocusedDecimal('strength')}
+                                            onBlur={() => setFocusedDecimal(null)}
                                             onChange={e => setCustomMG(e.target.value)}
                                             className="input-base w-full text-[var(--text)]"
                                             placeholder="0.6"
@@ -135,6 +142,8 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                         value={amount}
                                         aria-invalid={invalidAmount || undefined}
                                         aria-describedby={invalidAmount ? formatErrorId : undefined}
+                                        onFocus={() => setFocusedDecimal('amount')}
+                                        onBlur={() => setFocusedDecimal(null)}
                                         onChange={e => setAmount(e.target.value)}
                                         className="input-base min-w-0 flex-1 text-[var(--text)]"
                                         placeholder="1"
@@ -151,8 +160,8 @@ const GelDoseConverter: React.FC<{ onApply: (mg: string) => void }> = ({ onApply
                                     type="button"
                                     disabled={rounded === null || rounded <= 0}
                                     onClick={() => {
-                                        if (shownResult === null) return;
-                                        onApply(shownResult);
+                                        if (rounded === null) return;
+                                        onApply(rounded);
                                         setOpen(false);
                                     }}
                                     className="inline-flex shrink-0 items-center rounded-md border border-[var(--border)] px-2.5 py-1 text-xs font-medium text-body hover:bg-[var(--surface-hover)] disabled:opacity-40"
