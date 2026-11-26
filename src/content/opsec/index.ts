@@ -19,15 +19,16 @@ const LOADERS: Record<OpSecLang, () => Promise<{ default: OpSecContent }>> = {
 
 const loaded = new Map<string, OpSecContent>();
 
-const keyFor = (lang: string): OpSecLang => (lang in LOADERS ? (lang as OpSecLang) : 'en');
+export const opSecContentLanguage = (lang: string): OpSecLang =>
+    Object.hasOwn(LOADERS, lang) ? (lang as OpSecLang) : 'en';
 
 /** The guide in this language if it has already been fetched. */
 export function peekOpSecContent(lang: string): OpSecContent | null {
-    return loaded.get(keyFor(lang)) ?? null;
+    return loaded.get(opSecContentLanguage(lang)) ?? null;
 }
 
 export async function loadOpSecContent(lang: string): Promise<OpSecContent> {
-    const key = keyFor(lang);
+    const key = opSecContentLanguage(lang);
     const cached = loaded.get(key);
     if (cached) return cached;
     const content = (await LOADERS[key]()).default;

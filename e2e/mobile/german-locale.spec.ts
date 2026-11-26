@@ -12,6 +12,7 @@ import {
     type BundleFixture,
     type DoseEventFixture,
     type LabFixture,
+    type TemplateFixture,
 } from '../helpers';
 
 /**
@@ -33,11 +34,16 @@ const de = {
     welcomeTitle: 'Hallo!',
     next: 'Weiter',
     skip: 'Überspringen',
-    timelineTitle: 'Dosierungsverlauf',
+    timelineTitle: 'Verlauf der Dosen',
     labAdd: 'Laborwert hinzufügen',
     labE2: 'Estradiolwert',
     addDose: 'Dosis hinzufügen',
     save: 'Speichern',
+    templateLoad: 'Vorlage laden',
+    delete: 'Löschen',
+    keep: 'Behalten',
+    doseDeleteConfirm: 'Diesen Eintrag löschen?',
+    labDeleteConfirm: 'Diesen Laborwert löschen?',
     langRow: 'Sprache',
     exportData: 'Daten exportieren',
     completeBackup: 'Vollständige Sicherung',
@@ -228,6 +234,7 @@ test('German records keep comma decimals and de-DE dates across reload', async (
     await expect(bottomNav(page).getByRole('button', { name: de.home, exact: true })).toBeVisible();
     await bottomNav(page).getByRole('button', { name: de.history, exact: true }).tap();
     await expect(page.getByText(doseDate, { exact: true })).toBeVisible();
+    await expect(page.locator('[data-event-id]').getByText('2,50 mg', { exact: true })).toBeVisible();
     await bottomNav(page).getByRole('button', { name: de.labs, exact: true }).tap();
     await expect(page.getByText('1,5 pg/mL').first()).toBeVisible();
     await expect(page.getByText(labDate).first()).toBeVisible();
@@ -307,8 +314,92 @@ test('a complete backup exported in German restores hrt-lang and records into a 
     await bottomNav(cleanPage).getByRole('button', { name: de.history, exact: true }).tap();
     const restored = (await readStorage<DoseEventFixture[]>(cleanPage, 'hrt-events')) ?? [];
     await expect(cleanPage.getByText(dayLabel(new Date(restored[0].timeH * 3_600_000))).first()).toBeVisible();
+    await expect(cleanPage.locator('[data-event-id]').getByText('2,50 mg', { exact: true })).toBeVisible();
     await bottomNav(cleanPage).getByRole('button', { name: de.labs, exact: true }).tap();
     await expect(cleanPage.getByText('1,5 pg/mL').first()).toBeVisible();
 
     await clean.close();
+});
+
+test('a fractional German dose template shows 2,5 mg and loads with a comma', async ({ page, context }) => {
+    const template: TemplateFixture = {
+        id: 'de-template-1',
+        name: 'Abenddosis',
+        route: 'injection',
+        ester: 'EV',
+        doseMG: 2.5,
+        extras: {},
+        createdAt: stamp(),
+        updatedAt: stamp(),
+    };
+    await seedStorage(context, baseStorage({ 'hrt-lang': 'de', 'hrt-dose-templates': JSON.stringify([template]) }));
+    await page.goto('/');
+    await expect(bottomNav(page).getByRole('button', { name: de.home, exact: true })).toBeVisible();
+
+    await bottomNav(page).getByRole('button', { name: de.history, exact: true }).tap();
+    await page.getByRole('button', { name: de.addDose, exact: true }).first().tap();
+    const doseForm = page.locator('.disclosure[data-open="true"] form');
+    await doseForm.getByRole('button', { name: de.templateLoad, exact: true }).tap();
+
+    // The menu summary keeps the stored precision: 2,5 mg, never 2,50 mg.
+    const row = doseForm.locator('button').filter({ hasText: 'Abenddosis' });
+    await expect(row).toContainText('2,5 mg');
+    await row.tap();
+
+    // Loading puts the comma decimal back into the dose field.
+    await expect(doseForm.getByLabel('Dosis (mg)', { exact: true })).toHaveValue('2,5');
+});
+
+test('German dose and lab delete prompts can be dismissed without deleting', async ({ page, context }) => {
+    const dose: DoseEventFixture = {
+        id: 'de-delete-dose',
+        route: 'injection',
+        ester: 'EV',
+        doseMG: 2.5,
+        timeH: nowHours() - 1,
+        extras: {},
+        updatedAt: stamp(),
+    };
+    const lab: LabFixture = {
+        id: 'de-delete-lab',
+        timeH: nowHours() - 2,
+        concValue: 1.5,
+        unit: 'pg/ml',
+        updatedAt: stamp(),
+    };
+    await seedStorage(
+        context,
+        baseStorage({
+            'hrt-lang': 'de',
+            'hrt-events': JSON.stringify([dose]),
+            'hrt-lab-results': JSON.stringify([lab]),
+        }),
+    );
+    await page.goto('/');
+    await expect(bottomNav(page).getByRole('button', { name: de.home, exact: true })).toBeVisible();
+
+    // The dose prompt names the record with its German decimal; keeping it
+    // leaves the row in place.
+    await bottomNav(page).getByRole('button', { name: de.history, exact: true }).tap();
+    const doseRow = page.locator('[data-event-id]').filter({ hasText: '2,50 mg' });
+    await doseRow.getByRole('button').first().tap();
+    await doseRow.locator('.disclosure[data-open="true"]').getByRole('button', { name: de.delete, exact: true }).tap();
+    const prompt = page.locator('[data-prompt="confirm"]');
+    await expect(prompt).toContainText(de.doseDeleteConfirm);
+    await expect(prompt).toContainText('2,5 mg');
+    await confirmDialog(page, de.keep);
+    await expect(prompt).toHaveCount(0);
+    await expect(doseRow.getByText('2,50 mg', { exact: true })).toBeVisible();
+
+    // The lab prompt behaves the same, and both records stay stored.
+    await bottomNav(page).getByRole('button', { name: de.labs, exact: true }).tap();
+    await page.getByRole('button', { name: /1,5 pg\/mL/ }).tap();
+    await page.getByRole('button', { name: de.delete, exact: true }).tap();
+    await expect(prompt).toContainText(de.labDeleteConfirm);
+    await expect(prompt).toContainText('1,5 pg/mL');
+    await confirmDialog(page, de.keep);
+    await expect(prompt).toHaveCount(0);
+    await expect(page.getByText('1,5 pg/mL').first()).toBeVisible();
+    await expect.poll(async () => (await storedEvents(page)).length).toBe(1);
+    await expect.poll(async () => (await storedLabs(page)).length).toBe(1);
 });

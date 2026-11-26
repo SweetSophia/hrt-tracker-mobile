@@ -4,7 +4,7 @@ import { MOBILE_CREDITS } from './mobileCredits';
 import { RU } from './ru';
 import { UK } from './uk';
 
-export type Lang = 'zh' | 'zh-TW' | 'yue' | 'en' | 'de' | 'ja' | 'ko' | 'tr' | 'ru' | 'uk';
+export type { Lang } from './languages';
 
 export const TRANSLATIONS_BASE = {
     zh: {
@@ -174,6 +174,7 @@ export const TRANSLATIONS_BASE = {
         'status.level.low': '低于参考范围',
 
         'label.e2': '雌二醇',
+        'label.equivalent': '{hormone} eq:',
         'label.cpa_chart': '醋酸环丙孕酮',
         'label.t': '睾酮',
         'label.total_t': '总睾酮',
@@ -1604,6 +1605,7 @@ export const TRANSLATIONS_BASE = {
         'status.level.low': 'Below reference range',
 
         'label.e2': 'Estradiol',
+        'label.equivalent': '{hormone} eq:',
         'label.cpa_chart': 'CPA',
         'label.t': 'Testosterone',
         'label.total_t': 'Total T',

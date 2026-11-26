@@ -34,6 +34,7 @@ COPY --from=build /app/workerUtil.ts ./workerUtil.ts
 COPY --from=build /app/shareExpiry.ts ./shareExpiry.ts
 COPY --from=build /app/communityVote.ts ./communityVote.ts
 COPY --from=build /app/communityVoteServer.ts ./communityVoteServer.ts
+COPY --from=build /app/src/i18n/languages.ts ./src/i18n/languages.ts
 COPY --from=build /app/src/server/env.ts ./src/server/env.ts
 COPY --from=build /app/src/server/notice.ts ./src/server/notice.ts
 COPY --from=build /app/src/server/donation.ts ./src/server/donation.ts

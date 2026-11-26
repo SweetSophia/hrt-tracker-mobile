@@ -1,4 +1,5 @@
 import { Lang } from '../i18n/translations';
+import { formatRecordSummary } from './recordDecimal';
 
 export const LOCALE_MAP: Record<Lang, string> = {
     zh: 'zh-CN',
@@ -84,7 +85,8 @@ export const formatBytes = (bytes: number): string => {
 };
 
 /** A patch's wear in days, trimmed of trailing zeros: "3.5" or "7", not "3.50". */
-export const formatWearDays = (days: number): string => (Math.round(days * 100) / 100).toString();
+export const formatWearDays = (days: number, locale?: string): string =>
+    formatRecordSummary(Math.round(days * 100) / 100, locale);
 
 // No locale: `hour12: false` with two-digit fields renders "14:05" identically
 // in all seven of the app's locales, so threading `lang` through here would

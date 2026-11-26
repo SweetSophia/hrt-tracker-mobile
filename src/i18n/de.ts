@@ -183,6 +183,7 @@ export const DE = {
     'label.cpa_chart': 'CPA',
     'label.t': 'Testosteron',
     'label.total_t': 'Gesamt-T',
+    'label.equivalent': '{hormone}-Äquivalent:',
     'mode.transfem': 'Feminisierende HRT',
     'mode.transmasc': 'Maskulinisierende HRT',
     'settings.hrt_mode': 'HRT-Modus',
@@ -226,7 +227,7 @@ export const DE = {
         'Deine letzten Estradiol- und Testosteron-Laborwerte fallen beide niedrig aus. Wenn beide Sexualhormone über längere Zeit zugleich niedrig sind, kann das die Knochendichte, die Stimmung und vasomotorische Beschwerden wie Hitzewallungen beeinflussen. Das kann allein am Zeitpunkt der Blutentnahme liegen, deshalb lohnt es sich, deine Dosierung der letzten Zeit mit einer Ärztin oder einem Arzt zu besprechen.',
     'advisory.hormone_both_high.body':
         'Deine letzten Estradiol- und Testosteron-Laborwerte fallen zugleich hoch aus, eine ungewöhnliche Kombination, die einen zweiten Blick verdient. Das kann am Zeitpunkt der Blutentnahme oder an einer Einheitenverwechslung liegen, deshalb lohnt es sich, die Ergebnisse mit einer Ärztin oder einem Arzt zu bestätigen.',
-    'timeline.title': 'Dosierungsverlauf',
+    'timeline.title': 'Verlauf der Dosen',
     'timeline.add_title': 'Dosiseintrag hinzufügen',
     'timeline.empty': 'Noch keine Einträge.',
     'home.empty_title': 'Noch keine Dosen eingetragen',
@@ -292,7 +293,7 @@ export const DE = {
     'forecast.replace_desc': 'Aus: zusätzlich zum aktuellen Dosierungsschema',
     'forecast.legend.history': 'Eingetragen',
     'forecast.legend.current': 'Wie jetzt',
-    'forecast.legend.band': '10–90%',
+    'forecast.legend.band': '10–90 %',
     'forecast.legend.swing': 'Spitzen- bis Talspiegel',
     'forecast.trough': 'Talspiegel',
     'forecast.peak': 'Spitzenspiegel',
@@ -514,7 +515,7 @@ export const DE = {
     'avatar.crop_failed': 'Das Bild konnte nicht zugeschnitten werden',
     'avatar.upload_failed': 'Der Avatar konnte nicht hochgeladen werden',
     'nav.admin': 'Admin',
-    'patch.rate_placeholder': 'z. B. 50, 100',
+    'patch.rate_placeholder': 'z. B. 50 oder 100',
     'unit.min_short': 'Min.',
     'session.unknown_browser': 'Unbekannter Browser',
     'session.unknown_device': 'Unbekanntes Gerät',
@@ -905,7 +906,7 @@ export const DE = {
     'cal.desc.retrospective':
         'Glättend — alle Laborwerte schätzen den gesamten Verlauf neu. Im Nachhinein genauer; ein neuer Laborwert kann ältere Modellschätzungen revidieren.',
     'cal.source':
-        'EKF, OU-Kalman und Hybrid-MIPD spiegeln die Kalibrierungsmodelle auf hrt.transmtf.com wider; Full Bayes und Personal PK stammen aus dieser App.',
+        'EKF, OU-Kalman und Hybrid-MIPD spiegeln die Kalibrierungsmodelle auf hrt.transmtf.com wider; Voller Bayes und Persönliche PK stammen aus dieser App.',
     'cal.amplitude': 'Amplitude',
     'cal.halflife': 'Halbwertszeit',
     'cal.fit': 'Anpassung',
@@ -937,8 +938,8 @@ export const DE = {
     'lab.empty': 'Noch keine Laborwerte',
     'lab.delete_confirm': 'Diesen Laborwert löschen?',
     'lab.not_used': 'Nicht für die Kalibrierung verwendet: Für diese Blutentnahme ist keine Modellschätzung verfügbar',
-    'lab.ratio_above': '{pct}% darüber',
-    'lab.ratio_below': '{pct}% darunter',
+    'lab.ratio_above': '{pct} % darüber',
+    'lab.ratio_below': '{pct} % darunter',
     'lab.clear_all': 'Alle Laborwerte löschen',
     'lab.assay': 'Messverfahren',
     'lab.assay.unknown': 'Nicht sicher',
@@ -1361,7 +1362,7 @@ export const DE = {
     'vote.split.body':
         'Wenn die Community der Annahme von Spenden zustimmt, wird jede Spende gemäß der Gewinnoption aufgeteilt. Die persönlichen Anteile vergüten die Wartungszeit; der Projektanteil bezahlt Server, Domains, Sicherungen, Community-Arbeit und eine Rücklage.',
     'vote.split.proposed': 'Vorschlag der Maintainer',
-    'vote.split.option': 'fantuanmtf {fantuan}% / SmirnovaOyama {smirnova}% / {project_label} {project}%',
+    'vote.split.option': 'fantuanmtf {fantuan} % / SmirnovaOyama {smirnova} % / {project_label} {project} %',
     'vote.split.rule':
         'Die Aufteilung mit den meisten Stimmen gewinnt. Bei Gleichstand wird die vorgeschlagene Aufteilung verwendet.',
     'vote.split.floor': 'Jede Option garantiert jedem Maintainer mindestens {min} %; der Rest geht an das Projekt.',

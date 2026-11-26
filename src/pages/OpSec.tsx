@@ -5,6 +5,7 @@ import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { useTranslation } from '../contexts/LanguageContext';
 import {
     loadOpSecContent,
+    opSecContentLanguage,
     peekOpSecContent,
     type OpSecBlock,
     type OpSecCalloutKind,
@@ -27,7 +28,7 @@ const CAREFUL: ReadonlySet<OpSecCalloutKind> = new Set(['important', 'warning', 
  *  sentence, with no label, coloured edge or tint. A screen reader still
  *  hears what kind of note it is, in the reader's language. */
 const Callout: React.FC<{ kind: OpSecCalloutKind; text: string }> = ({ kind, text }) => {
-    const { t } = useTranslation();
+    const { lang, t } = useTranslation();
     const careful = CAREFUL.has(kind);
     const Icon = careful ? Warning : Info;
     return (
@@ -40,7 +41,9 @@ const Callout: React.FC<{ kind: OpSecCalloutKind; text: string }> = ({ kind, tex
                 />
             </span>
             <p>
-                <span className="sr-only">{t(`opsec.callout.${kind}`)}: </span>
+                <span className="sr-only" lang={lang}>
+                    {t(`opsec.callout.${kind}`)}:{' '}
+                </span>
                 {text}
             </p>
         </aside>
@@ -253,6 +256,8 @@ const OpSec: React.FC<OpSecProps> = ({ onBack }) => {
 };
 
 const OpSecArticle: React.FC<{ content: OpSecContent; onBack: () => void }> = ({ content, onBack }) => {
+    const { lang, t } = useTranslation();
+    const englishFallback = lang !== 'en' && opSecContentLanguage(lang) === 'en';
     const basic = React.useMemo(() => content.sections.filter(s => s.level === 'basic'), [content]);
     const advanced = React.useMemo(() => content.sections.filter(s => s.level === 'advanced'), [content]);
     const extended = React.useMemo(() => content.sections.filter(s => s.level === 'extended'), [content]);
@@ -306,8 +311,13 @@ const OpSecArticle: React.FC<{ content: OpSecContent; onBack: () => void }> = ({
 
     return (
         <div className="opsec-page min-h-full flex-none select-text md:pb-32">
-            <PageHeader onBack={onBack} title={content.title} columnClassName={OPSEC_COLUMN} />
-            <div className={`${OPSEC_COLUMN} pt-2`}>
+            <PageHeader
+                onBack={onBack}
+                title={englishFallback ? t('opsec.title') : content.title}
+                columnClassName={OPSEC_COLUMN}
+            />
+            <div className={`${OPSEC_COLUMN} pt-2`} lang={englishFallback ? 'en' : undefined}>
+                {englishFallback && <p className="mb-4 text-sm text-muted">English</p>}
                 <div className="grid grid-cols-1 gap-12 min-[1200px]:grid-cols-[minmax(0,40rem)_11rem]">
                     <article ref={articleRef} className="opsec-prose min-w-0">
                         <section className="opsec-disclaimer">

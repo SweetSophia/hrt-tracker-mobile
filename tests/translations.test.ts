@@ -104,14 +104,20 @@ describe('complete language packs', () => {
             expect(off).toEqual([]);
         });
     }
+
+    it('ships the German pack exactly as authored', () => {
+        expect(TRANSLATIONS.de).toEqual(authored.de);
+    });
 });
 
-it('German share copy keeps every placeholder used by its English counterpart', () => {
+it('German share copy stays distinct from English and keeps every placeholder', () => {
     const en = getShareCopy('en');
     const de = getShareCopy('de');
-    expect(de.modalTitle).toBe('Dosierungsdaten teilen');
+    // 'Live' is the same badge word in both languages.
+    const sharedBadge = new Set<keyof ShareCopy>(['liveBadge']);
     for (const key of Object.keys(en) as (keyof ShareCopy)[]) {
         expect(de[key].trim(), key).toBeTruthy();
         expect(placeholders(de[key]), key).toEqual(placeholders(en[key]));
+        if (!sharedBadge.has(key)) expect(de[key], key).not.toBe(en[key]);
     }
 });

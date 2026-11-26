@@ -181,6 +181,7 @@ export const UK = {
     'label.e2': 'Естрадіол',
     'label.cpa_chart': 'ЦПА',
     'label.t': 'Тестостерон',
+    'label.equivalent': '{hormone} eq:',
     'label.total_t': 'Загальний тестостерон',
     'mode.transfem': 'Фемінізувальна ЗГТ',
     'mode.transmasc': 'Маскулінізувальна ЗГТ',

@@ -41,7 +41,7 @@ import {
 } from '../domain/engine';
 import { isAppTheme, type AppTheme } from '../constants';
 import { isColorPalette, type ColorPalette } from '../appearance/palettes';
-import type { Lang } from '../i18n/translations';
+import { isLangCode, type Lang } from '../i18n/languages';
 import { legacyCpaItem, normalizePlanItem, type PlanItem } from './plan';
 import { normalizeSupply, type Pack, type Supply } from './regimen';
 import { cleanDoseMG } from './cleanDose';
@@ -355,18 +355,6 @@ const readStampString = (value: string | null): number | undefined => {
 
 const isIsoDate = (value: unknown): value is string =>
     typeof value === 'string' && value.trim() !== '' && Number.isFinite(Date.parse(value));
-
-const isLang = (value: unknown): value is Lang =>
-    value === 'zh' ||
-    value === 'zh-TW' ||
-    value === 'yue' ||
-    value === 'en' ||
-    value === 'de' ||
-    value === 'ja' ||
-    value === 'ko' ||
-    value === 'tr' ||
-    value === 'ru' ||
-    value === 'uk';
 
 // `bayes` and `mcmc` are website-only for now: hrt-cold Tools rejects them (see
 // docs/backup-schema-audit/BACKUP_TEST_VECTORS.md, BTV-1).
@@ -769,7 +757,7 @@ export function sanitizePortablePreferences(raw: unknown): {
                 else invalid.push(key);
                 break;
             case 'hrt-lang':
-                if (isLang(value)) values['hrt-lang'] = value;
+                if (isLangCode(value)) values['hrt-lang'] = value;
                 else invalid.push(key);
                 break;
             case 'app-show-prediction':
@@ -801,7 +789,7 @@ export function readPortablePreferences(storage: StorageLike): PortablePreferenc
     const palette = storage.getItem('app-palette');
     if (isColorPalette(palette)) values['app-palette'] = palette;
     const lang = storage.getItem('hrt-lang');
-    if (isLang(lang)) values['hrt-lang'] = lang;
+    if (isLangCode(lang)) values['hrt-lang'] = lang;
     const prediction = storage.getItem('app-show-prediction');
     if (prediction === 'true' || prediction === 'false') values['app-show-prediction'] = prediction === 'true';
     const hideSiteLabel = storage.getItem('app-hide-site-label');

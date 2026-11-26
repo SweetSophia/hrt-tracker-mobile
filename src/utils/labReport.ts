@@ -8,14 +8,17 @@ import {
     rawModelAtLab,
 } from '../../logic';
 import { fill } from './regimenText';
+import { formatRecordSummary } from './recordDecimal';
 
 type T = (key: string) => string;
 
 const trim1 = (n: number) => String(Number(n.toFixed(1)));
 
 /** "5.2 小时", "3 天": how long before the draw, in hours up to two days, in days past that. */
-export const sinceDoseLabel = (hours: number, t: T) =>
-    hours < 48 ? fill(t('lab.hours'), { n: trim1(hours) }) : fill(t('lab.days'), { n: trim1(hours / 24) });
+export const sinceDoseLabel = (hours: number, t: T, locale?: string) =>
+    fill(t(hours < 48 ? 'lab.hours' : 'lab.days'), {
+        n: formatRecordSummary(trim1(hours < 48 ? hours : hours / 24), locale),
+    });
 
 /** Lab vs model in percent: +29 is the lab 29% above the model. */
 export const labVsModelPct = (lab: number, model: number) => Math.round((lab / model - 1) * 100);

@@ -33,3 +33,15 @@ for (const testCase of CASES) {
         }
     });
 }
+
+test('the German OpSec heading stays localized when the English guide loads', async ({ page, context }) => {
+    await seedStorage(context, baseStorage({ 'hrt-lang': 'de' }));
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
+    await page.getByRole('tab', { name: 'Über', exact: true }).click();
+    await page.getByRole('button', { name: 'Alltagssicherheit', exact: true }).click();
+
+    const guide = page.locator('[lang="en"]').filter({ has: page.locator('article.opsec-prose') });
+    await expect(guide.getByText('English', { exact: true })).toBeVisible();
+    await expect(page.getByText('Alltagssicherheit', { exact: true })).toBeVisible();
+});
