@@ -261,6 +261,7 @@ h1.font-sans {
     height: 1.5em;
     height: 1lh;
 }
+/* Give the developer touch simulator the same 48px logging controls as Android. */
 :root[data-sim-touch] .logging-touch-target {
     min-inline-size: 48px;
     min-block-size: 48px;

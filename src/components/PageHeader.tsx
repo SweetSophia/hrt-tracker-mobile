@@ -21,6 +21,7 @@ export const headerActionAccent =
 export const loggingHeaderAction =
     'logging-touch-target inline-flex min-h-8 max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium leading-snug [overflow-wrap:anywhere]';
 
+/** The accent treatment for a logging page's Add and Cancel capsule. */
 export const loggingHeaderActionAccent = `${loggingHeaderAction} text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]`;
 
 const on = 'text-[var(--text)]';
@@ -49,11 +50,12 @@ const PageHeader: React.FC<{
     actions?: React.ReactNode;
     columnClassName?: string;
     reflow?: boolean;
-    /** A stable listener for the sticky bar's rendered height. */
+    /** Called for the initial measurement and when the rendered height changes. */
     onHeightChange?: (height: number) => void;
 }> = ({ title, subtitle, onBack, actions, columnClassName = PAGE_COLUMN, reflow = false, onHeightChange }) => {
     const { t } = useTranslation();
     const barRef = React.useRef<HTMLDivElement>(null);
+    const onHeightChangeRef = React.useRef(onHeightChange);
     // A zero-height marker just above the sticky bar: once it has scrolled out
     // of view, content is passing under the bar and the hairline shows.
     const [marker, setMarker] = React.useState<HTMLDivElement | null>(null);
@@ -66,6 +68,10 @@ const PageHeader: React.FC<{
     }, [marker]);
 
     React.useLayoutEffect(() => {
+        onHeightChangeRef.current = onHeightChange;
+    }, [onHeightChange]);
+
+    React.useLayoutEffect(() => {
         const bar = barRef.current;
         if (!reflow || !bar) return;
         const scroller = bar.closest<HTMLElement>('.main-view');
@@ -75,7 +81,7 @@ const PageHeader: React.FC<{
             if (height <= 0 || measured === height) return;
             measured = height;
             scroller?.style.setProperty('--page-header-h', `${height}px`);
-            onHeightChange?.(height);
+            onHeightChangeRef.current?.(height);
         };
         measure();
         const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
@@ -84,7 +90,7 @@ const PageHeader: React.FC<{
             observer?.disconnect();
             scroller?.style.removeProperty('--page-header-h');
         };
-    }, [reflow, onHeightChange]);
+    }, [reflow]);
 
     const titleLayout = reflow ? 'leading-tight [overflow-wrap:anywhere]' : 'leading-8 truncate';
     return (

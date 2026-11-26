@@ -104,13 +104,20 @@ for (const view of views) {
     });
 }
 
-test('the outgoing Add label does not wrap into Cancel during the crossfade', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
+test('the inactive Add label is laid out on a single line', async ({ page }) => {
     const { header } = await openView(page, views[1]);
     await enlargeText(page);
     await header.getByRole('button', { name: views[1].add, exact: true }).tap();
     const outgoing = header.locator('.swap-label-wrap > [data-shown="false"]').filter({ hasText: views[1].add });
-    await expect(outgoing).toHaveCSS('white-space', 'nowrap');
+    await expect
+        .poll(() =>
+            outgoing.evaluate(label => {
+                const range = document.createRange();
+                range.selectNodeContents(label);
+                return range.getClientRects().length;
+            }),
+        )
+        .toBe(1);
 });
 
 test('History follows the actual sticky header when it grows', async ({ page }) => {
@@ -199,6 +206,10 @@ test('the logging forms give separate touch targets to their footer actions', as
     await expectTouchSize(labCancel);
     await labCancel.tap();
     await expect(lab.header.getByRole('button', { name: views[1].add, exact: true })).toBeVisible();
+    const labRow = page.getByRole('button', { name: /^31\.5 pmol\/L/ });
+    await labRow.tap();
+    await expect(labRow).toHaveAttribute('aria-expanded', 'true');
+    await expectTouchSize(page.locator('.main-view').getByRole('button', { name: 'Удалить', exact: true }));
 
     await openView(page, views[0]);
     const row = page.locator('[data-event-id="layout-dose-2"]');
