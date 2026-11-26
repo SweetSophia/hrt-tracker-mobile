@@ -62,6 +62,8 @@ test('Black & white keeps its legacy look and remembers the last color theme', a
 
     const light = page.getByRole('button', { name: 'Light', exact: true });
     await light.click();
+    await expect(page.getByRole('button', { name: 'Terracotta', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    expect(await accent(page)).toBe(monoAccent);
     await expect(teal).toBeEnabled();
     await teal.click();
     await expect(teal).toHaveAttribute('aria-pressed', 'true');
@@ -86,7 +88,10 @@ test('Black & white keeps its legacy look and remembers the last color theme', a
     await expect.poll(() => accent(page)).toBe(tealAccent);
 });
 
-test('each registered palette paints a distinct swatch and accent in Light and Dark', async ({ page, context }) => {
+test('each registered palette supplies a distinct swatch, accent and chart color in Light and Dark', async ({
+    page,
+    context,
+}) => {
     await seedStorage(context, baseStorage());
     await gotoApp(page);
     await openAppearance(page);
@@ -98,6 +103,7 @@ test('each registered palette paints a distinct swatch and accent in Light and D
         await expect(modeButton).toHaveAttribute('aria-pressed', 'true');
         const swatches = new Set<string>();
         const accents = new Set<string>();
+        const chartLines = new Set<string>();
         for (const palette of COLOR_PALETTES) {
             const label = APPEARANCE_COPY.en[`appearance.palette.${palette}`];
             const choice = themeGroup.getByRole('button', { name: label, exact: true });
@@ -107,9 +113,15 @@ test('each registered palette paints a distinct swatch and accent in Light and D
             await choice.click();
             await expect(choice).toHaveAttribute('aria-pressed', 'true');
             accents.add(await accent(page));
+            const chartLine = await page
+                .locator('html')
+                .evaluate(root => getComputedStyle(root).getPropertyValue('--chart-line').trim());
+            expect(chartLine).not.toBe('');
+            chartLines.add(chartLine);
         }
         expect(swatches.size).toBe(COLOR_PALETTES.length);
         expect(accents.size).toBe(COLOR_PALETTES.length);
+        expect(chartLines.size).toBe(COLOR_PALETTES.length);
     }
 });
 
