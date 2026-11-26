@@ -39,6 +39,8 @@ import {
 import { useAppData } from './hooks/useAppData';
 import { ModelStatus } from './components/ModelStatus';
 import { useAppNavigation, tabForView, ViewKey } from './hooks/useAppNavigation';
+import { appBackOwners } from './application/backNavigation';
+import { useLauncherShortcut } from './hooks/useLauncherShortcut';
 import { useLiveShareSync } from './hooks/useLiveShareSync';
 import { describeSyncError, useCloudSync } from './hooks/useCloudSync';
 
@@ -272,6 +274,22 @@ const AppContent = ({ session }: { session: UiSession }) => {
 
     // --- First run ---
     const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding(runtime));
+    const openDoseEntry = () => {
+        setIsQuickAddOpen(true);
+        handleViewChange('history');
+    };
+    useLauncherShortcut(showOnboarding ? null : t('btn.add'), () => {
+        if (
+            showOnboarding ||
+            isPasswordInputOpen ||
+            (currentView === 'history' && isQuickAddOpen) ||
+            (currentView === 'lab' && isQuickAddLabOpen) ||
+            editFromOverview ||
+            appBackOwners.hasActiveOwner()
+        )
+            return;
+        openDoseEntry();
+    });
 
     // --- Developer mode (unlocks the milk tea easter egg) ---
     const [devMode, setDevMode] = useDevicePreference('app-dev-mode', raw => raw === 'true');
@@ -1013,10 +1031,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
                                 modelStatus={modelStatus}
                                 modelSnapshot={modelSnapshot}
                                 theme={theme}
-                                onNavigateToHistory={() => {
-                                    setIsQuickAddOpen(true);
-                                    handleViewChange('history');
-                                }}
+                                onNavigateToHistory={openDoseEntry}
                                 onNavigateToLab={() => {
                                     setIsQuickAddLabOpen(true);
                                     handleViewChange('lab');
