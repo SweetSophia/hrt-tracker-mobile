@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import Tabs, { useSwitchAnimation } from '../Tabs';
-import { refusedFieldProps } from './refusedField';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
 import { LOCALE_MAP } from '../../utils/helpers';
 import { formatRecordDecimal, recordDecimalValue } from '../../utils/recordDecimal';
 
@@ -16,8 +16,7 @@ interface PatchFieldsProps {
     onRawChange: (val: string) => void;
     patchWearDays: string;
     setPatchWearDays: (val: string) => void;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
@@ -48,7 +47,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
     onRawChange,
     patchWearDays,
     setPatchWearDays,
-    invalid,
+    errorField,
     errorId,
 }) => {
     const { t, lang } = useTranslation();
@@ -80,7 +79,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         </label>
                         <input
                             id={rateId}
-                            {...refusedFieldProps(patchRate, locale, invalid, errorId)}
+                            {...refusedFieldProps(errorField === 'patchRate', errorId)}
                             type="text"
                             inputMode="decimal"
                             value={patchRate}
@@ -114,7 +113,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         </label>
                         <input
                             id={rawId}
-                            {...refusedFieldProps(rawDose, locale, invalid, errorId)}
+                            {...refusedFieldProps(errorField === 'raw', errorId)}
                             type="text"
                             inputMode="decimal"
                             value={rawDose}
@@ -135,7 +134,7 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                 </label>
                 <input
                     id={wearId}
-                    {...refusedFieldProps(patchWearDays, locale, invalid, errorId, true)}
+                    {...refusedFieldProps(errorField === 'patchWear', errorId)}
                     type="text"
                     inputMode="decimal"
                     value={patchWearDays}

@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, isUnmodelledDrug } from '../../../logic';
-import { refusedFieldProps } from './refusedField';
-import { LOCALE_MAP } from '../../utils/helpers';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
 
 interface OralFieldsProps {
     ester: Ester;
@@ -11,8 +10,7 @@ interface OralFieldsProps {
     onRawChange: (val: string) => void;
     onE2Change: (val: string) => void;
     route: Route;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
@@ -23,11 +21,10 @@ const OralFields: React.FC<OralFieldsProps> = ({
     onRawChange,
     onE2Change,
     route,
-    invalid,
+    errorField,
     errorId,
 }) => {
-    const { t, lang } = useTranslation();
-    const locale = LOCALE_MAP[lang] ?? 'en-US';
+    const { t } = useTranslation();
     // Cyproterone and the unmodelled drugs have no estradiol equivalent: their own dose is all there is.
     const rawOnly = ester === Ester.CPA || isUnmodelledDrug(ester);
     const rawId = React.useId();
@@ -44,7 +41,7 @@ const OralFields: React.FC<OralFieldsProps> = ({
                     </label>
                     <input
                         id={rawId}
-                        {...refusedFieldProps(rawDose, locale, invalid, errorId)}
+                        {...refusedFieldProps(errorField === 'raw', errorId)}
                         type="text"
                         inputMode="decimal"
                         value={rawDose}
@@ -63,7 +60,7 @@ const OralFields: React.FC<OralFieldsProps> = ({
                     </label>
                     <input
                         id={e2Id}
-                        {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
+                        {...refusedFieldProps(errorField === 'equivalent', errorId)}
                         type="text"
                         inputMode="decimal"
                         value={e2Dose}

@@ -1,8 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, isTestosteroneEster, isUnmodelledDrug } from '../../../logic';
-import { refusedFieldProps } from './refusedField';
-import { LOCALE_MAP } from '../../utils/helpers';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
 
 interface InjectionFieldsProps {
     ester: Ester;
@@ -11,8 +10,7 @@ interface InjectionFieldsProps {
     onRawChange: (val: string) => void;
     onE2Change: (val: string) => void;
     route: Route;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
@@ -23,11 +21,10 @@ const InjectionFields: React.FC<InjectionFieldsProps> = ({
     onRawChange,
     onE2Change,
     route,
-    invalid,
+    errorField,
     errorId,
 }) => {
-    const { t, lang } = useTranslation();
-    const locale = LOCALE_MAP[lang] ?? 'en-US';
+    const { t } = useTranslation();
     const isT = isTestosteroneEster(ester);
     const equivLabelKey = isT ? 'field.dose_t' : 'field.dose_e2';
     // Cyproterone and the unmodelled drugs have no estradiol equivalent: their own dose is all there is.
@@ -46,7 +43,7 @@ const InjectionFields: React.FC<InjectionFieldsProps> = ({
                     </label>
                     <input
                         id={rawId}
-                        {...refusedFieldProps(rawDose, locale, invalid, errorId)}
+                        {...refusedFieldProps(errorField === 'raw', errorId)}
                         type="text"
                         inputMode="decimal"
                         value={rawDose}
@@ -64,7 +61,7 @@ const InjectionFields: React.FC<InjectionFieldsProps> = ({
                     </label>
                     <input
                         id={e2Id}
-                        {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
+                        {...refusedFieldProps(errorField === 'equivalent', errorId)}
                         type="text"
                         inputMode="decimal"
                         value={e2Dose}

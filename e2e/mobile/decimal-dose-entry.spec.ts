@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { baseStorage, gotoApp, nowHours, seedStorage, type DoseEventFixture } from '../helpers';
+import { baseStorage, gotoApp, nowHours, seedStorage, type DoseEventFixture, type TemplateFixture } from '../helpers';
 
 const storedEvents = (page: Page) =>
     page.evaluate(() => JSON.parse(localStorage.getItem('hrt-events') ?? '[]')) as Promise<DoseEventFixture[]>;
@@ -81,6 +81,33 @@ test('saving an edited dose preserves a previously stored amount beyond three de
     expect(await storedEvents(page)).toMatchObject([{ id: 'fractional-dose', doseMG: 0.0375 }]);
 });
 
+test('a template from the equivalent field stores the same converted amount as Save', async ({ page, context }) => {
+    await seedStorage(context, baseStorage());
+    await gotoApp(page);
+    const form = await openAddDose(page);
+
+    await form.getByRole('button', { name: /^Route / }).click();
+    await form.getByRole('listbox', { name: 'Route' }).getByRole('option', { name: 'Injection' }).click();
+    await form.getByRole('button', { name: /^Compound / }).click();
+    await form
+        .getByRole('listbox', { name: 'Compound' })
+        .getByRole('option', { name: /Estradiol cypionate/ })
+        .click();
+    await enterText(page, form.getByLabel('E2 equivalent (mg)', { exact: true }), '1,5');
+    await form.getByTitle('Save as template', { exact: true }).click();
+    await form.getByPlaceholder('Enter template name').fill('Synthetic decimal template');
+    await form.getByPlaceholder('Enter template name').press('Enter');
+
+    const templates = () =>
+        page.evaluate(() => JSON.parse(localStorage.getItem('hrt-dose-templates') ?? '[]')) as Promise<
+            TemplateFixture[]
+        >;
+    await expect.poll(templates).toHaveLength(1);
+    await form.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect.poll(() => storedEvents(page)).toHaveLength(1);
+    expect((await templates())[0].doseMG).toBe((await storedEvents(page))[0].doseMG);
+});
+
 test('patch batch uses the parsed rate, wear duration, and interval', async ({ page, context }) => {
     await seedStorage(context, baseStorage());
     await gotoApp(page);
@@ -88,13 +115,16 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
 
     await form.getByRole('button', { name: /^Route / }).click();
     await form.getByRole('listbox', { name: 'Route' }).getByRole('option', { name: 'Patch apply' }).click();
-    await enterText(page, form.getByLabel('Rate (µg/day)', { exact: true }), '37,5');
+    const rate = form.getByLabel('Rate (µg/day)', { exact: true });
     const wear = form.getByLabel('Wear duration (days)', { exact: true });
     const save = form.getByRole('button', { name: 'Save', exact: true });
     await enterText(page, wear, '1.2,3');
     await expect(wear).toHaveAttribute('aria-invalid', 'true');
     await save.click();
+    await expect(wear).toBeFocused();
+    await expect(rate).not.toHaveAttribute('aria-invalid', 'true');
     expect(await storedEvents(page)).toHaveLength(0);
+    await enterText(page, rate, '37,5');
     await wear.fill('3,');
     await expect(wear).not.toHaveAttribute('aria-invalid', 'true');
     await save.click();

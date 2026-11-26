@@ -4,7 +4,7 @@ import { Ester, GEL_SITE_ORDER } from '../../../logic';
 import { useHRTMode } from '../../contexts/HRTModeContext';
 import CustomSelect from '../CustomSelect';
 import GelDoseConverter from './GelDoseConverter';
-import { refusedFieldProps } from './refusedField';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
 import { LOCALE_MAP } from '../../utils/helpers';
 import { formatRecordDecimal, recordDecimalValue } from '../../utils/recordDecimal';
 
@@ -15,8 +15,7 @@ interface GelFieldsProps {
     e2Dose: string;
     onE2Change: (val: string) => void;
     bioMultiplier?: number;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
@@ -27,7 +26,7 @@ const GelFields: React.FC<GelFieldsProps> = ({
     e2Dose,
     onE2Change,
     bioMultiplier,
-    invalid,
+    errorField,
     errorId,
 }) => {
     const { t, lang } = useTranslation();
@@ -69,7 +68,7 @@ const GelFields: React.FC<GelFieldsProps> = ({
                 </label>
                 <input
                     id={doseId}
-                    {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
+                    {...refusedFieldProps(errorField === 'equivalent', errorId)}
                     type="text"
                     inputMode="decimal"
                     value={e2Dose}

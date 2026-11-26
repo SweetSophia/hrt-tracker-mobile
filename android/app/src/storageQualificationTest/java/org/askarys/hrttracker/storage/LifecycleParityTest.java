@@ -21,7 +21,8 @@ import org.junit.Test;
 /** Shared rendered controls, actual Android lifecycle, fresh native record reads. Synthetic data only. */
 public final class LifecycleParityTest {
     private static final Instrumentation I = InstrumentationRegistry.getInstrumentation();
-    private static final String INPUTS = "[...document.querySelectorAll('input[type=number]')].filter(n=>n.getClientRects().length&&!n.closest('[inert],[hidden]'))";
+    // Dose and lab amounts are localized decimal entry fields (inputmode=decimal), no longer type=number.
+    private static final String INPUTS = "[...document.querySelectorAll('input[inputmode=decimal]')].filter(n=>n.getClientRects().length&&!n.closest('[inert],[hidden]'))";
     private static String js(ActivityScenario<MainActivity> a, String expression) throws Exception { return StorageBridgeTest.evaluate(a, expression); }
     private static void waitFor(ActivityScenario<MainActivity> a, String expression) throws Exception { StorageBridgeTest.waitFor(a, expression); }
     private static JSONObject call(ActivityScenario<MainActivity> a, String expression) throws Exception {
@@ -93,16 +94,16 @@ public final class LifecycleParityTest {
     @Test public void draftLifecycle() throws Exception {
         try (ActivityScenario<MainActivity> a=ActivityScenario.launch(MainActivity.class)) {
             prepare(a); String before=snapshot(a);
-            button(a,"History"); button(a,"Add dose"); input(a,0,"3.25");
+            button(a,"History"); button(a,"Add dose"); input(a,0,"3,25");
             backgroundAndResume(a);
-            waitFor(a,"history.state.view==='history'&&"+INPUTS+"[0]?.value==='3.25'");
+            waitFor(a,"history.state.view==='history'&&"+INPUTS+"[0]?.value==='3,25'");
             assertEquals(before,snapshot(a));
             AtomicInteger original=new AtomicInteger(); a.onActivity(activity->original.set(activity.getRequestedOrientation()));
             try {
                 rotate(a,ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,Configuration.ORIENTATION_LANDSCAPE);
-                waitFor(a,"innerWidth>innerHeight&&history.state.view==='history'&&"+INPUTS+"[0]?.value==='3.25'");
+                waitFor(a,"innerWidth>innerHeight&&history.state.view==='history'&&"+INPUTS+"[0]?.value==='3,25'");
                 rotate(a,ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,Configuration.ORIENTATION_PORTRAIT);
-                waitFor(a,"innerHeight>innerWidth&&history.state.view==='history'&&"+INPUTS+"[0]?.value==='3.25'");
+                waitFor(a,"innerHeight>innerWidth&&history.state.view==='history'&&"+INPUTS+"[0]?.value==='3,25'");
                 assertEquals(before,snapshot(a));
             } finally { a.onActivity(activity->activity.setRequestedOrientation(original.get())); }
             a.recreate(); ready(a); waitFor(a,nodes("Medication plan",false)+".length===1");
@@ -126,7 +127,7 @@ public final class LifecycleParityTest {
             double expected=name.equals("transfem")?3.25:12.5; int matching=0;
             for(int n=0;n<events.length();n++) if(events.getJSONObject(n).getDouble("doseMG")==expected) matching++;
             assertEquals("Saved dose value",1,matching);
-            assertEquals(name.equals("transfem")?123:456,labs.getJSONObject(0).getDouble("concValue"),0);
+            assertEquals(name.equals("transfem")?123.5:456.5,labs.getJSONObject(0).getDouble("concValue"),0);
             assertEquals(name.equals("transfem")?"pmol/l":"ng/dl",labs.getJSONObject(0).getString("unit"));
         }
     }
@@ -137,13 +138,13 @@ public final class LifecycleParityTest {
                 if (name.equals("transmasc")) switchMode(a,"Masculinizing HRT");
                 String other=name.equals("transfem")?"transmasc":"transfem";
                 String otherBefore=mode(state(a),other).toString();
-                button(a,"History"); button(a,"Add dose"); input(a,0,name.equals("transfem")?"3.25":"12.5");
+                button(a,"History"); button(a,"Add dose"); input(a,0,name.equals("transfem")?"3,25":"12,5");
                 button(a,"Save"); waitFor(a,nodes("Add dose",false)+".length===1");
                 assertEquals(2,mode(state(a),name).getJSONArray("events").length());
                 // Empty Labs exposes the same action in both header and empty state.
                 button(a,"Labs"); waitFor(a,nodes("Add lab result",false)+".length===2");
                 js(a,nodes("Add lab result",false)+"[0].click();void 0");
-                input(a,name.equals("transfem")?0:1,name.equals("transfem")?"123":"456");
+                input(a,name.equals("transfem")?0:1,name.equals("transfem")?"123,5":"456,5");
                 button(a,"Save"); waitFor(a,nodes("Add lab result",false)+".length===1");
                 assertEquals(1,mode(state(a),name).getJSONArray("labResults").length());
                 assertEquals("Other mode must not change",otherBefore,mode(state(a),other).toString());
@@ -165,7 +166,7 @@ public final class LifecycleParityTest {
             for (String label:new String[]{"Feminizing HRT","Masculinizing HRT"}) {
                 switchMode(a,label); button(a,"History");
                 waitFor(a,nodes(label.equals("Feminizing HRT")?"3.25 mg":"12.50 mg",true)+".length===1");
-                button(a,"Labs"); waitFor(a,nodes(label.equals("Feminizing HRT")?"123":"456",true)+".length===1");
+                button(a,"Labs"); waitFor(a,nodes(label.equals("Feminizing HRT")?"123.5":"456.5",true)+".length===1");
             }
             assertEquals(after,snapshot(a));
             report("acknowledgedEditsVerify",after,new JSONObject().put("reopenedExact",true).put("noReplay",true).put("bothModesExact",true));

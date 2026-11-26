@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, SL_TIER_ORDER, SublingualTierParams } from '../../../logic';
 import CustomSelect from '../CustomSelect';
-import { refusedFieldProps } from './refusedField';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
 import { LOCALE_MAP } from '../../utils/helpers';
 import { formatRecordDecimal, recordDecimalValue } from '../../utils/recordDecimal';
 
@@ -22,8 +22,7 @@ interface SublingualFieldsProps {
     setCustomHoldValue: (val: number) => void;
     thetaFromHold: (hold: number) => number;
     route: Route;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
@@ -43,7 +42,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
     setCustomHoldValue,
     thetaFromHold,
     route,
-    invalid,
+    errorField,
     errorId,
 }) => {
     const { t, lang } = useTranslation();
@@ -103,7 +102,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         <div className="flex items-center gap-2">
                             <input
                                 id={holdId}
-                                {...refusedFieldProps(customHoldInput, locale, invalid, errorId)}
+                                {...refusedFieldProps(errorField === 'hold', errorId)}
                                 type="text"
                                 inputMode="decimal"
                                 value={customHoldInput}
@@ -143,7 +142,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         </label>
                         <input
                             id={rawId}
-                            {...refusedFieldProps(rawDose, locale, invalid, errorId)}
+                            {...refusedFieldProps(errorField === 'raw', errorId)}
                             type="text"
                             inputMode="decimal"
                             value={rawDose}
@@ -162,7 +161,7 @@ const SublingualFields: React.FC<SublingualFieldsProps> = ({
                         </label>
                         <input
                             id={e2Id}
-                            {...refusedFieldProps(e2Dose, locale, invalid, errorId)}
+                            {...refusedFieldProps(errorField === 'equivalent', errorId)}
                             type="text"
                             inputMode="decimal"
                             value={e2Dose}

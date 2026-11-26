@@ -31,6 +31,7 @@ import GelFields from './dose_form/GelFields';
 import PatchFields from './dose_form/PatchFields';
 import PatchReplacementSwitch from './PatchReplacementSwitch';
 import QuickDoseButtons, { QuickDose } from './dose_form/QuickDoseButtons';
+import type { DoseErrorField } from './dose_form/refusedField';
 import { useHRTMode } from '../contexts/HRTModeContext';
 
 import { useEscapeLayer, SelectChevron } from './CustomSelect';
@@ -49,6 +50,8 @@ export interface DoseTemplate {
     extras: Partial<Record<ExtraKey, number>>;
     createdAt: number;
 }
+
+type DoseIssue = { field: DoseErrorField; message: string };
 
 type DoseLevelKey = 'low' | 'medium' | 'high' | 'very_high' | 'above';
 
@@ -277,6 +280,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
         }
     };
 
+    // Prefill when the edited record changes and keep an open draft through language changes.
     useEffect(() => {
         isInitializingRef.current = true;
         if (eventToEdit) {
@@ -442,6 +446,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
     const patchByRate = route === Route.patchApply && patchMode === 'rate';
     const useRawAmount = route === Route.patchApply || (ester !== Ester.E2 && lastEditedField === 'raw');
     const amount = parseRecordDecimal(patchByRate ? patchRate : useRawAmount ? rawDose : e2Dose, locale);
+    // An empty pair starts with the raw field when it is available. For typed text,
+    // target the field that supplied the amount.
+    const amountField: DoseErrorField = patchByRate
+        ? 'patchRate'
+        : route !== Route.gel && (useRawAmount || (amount.kind === 'empty' && ester !== Ester.E2))
+          ? 'raw'
+          : 'equivalent';
     const amountValue = amount.kind === 'number' ? amount.value : 0;
     const factor = getToE2Factor(ester) || 1;
     const doseMG =
@@ -454,20 +465,28 @@ const DoseForm: React.FC<DoseFormProps> = ({
     const patchWearH = patchWear.kind === 'number' && patchWear.value > 0 ? patchWear.value * 24 : 0;
     const customHold = parseRecordDecimal(customHoldInput, locale);
     const hasCustomHold = route === Route.sublingual && useCustomTheta;
-    const invalidDecimal =
-        (route !== Route.patchRemove && amount.kind === 'invalid') ||
-        (route === Route.patchApply && (patchWear.kind === 'invalid' || !Number.isFinite(patchWearH))) ||
-        (hasCustomHold && customHold.kind === 'invalid') ||
-        !Number.isFinite(doseMG);
-    const incompleteDecimal =
-        (route !== Route.patchRemove && amount.kind === 'incomplete') ||
-        (route === Route.patchApply && patchWear.kind === 'incomplete') ||
-        (hasCustomHold && customHold.kind === 'incomplete');
+    const malformedField: DoseErrorField | null =
+        (route !== Route.patchRemove && amount.kind === 'invalid') || !Number.isFinite(doseMG)
+            ? amountField
+            : route === Route.patchApply && (patchWear.kind === 'invalid' || !Number.isFinite(patchWearH))
+              ? 'patchWear'
+              : hasCustomHold && customHold.kind === 'invalid'
+                ? 'hold'
+                : null;
+    const unfinishedField: DoseErrorField | null =
+        route !== Route.patchRemove && amount.kind === 'incomplete'
+            ? amountField
+            : route === Route.patchApply && patchWear.kind === 'incomplete'
+              ? 'patchWear'
+              : hasCustomHold && customHold.kind === 'incomplete'
+                ? 'hold'
+                : null;
 
     // A format error is visible while editing. Submit errors go away when
     // the values they were about change.
     const decimalError = t('error.decimalFormat').replace('{example}', formatAmount(1.5));
     const valuesKey = [
+        locale,
         route,
         ester,
         patchMode,
@@ -478,16 +497,23 @@ const DoseForm: React.FC<DoseFormProps> = ({
         useCustomTheta,
         customHoldInput,
     ].join('|');
-    const [doseError, setDoseError] = useState<{ message: string; key: string } | null>(null);
-    const refusedDose = doseError?.key === valuesKey;
-    const shownDoseError = invalidDecimal ? decimalError : refusedDose ? doseError.message : null;
+    const [doseError, setDoseError] = useState<(DoseIssue & { key: string }) | null>(null);
+    const shownIssue = malformedField
+        ? { field: malformedField, message: decimalError }
+        : doseError?.key === valuesKey
+          ? doseError
+          : null;
 
-    const validateDose = (allowEmptyAmount: boolean): string | null => {
-        if (invalidDecimal || incompleteDecimal) return decimalError;
-        if (hasCustomHold && (customHold.kind !== 'number' || customHold.value < 1)) return t('error.slHoldMinOne');
+    const validateDose = (allowEmptyAmount: boolean): DoseIssue | null => {
+        const decimalField = malformedField ?? unfinishedField;
+        if (decimalField) return { field: decimalField, message: decimalError };
+        if (hasCustomHold && (customHold.kind !== 'number' || customHold.value < 1))
+            return { field: 'hold', message: t('error.slHoldMinOne') };
         if (route === Route.patchRemove || (allowEmptyAmount && amountValue === 0)) return null;
-        if (amount.kind === 'empty') return t('modal.dose.dose_required');
-        return (patchByRate ? amountValue : doseMG) > 0 ? null : t('error.nonPositive');
+        if (amount.kind === 'empty') return { field: amountField, message: t('modal.dose.dose_required') };
+        return (patchByRate ? amountValue : doseMG) > 0
+            ? null
+            : { field: amountField, message: t('error.nonPositive') };
     };
 
     const doseExtras = (): DoseEvent['extras'] => {
@@ -501,8 +527,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
     const doseErrorId = React.useId();
     const saveBlockedReasonId = React.useId();
     const fieldsRef = useRef<HTMLDivElement>(null);
-    // Put the cursor in the field to fix: the first one marked, or for the
-    // hold time (not a dose) the first field there is.
+    // Put the cursor in the field to fix.
     useEffect(() => {
         if (!doseError) return;
         const box = fieldsRef.current;
@@ -528,7 +553,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
 
         const error = validateDose(true);
         if (error) {
-            setDoseError({ message: error, key: valuesKey });
+            setDoseError({ ...error, key: valuesKey });
             return;
         }
         const template: DoseTemplate = {
@@ -536,7 +561,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
             name: templateName.trim(),
             route,
             ester,
-            doseMG,
+            doseMG: useRawAmount || ester === Ester.E2 ? doseMG : cleanDoseMG(doseMG),
             extras: doseExtras(),
             createdAt: Date.now(),
         };
@@ -561,8 +586,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
         if (isSavingRef.current || saveBlockedReason) return;
         isSavingRef.current = true;
         setIsSaving(true);
-        const failSave = (msg: string) => {
-            setDoseError({ message: msg, key: valuesKey });
+        const failSave = (issue: DoseIssue) => {
+            setDoseError({ ...issue, key: valuesKey });
             isSavingRef.current = false;
             setIsSaving(false);
         };
@@ -982,7 +1007,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     onRawChange={handleRawChange}
                                     onE2Change={handleE2Change}
                                     route={route}
-                                    invalid={refusedDose}
+                                    errorField={shownIssue?.field}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -995,7 +1020,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     onRawChange={handleRawChange}
                                     onE2Change={handleE2Change}
                                     route={route}
-                                    invalid={refusedDose}
+                                    errorField={shownIssue?.field}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1017,7 +1042,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     setCustomHoldValue={setCustomHoldValue}
                                     thetaFromHold={thetaFromHold}
                                     route={route}
-                                    invalid={refusedDose}
+                                    errorField={shownIssue?.field}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1030,7 +1055,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     e2Dose={e2Dose}
                                     onE2Change={handleE2Change}
                                     bioMultiplier={bioMultiplier}
-                                    invalid={refusedDose}
+                                    errorField={shownIssue?.field}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1045,7 +1070,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     onRawChange={handleRawChange}
                                     patchWearDays={patchWearDays}
                                     setPatchWearDays={setPatchWearDays}
-                                    invalid={refusedDose}
+                                    errorField={shownIssue?.field}
                                     errorId={doseErrorId}
                                 />
                             )}
@@ -1059,9 +1084,9 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                 </div>
                             )}
                         </div>
-                        {shownDoseError && (
+                        {shownIssue && (
                             <p id={doseErrorId} role="alert" className="mt-2 ps-1 text-xs text-[var(--danger)]">
-                                {shownDoseError}
+                                {shownIssue.message}
                             </p>
                         )}
 

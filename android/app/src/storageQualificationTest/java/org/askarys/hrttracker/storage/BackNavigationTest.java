@@ -148,7 +148,7 @@ public final class BackNavigationTest {
             I.getUiAutomation().adoptShellPermissionIdentity(android.Manifest.permission.WRITE_SECURE_SETTINGS);
             try {
                 assertTrue(Settings.Secure.putString(settings,"show_ime_with_hard_keyboard","1"));
-                tapInput(a,"form:has(button[aria-label=Delete]) input[type=number]");
+                tapInput(a,"form:has(button[aria-label=Delete]) input[inputmode=decimal]");
                 waitIme(a,true);
                 back(); waitIme(a,false);
                 assertEquals("true",js(a,"Boolean("+form+")"));
