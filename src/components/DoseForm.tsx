@@ -461,12 +461,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
             : useRawAmount || ester === Ester.E2
               ? amountValue
               : amountValue / factor;
+    const savedDoseMG = cleanDoseMG(doseMG);
     const patchWear = parseRecordDecimal(patchWearDays, locale);
     const patchWearH = patchWear.kind === 'number' && patchWear.value > 0 ? patchWear.value * 24 : 0;
     const customHold = parseRecordDecimal(customHoldInput, locale);
     const hasCustomHold = route === Route.sublingual && useCustomTheta;
     const malformedField: DoseErrorField | null =
-        (route !== Route.patchRemove && amount.kind === 'invalid') || !Number.isFinite(doseMG)
+        (route !== Route.patchRemove && amount.kind === 'invalid') || !Number.isFinite(savedDoseMG)
             ? amountField
             : route === Route.patchApply && (patchWear.kind === 'invalid' || !Number.isFinite(patchWearH))
               ? 'patchWear'
@@ -561,7 +562,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
             name: templateName.trim(),
             route,
             ester,
-            doseMG: useRawAmount || ester === Ester.E2 ? doseMG : cleanDoseMG(doseMG),
+            doseMG: savedDoseMG,
             extras: doseExtras(),
             createdAt: Date.now(),
         };
@@ -612,7 +613,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                         : Ester.E2
                     : ester,
             timeH,
-            doseMG: cleanDoseMG(doseMG),
+            doseMG: savedDoseMG,
             extras: doseExtras(),
         };
 
@@ -990,7 +991,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     route={route}
                                     ester={ester}
                                     quickDoses={quickDoses}
-                                    currentDose={cleanDoseMG(doseMG)}
+                                    currentDose={savedDoseMG}
                                     onSelectDose={val => handleRawChange(formatAmount(val))}
                                     onAddQuickDose={onAddQuickDose}
                                     onDeleteQuickDose={onDeleteQuickDose}

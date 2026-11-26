@@ -54,10 +54,8 @@ const Stepper: React.FC<{
                     max={!decimalLocale && Number.isFinite(max) ? max : undefined}
                     step={decimalLocale ? undefined : inputStep}
                     role={decimalLocale ? 'spinbutton' : undefined}
-                    aria-valuemin={decimalLocale ? min : undefined}
-                    aria-valuemax={decimalLocale && Number.isFinite(max) ? max : undefined}
-                    aria-valuenow={decimalLocale && hasNumber ? Math.min(max, Math.max(min, n)) : undefined}
-                    aria-valuetext={decimalLocale && hasNumber ? formatRecordDecimal(n, decimalLocale) : undefined}
+                    aria-valuenow={decimalLocale && hasNumber ? n : undefined}
+                    aria-valuetext={decimalLocale && !hasNumber && value ? value : undefined}
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? errorId : undefined}
                     value={value}

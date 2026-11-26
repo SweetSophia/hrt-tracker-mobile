@@ -81,32 +81,38 @@ test('saving an edited dose preserves a previously stored amount beyond three de
     expect(await storedEvents(page)).toMatchObject([{ id: 'fractional-dose', doseMG: 0.0375 }]);
 });
 
-test('a template from the equivalent field stores the same converted amount as Save', async ({ page, context }) => {
-    await seedStorage(context, baseStorage());
-    await gotoApp(page);
-    const form = await openAddDose(page);
+for (const [source, label, input, storedAmount] of [
+    ['raw', 'Dose (mg)', '12,499934062706513', 12.5],
+    ['equivalent', 'E2 equivalent (mg)', '1,5', 2.184],
+] as const) {
+    test(`a template from the ${source} field stores the same amount as Save`, async ({ page, context }) => {
+        await seedStorage(context, baseStorage());
+        await gotoApp(page);
+        const form = await openAddDose(page);
 
-    await form.getByRole('button', { name: /^Route / }).click();
-    await form.getByRole('listbox', { name: 'Route' }).getByRole('option', { name: 'Injection' }).click();
-    await form.getByRole('button', { name: /^Compound / }).click();
-    await form
-        .getByRole('listbox', { name: 'Compound' })
-        .getByRole('option', { name: /Estradiol cypionate/ })
-        .click();
-    await enterText(page, form.getByLabel('E2 equivalent (mg)', { exact: true }), '1,5');
-    await form.getByTitle('Save as template', { exact: true }).click();
-    await form.getByPlaceholder('Enter template name').fill('Synthetic decimal template');
-    await form.getByPlaceholder('Enter template name').press('Enter');
+        if (source === 'equivalent') {
+            await form.getByRole('button', { name: /^Route / }).click();
+            await form.getByRole('listbox', { name: 'Route' }).getByRole('option', { name: 'Injection' }).click();
+            await form.getByRole('button', { name: /^Compound / }).click();
+            await form
+                .getByRole('listbox', { name: 'Compound' })
+                .getByRole('option', { name: /Estradiol cypionate/ })
+                .click();
+        }
+        await enterText(page, form.getByLabel(label, { exact: true }), input);
+        await form.getByTitle('Save as template', { exact: true }).click();
+        await form.getByPlaceholder('Enter template name').fill('Synthetic decimal template');
+        await form.getByPlaceholder('Enter template name').press('Enter');
 
-    const templates = () =>
-        page.evaluate(() => JSON.parse(localStorage.getItem('hrt-dose-templates') ?? '[]')) as Promise<
-            TemplateFixture[]
-        >;
-    await expect.poll(templates).toHaveLength(1);
-    await form.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect.poll(() => storedEvents(page)).toHaveLength(1);
-    expect((await templates())[0].doseMG).toBe((await storedEvents(page))[0].doseMG);
-});
+        const templates = () =>
+            page.evaluate(() => JSON.parse(localStorage.getItem('hrt-dose-templates') ?? '[]')) as Promise<
+                TemplateFixture[]
+            >;
+        await expect.poll(templates).toMatchObject([{ doseMG: storedAmount }]);
+        await form.getByRole('button', { name: 'Save', exact: true }).click();
+        await expect.poll(() => storedEvents(page)).toMatchObject([{ doseMG: storedAmount }]);
+    });
+}
 
 test('patch batch uses the parsed rate, wear duration, and interval', async ({ page, context }) => {
     await seedStorage(context, baseStorage());
@@ -134,8 +140,12 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
 
     await page.getByRole('switch', { name: 'Batch add' }).click();
     const interval = page.getByRole('spinbutton', { name: 'Interval (days)' });
+    await interval.fill('0,125');
+    await expect(interval).toHaveAttribute('aria-valuenow', '0.125');
     await enterText(page, interval, '1,');
     await expect(interval).not.toHaveAttribute('aria-invalid', 'true');
+    await expect(interval).not.toHaveAttribute('aria-valuenow');
+    await expect(interval).toHaveAttribute('aria-valuetext', '1,');
     await expect(save).toBeDisabled();
     await expect(save).toHaveAccessibleDescription('Check the batch interval and count before saving.');
     await interval.pressSequentially('5');
@@ -145,6 +155,9 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
     await expect(count).toHaveAttribute('aria-invalid', 'true');
     await expect(save).toBeDisabled();
     expect(await storedEvents(page)).toHaveLength(0);
+    await count.fill('400');
+    await expect(count).toHaveAttribute('aria-valuenow', '400');
+    await expect(page.getByText(/one entry every 1\.5 days, 365 entries total/)).toBeVisible();
     await count.fill('2.9');
     await expect(page.getByText(/one entry every 1\.5 days, 2 entries total/)).toBeVisible();
     await count.fill('3');
