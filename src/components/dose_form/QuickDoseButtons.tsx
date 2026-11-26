@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { useDialog } from '../../contexts/DialogContext';
 import { Route, Ester } from '../../../logic';
+import { LOCALE_MAP } from '../../utils/helpers';
+import { formatRecordDecimal } from '../../utils/recordDecimal';
 
 export interface QuickDose {
     id: string;
@@ -17,7 +19,7 @@ interface QuickDoseButtonsProps {
     route: Route;
     ester: Ester;
     quickDoses: QuickDose[];
-    currentDose: string;
+    currentDose: number;
     onSelectDose: (value: number) => void;
     onAddQuickDose: (dose: QuickDose) => Promise<boolean>;
     onDeleteQuickDose: (id: string) => Promise<boolean>;
@@ -34,8 +36,10 @@ const QuickDoseButtons: React.FC<QuickDoseButtonsProps> = ({
     onDeleteQuickDose,
     unit = 'mg',
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const { showDialog } = useDialog();
+    const formatValue = (value: number) => formatRecordDecimal(value, locale);
 
     // Filter quick doses for current route + ester combination
     const filteredDoses = quickDoses
@@ -43,7 +47,7 @@ const QuickDoseButtons: React.FC<QuickDoseButtonsProps> = ({
         .sort((a, b) => a.value - b.value);
 
     const handleAdd = () => {
-        const val = parseFloat(currentDose);
+        const val = currentDose;
         if (!Number.isFinite(val) || val <= 0) {
             showDialog('alert', t('quickdose.empty_input'));
             return;
@@ -72,13 +76,6 @@ const QuickDoseButtons: React.FC<QuickDoseButtonsProps> = ({
             },
             { danger: true, title: t('quickdose.delete_confirm'), confirmLabel: t('btn.delete') },
         );
-    };
-
-    const formatValue = (val: number): string => {
-        if (Number.isInteger(val)) return val.toString();
-        // Remove trailing zeros
-        const str = val.toFixed(3);
-        return str.replace(/\.?0+$/, '');
     };
 
     return (

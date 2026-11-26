@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import { Route, Ester, isUnmodelledDrug } from '../../../logic';
-import { refusedFieldProps } from './refusedField';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
 
 interface OralFieldsProps {
     ester: Ester;
@@ -10,8 +10,7 @@ interface OralFieldsProps {
     onRawChange: (val: string) => void;
     onE2Change: (val: string) => void;
     route: Route;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
@@ -22,7 +21,7 @@ const OralFields: React.FC<OralFieldsProps> = ({
     onRawChange,
     onE2Change,
     route,
-    invalid,
+    errorField,
     errorId,
 }) => {
     const { t } = useTranslation();
@@ -42,14 +41,12 @@ const OralFields: React.FC<OralFieldsProps> = ({
                     </label>
                     <input
                         id={rawId}
-                        {...refusedFieldProps(rawDose, invalid, errorId)}
-                        type="number"
+                        {...refusedFieldProps(errorField === 'raw', errorId)}
+                        type="text"
                         inputMode="decimal"
-                        min="0"
-                        step="0.001"
                         value={rawDose}
                         onChange={e => onRawChange(e.target.value)}
-                        className="input-base w-full text-[var(--text)] font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="input-base w-full text-[var(--text)] font-medium"
                         placeholder="0.0"
                         style={{ fontSize: '16px' }}
                     />
@@ -63,14 +60,12 @@ const OralFields: React.FC<OralFieldsProps> = ({
                     </label>
                     <input
                         id={e2Id}
-                        {...refusedFieldProps(e2Dose, invalid, errorId)}
-                        type="number"
+                        {...refusedFieldProps(errorField === 'equivalent', errorId)}
+                        type="text"
                         inputMode="decimal"
-                        min="0"
-                        step="0.001"
                         value={e2Dose}
                         onChange={e => onE2Change(e.target.value)}
-                        className="input-base w-full font-medium text-[var(--text)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="input-base w-full font-medium text-[var(--text)]"
                         placeholder="0.0"
                         style={{ fontSize: '16px' }}
                     />

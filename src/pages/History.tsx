@@ -10,9 +10,11 @@ import Doodle from '../components/Doodle';
 import { v4 as uuidv4 } from 'uuid';
 import { DoseEvent, Route, Ester, ExtraKey, getToE2Factor, isEstradiolEster, isTestosteroneEster } from '../../logic';
 import { patchRemovalPairs } from '../domain/shared/patch';
-import { formatTime, formatWearDays } from '../utils/helpers';
+import { LOCALE_MAP, formatTime, formatWearDays } from '../utils/helpers';
+import { formatRecordDecimal, parseRecordDecimal } from '../utils/recordDecimal';
 import { drugLabel } from '../utils/regimenText';
 import { useDialog } from '../contexts/DialogContext';
+import { useTranslation } from '../contexts/LanguageContext';
 import DoseForm from '../components/DoseForm';
 import Stepper from '../components/Stepper';
 import LogDoodle from '../components/LogDoodle';
@@ -136,6 +138,8 @@ const History: React.FC<HistoryProps> = ({
     onOpenEditHandled,
 }) => {
     const { showDialog } = useDialog();
+    const { lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
     const isMounted = useMounted();
     const [editingId, setEditingId] = useState<string | null>(openEditId ?? null);
 
@@ -265,11 +269,29 @@ const History: React.FC<HistoryProps> = ({
         setBatchOn(false);
     };
 
+    const parsedInterval = parseRecordDecimal(batchIntervalDays, locale);
+    const parsedCount = parseRecordDecimal(batchCount, locale);
+    const interval = parsedInterval.kind === 'number' ? parsedInterval.value : 0;
+    const count = parsedCount.kind === 'number' ? Math.min(MAX_BATCH_COUNT, Math.floor(parsedCount.value)) : 0;
+    const batchIsValid = interval > 0 && count >= 2;
+    const decimalError = t('error.decimalFormat').replace('{example}', formatRecordDecimal(1.5, locale));
+    const intervalError =
+        parsedInterval.kind === 'invalid'
+            ? decimalError
+            : parsedInterval.kind === 'number' && interval <= 0
+              ? t('error.nonPositive')
+              : null;
+    const countError =
+        parsedCount.kind === 'invalid'
+            ? decimalError
+            : parsedCount.kind === 'number' && count < 2
+              ? t('timeline.batch_count_min')
+              : null;
+
     const handleQuickSave = async (e: DoseEvent, replacePreviousPatch = false) => {
-        const interval = parseFloat(batchIntervalDays);
-        const count = Math.min(MAX_BATCH_COUNT, Math.floor(parseFloat(batchCount)));
+        if (batchOn && !batchIsValid) return false;
         const list = [e];
-        if (batchOn && Number.isFinite(interval) && interval > 0 && Number.isFinite(count) && count > 1) {
+        if (batchOn) {
             for (let k = 1; k < count; k++) {
                 list.push({
                     ...e,
@@ -338,8 +360,8 @@ const History: React.FC<HistoryProps> = ({
     };
 
     const batchHint = t('timeline.batch_hint')
-        .replace('{d}', batchIntervalDays || '?')
-        .replace('{n}', batchCount || '?');
+        .replace('{d}', interval > 0 ? formatRecordDecimal(interval, locale) : '?')
+        .replace('{n}', count >= 2 ? formatRecordDecimal(count, locale) : '?');
 
     const renderRow = (ev: DoseEvent) => {
         const isEditing = editingId === ev.id;
@@ -613,6 +635,8 @@ const History: React.FC<HistoryProps> = ({
                                         min={0.25}
                                         step={intervalStep}
                                         inputStep="0.25"
+                                        decimalLocale={locale}
+                                        error={intervalError}
                                     />
                                     <Stepper
                                         label={t('timeline.batch_count')}
@@ -622,6 +646,8 @@ const History: React.FC<HistoryProps> = ({
                                         max={MAX_BATCH_COUNT}
                                         step={() => 1}
                                         inputStep="1"
+                                        decimalLocale={locale}
+                                        error={countError}
                                     />
                                 </div>
                                 <p className={`mt-3 flex items-start gap-2 text-xs ${muted}`}>
@@ -643,6 +669,9 @@ const History: React.FC<HistoryProps> = ({
                                 templates={doseTemplates}
                                 onSaveTemplate={onSaveTemplate}
                                 onDeleteTemplate={onDeleteTemplate}
+                                saveBlockedReason={
+                                    batchOn && !batchIsValid ? t('timeline.batch_check_fields') : undefined
+                                }
                                 isInline={true}
                                 events={events ?? allEvents}
                                 quickDoses={quickDoses}

@@ -45,8 +45,8 @@ test.describe('manual patch replace (L3 browser)', () => {
         await expect(replace).toBeVisible();
         await expect(replace).toHaveAttribute('aria-checked', 'false');
         await page.getByRole('switch', { name: 'Batch add' }).click();
-        await page.getByRole('spinbutton', { name: 'Interval (days)', exact: true }).fill('3');
-        await page.getByRole('spinbutton', { name: 'Count', exact: true }).fill('3');
+        await page.getByLabel('Interval (days)', { exact: true }).fill('3');
+        await page.getByLabel('Count', { exact: true }).fill('3');
 
         await replace.click();
         await expect(replace).toHaveAttribute('aria-checked', 'true');

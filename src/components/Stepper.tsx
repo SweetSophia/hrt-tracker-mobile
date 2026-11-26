@@ -1,5 +1,6 @@
 import React from 'react';
 import { Minus, Plus } from './icons';
+import { formatRecordDecimal, recordDecimalValue } from '../utils/recordDecimal';
 
 /**
  * A number field with − and + on either side, so the batch values can be
@@ -15,13 +16,20 @@ const Stepper: React.FC<{
     /** Size of one step for a given value and direction. */
     step: (current: number, dir: 1 | -1) => number;
     inputStep: string;
-}> = ({ label, value, onChange, min, max = Infinity, step, inputStep }) => {
+    decimalLocale?: string;
+    error?: string | null;
+}> = ({ label, value, onChange, min, max = Infinity, step, inputStep, decimalLocale, error }) => {
     const id = React.useId();
-    const n = parseFloat(value);
-    const current = Number.isFinite(n) ? n : min;
+    const errorId = React.useId();
+    const n = decimalLocale ? recordDecimalValue(value, decimalLocale) : parseFloat(value);
+    const hasNumber = Number.isFinite(n);
+    const current = hasNumber || decimalLocale ? n : min;
+    const canNudge = Number.isFinite(current);
     const nudge = (dir: 1 | -1) => {
+        if (!canNudge) return;
         const next = Math.min(max, Math.max(min, current + dir * step(current, dir)));
-        onChange(String(Math.round(next * 100) / 100));
+        const rounded = Math.round(next * 100) / 100;
+        onChange(decimalLocale ? formatRecordDecimal(rounded, decimalLocale) : String(rounded));
     };
     const btn =
         'grid h-9 w-9 shrink-0 place-items-center rounded-full text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] disabled:opacity-35 disabled:hover:bg-transparent';
@@ -34,7 +42,7 @@ const Stepper: React.FC<{
                 <button
                     type="button"
                     onClick={() => nudge(-1)}
-                    disabled={current <= min}
+                    disabled={!canNudge || current <= min}
                     aria-label={`${label} −`}
                     className={btn}
                 >
@@ -42,25 +50,45 @@ const Stepper: React.FC<{
                 </button>
                 <input
                     id={id}
-                    type="number"
-                    inputMode="decimal"
-                    min={min}
-                    max={Number.isFinite(max) ? max : undefined}
-                    step={inputStep}
+                    type={decimalLocale ? 'text' : 'number'}
+                    inputMode={decimalLocale && inputStep === '1' ? 'numeric' : 'decimal'}
+                    min={decimalLocale ? undefined : min}
+                    max={!decimalLocale && Number.isFinite(max) ? max : undefined}
+                    step={decimalLocale ? undefined : inputStep}
+                    role={decimalLocale ? 'spinbutton' : undefined}
+                    aria-valuenow={decimalLocale && hasNumber ? n : undefined}
+                    aria-valuetext={decimalLocale && !hasNumber && value ? value : undefined}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
                     value={value}
                     onChange={e => onChange(e.target.value)}
+                    onKeyDown={
+                        decimalLocale
+                            ? e => {
+                                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                                      e.preventDefault();
+                                      nudge(e.key === 'ArrowUp' ? 1 : -1);
+                                  }
+                              }
+                            : undefined
+                    }
                     className="input-base min-w-0 flex-1 text-center text-sm font-medium tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <button
                     type="button"
                     onClick={() => nudge(1)}
-                    disabled={current >= max}
+                    disabled={!canNudge || current >= max}
                     aria-label={`${label} +`}
                     className={btn}
                 >
                     <Plus size={16} />
                 </button>
             </span>
+            {error && (
+                <p id={errorId} className="field-hint is-error">
+                    {error}
+                </p>
+            )}
         </div>
     );
 };

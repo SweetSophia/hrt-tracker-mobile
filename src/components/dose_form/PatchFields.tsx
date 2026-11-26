@@ -1,7 +1,9 @@
 import React from 'react';
 import { useTranslation } from '../../contexts/LanguageContext';
 import Tabs, { useSwitchAnimation } from '../Tabs';
-import { refusedFieldProps } from './refusedField';
+import { refusedFieldProps, type DoseErrorField } from './refusedField';
+import { LOCALE_MAP } from '../../utils/helpers';
+import { formatRecordDecimal, recordDecimalValue } from '../../utils/recordDecimal';
 
 const MODE_ORDER = ['rate', 'dose'] as const;
 
@@ -14,13 +16,11 @@ interface PatchFieldsProps {
     onRawChange: (val: string) => void;
     patchWearDays: string;
     setPatchWearDays: (val: string) => void;
-    /** Save was refused for an empty or zero dose; see refusedFieldProps. */
-    invalid?: boolean;
+    errorField?: DoseErrorField;
     errorId?: string;
 }
 
-const inputCls =
-    'input-base w-full text-[var(--text)] font-medium [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none';
+const inputCls = 'input-base w-full text-[var(--text)] font-medium';
 
 // Common transdermal E2 patch nominal release rates (µg/day).
 const RATE_PRESETS = [25, 37.5, 50, 75, 100];
@@ -30,8 +30,6 @@ const WEAR_PRESETS: { days: number; labelKey: string }[] = [
     { days: 3.5, labelKey: 'patch.wear.twice_week' },
     { days: 7, labelKey: 'patch.wear.weekly' },
 ];
-
-const formatNum = (val: number) => String(val);
 
 const chipCls = (active: boolean) =>
     `inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
@@ -49,10 +47,11 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
     onRawChange,
     patchWearDays,
     setPatchWearDays,
-    invalid,
+    errorField,
     errorId,
 }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
+    const locale = LOCALE_MAP[lang] ?? 'en-US';
 
     const modes: { key: 'dose' | 'rate'; label: string }[] = [
         { key: 'rate', label: t('field.patch_rate') },
@@ -60,8 +59,8 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
     ];
     const modeAnim = useSwitchAnimation(patchMode, MODE_ORDER);
 
-    const currentRate = parseFloat(patchRate);
-    const currentWear = parseFloat(patchWearDays);
+    const currentRate = recordDecimalValue(patchRate, locale);
+    const currentWear = recordDecimalValue(patchWearDays, locale);
     const rateId = React.useId();
     const rawId = React.useId();
     const wearId = React.useId();
@@ -80,11 +79,9 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         </label>
                         <input
                             id={rateId}
-                            {...refusedFieldProps(patchRate, invalid, errorId)}
-                            type="number"
+                            {...refusedFieldProps(errorField === 'patchRate', errorId)}
+                            type="text"
                             inputMode="decimal"
-                            min="0"
-                            step="1"
                             value={patchRate}
                             onChange={e => setPatchRate(e.target.value)}
                             className={inputCls}
@@ -99,12 +96,12 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                                 <button
                                     key={r}
                                     type="button"
-                                    onClick={() => setPatchRate(String(r))}
+                                    onClick={() => setPatchRate(formatRecordDecimal(r, locale))}
                                     className={chipCls(
                                         Number.isFinite(currentRate) && Math.abs(currentRate - r) < 1e-6,
                                     )}
                                 >
-                                    {formatNum(r)} µg/d
+                                    {formatRecordDecimal(r, locale)} µg/d
                                 </button>
                             ))}
                         </div>
@@ -116,11 +113,9 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         </label>
                         <input
                             id={rawId}
-                            {...refusedFieldProps(rawDose, invalid, errorId)}
-                            type="number"
+                            {...refusedFieldProps(errorField === 'raw', errorId)}
+                            type="text"
                             inputMode="decimal"
-                            min="0"
-                            step="0.001"
                             value={rawDose}
                             onChange={e => onRawChange(e.target.value)}
                             className={inputCls}
@@ -139,10 +134,9 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                 </label>
                 <input
                     id={wearId}
-                    type="number"
+                    {...refusedFieldProps(errorField === 'patchWear', errorId)}
+                    type="text"
                     inputMode="decimal"
-                    min="0"
-                    step="0.5"
                     value={patchWearDays}
                     onChange={e => setPatchWearDays(e.target.value)}
                     className={inputCls}
@@ -154,10 +148,10 @@ const PatchFields: React.FC<PatchFieldsProps> = ({
                         <button
                             key={w.days}
                             type="button"
-                            onClick={() => setPatchWearDays(String(w.days))}
+                            onClick={() => setPatchWearDays(formatRecordDecimal(w.days, locale))}
                             className={chipCls(Number.isFinite(currentWear) && Math.abs(currentWear - w.days) < 1e-6)}
                         >
-                            {t(w.labelKey)} ({formatNum(w.days)} d)
+                            {t(w.labelKey)} ({formatRecordDecimal(w.days, locale)} d)
                         </button>
                     ))}
                     <button

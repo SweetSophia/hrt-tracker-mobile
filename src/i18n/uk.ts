@@ -353,6 +353,8 @@ export const UK = {
     'timeline.batch_desc': 'Повторювати цю дозу з постійним інтервалом',
     'timeline.batch_interval': 'Інтервал (дні)',
     'timeline.batch_count': 'Кількість',
+    'timeline.batch_count_min': 'Введіть щонайменше 2 дози.',
+    'timeline.batch_check_fields': 'Перед збереженням перевірте інтервал і кількість доз.',
     'timeline.batch_hint': 'Починаючи з вибраного часу дози, один запис кожні {d} дн., усього записів: {n}.',
     'timeline.future': 'Заплановано',
     'timeline.records': 'Записи',
@@ -396,6 +398,7 @@ export const UK = {
     'import.replace_complete_partial':
         'Відновлення не завершилося. Застосунок перезавантажиться і поверне пристрій до попереднього стану.',
     'error.nonPositive': 'Значення має бути більшим за нуль.',
+    'error.decimalFormat': 'Введіть число у форматі {example}. Цифри цілої частини вводьте разом.',
     'error.weightRange': 'Вага має бути від 20 до 400 кг.',
     'error.birthYearRange': 'Рік народження має бути від {min} до {max}.',
     'error.slHoldMinOne': 'Час під язиком має бути не менше 1 хвилини.',

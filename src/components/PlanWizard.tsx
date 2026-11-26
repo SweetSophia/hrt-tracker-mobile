@@ -297,7 +297,7 @@ const PlanWizard: React.FC<PlanWizardProps> = ({ plan, onAdd, onCancel, aboveNav
                             )}
                             {draft.route === Route.gel && draft.ester === Ester.E2 && (
                                 <div className="mt-3">
-                                    <GelDoseConverter onApply={mg => patch({ dose: mg })} />
+                                    <GelDoseConverter onApply={mg => patch({ dose: String(mg) })} />
                                 </div>
                             )}
                         </div>

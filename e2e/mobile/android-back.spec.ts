@@ -183,7 +183,7 @@ test('collapsed planned doses release Back without discarding the retained draft
     await planned.click();
     await page.getByRole('button', { name: /3.00 mg/ }).click();
     const form = page.locator('form').filter({ has: page.getByRole('button', { name: 'Delete', exact: true }) });
-    const dose = form.locator('input[type="number"]').first();
+    const dose = form.getByLabel('Dose (mg)', { exact: true });
     await dose.fill('4');
     const selector = form.locator('button[aria-haspopup="listbox"]').first();
     await selector.click();
