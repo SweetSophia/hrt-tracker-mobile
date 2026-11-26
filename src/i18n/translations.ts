@@ -3,8 +3,9 @@ import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { RU } from './ru';
 import { UK } from './uk';
+import type { Lang } from './languages';
 
-export type { Lang } from './languages';
+export type { Lang };
 
 export const TRANSLATIONS_BASE = {
     zh: {
@@ -763,6 +764,7 @@ export const TRANSLATIONS_BASE = {
         'opsec.callout.important': '重要',
         'opsec.callout.warning': '注意',
         'opsec.callout.caution': '警告',
+        'opsec.english_fallback': '英文版',
         'pk_viz.subtitle': '用简化模型直观展示药物浓度随时间的变化',
         'pk_viz.model': '模型',
         'pk_viz.dose': '剂量',
@@ -2204,6 +2206,7 @@ export const TRANSLATIONS_BASE = {
         'opsec.callout.important': 'Important',
         'opsec.callout.warning': 'Warning',
         'opsec.callout.caution': 'Caution',
+        'opsec.english_fallback': 'English version',
         'pk_viz.subtitle': 'A simplified model of how a level changes over time',
         'pk_viz.model': 'Model',
         'pk_viz.dose': 'Dose',
@@ -8779,4 +8782,4 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.uk,
         ...APPEARANCE_COPY.uk,
     },
-} as const;
+} as const satisfies Record<Lang, Record<string, string>>;

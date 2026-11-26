@@ -168,13 +168,13 @@ const copy: Record<Lang, ShareCopy> = {
         expiryTooFar: 'Freigabelinks können höchstens bis Ende 2100 gültig sein.',
         expiryLongWarning:
             'Über 365 Tage hinaus lässt sich die Sicherheit nicht garantieren. Bis zum Ablauf kann jede Person mit dem Link ihn öffnen.',
-        publicTitle: 'Geteilter Dosierungsverlauf',
+        publicTitle: 'Geteilter Verlauf der Dosen',
         sharedOn: 'Geteilt',
         expiresOn: 'Läuft ab',
         neverExpires: 'Läuft nie ab',
         protected: 'Passwortgeschützt',
         chartTitle: 'Dosierungsdiagramm',
-        historyTitle: 'Dosierungsverlauf',
+        historyTitle: 'Verlauf der Dosen',
         records: 'Einträge',
         disclaimer:
             'Das Diagramm zeigt eine Modellschätzung auf Grundlage der erfassten Dosen. Sie dient nicht als medizinischer Rat und ersetzt weder Blutuntersuchungen noch ärztliche Betreuung.',

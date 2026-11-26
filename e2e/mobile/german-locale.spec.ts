@@ -12,6 +12,7 @@ import {
     type BundleFixture,
     type DoseEventFixture,
     type LabFixture,
+    type PlanFixture,
     type TemplateFixture,
 } from '../helpers';
 
@@ -35,6 +36,9 @@ const de = {
     next: 'Weiter',
     skip: 'Überspringen',
     timelineTitle: 'Verlauf der Dosen',
+    planTitle: 'Medikationsplan',
+    forecastEntry: 'Was-wäre-wenn',
+    forecastCurrent: 'Aktuell',
     labAdd: 'Laborwert hinzufügen',
     labE2: 'Estradiolwert',
     addDose: 'Dosis hinzufügen',
@@ -177,6 +181,20 @@ test('Settings switches between Deutsch and English and the choice survives relo
     const heading = page.getByRole('heading', { name: de.timelineTitle, exact: true });
     await expect(heading).toBeVisible();
     await expectFullText(heading);
+    // Width alone can hold while one word still breaks across lines, so each
+    // word of the heading must render as a single line box. Wrapping between
+    // words is fine; a range around a split word reports two boxes.
+    const linesPerWord = await heading.evaluate(el => {
+        const node = el.firstChild;
+        if (node?.nodeType !== Node.TEXT_NODE) return [];
+        return Array.from((node.textContent ?? '').matchAll(/\S+/g), ({ 0: word, index }) => {
+            const range = document.createRange();
+            range.setStart(node, index);
+            range.setEnd(node, index + word.length);
+            return new Set(Array.from(range.getClientRects(), rect => rect.top)).size;
+        });
+    });
+    expect(linesPerWord).toEqual(de.timelineTitle.split(' ').map(() => 1));
     const header = page.locator('.glass-bar').filter({ has: heading });
     await expectTouchSize(header.getByRole('button', { name: de.addDose, exact: true }));
     await expect(bottomNav(page).getByRole('button', { name: de.home, exact: true })).toBeVisible();
@@ -319,6 +337,53 @@ test('a complete backup exported in German restores hrt-lang and records into a 
     await expect(cleanPage.getByText('1,5 pg/mL').first()).toBeVisible();
 
     await clean.close();
+});
+
+test('the German plan and forecast read 2,5 mg alle 3,5 Tage', async ({ page, context }) => {
+    const plan: PlanFixture = {
+        id: 'de-plan-1',
+        route: 'injection',
+        ester: 'EV',
+        doseMG: 2.5,
+        extras: {},
+        everyDays: 3.5,
+        timesPerDay: 1,
+    };
+    const dose: DoseEventFixture = {
+        id: 'de-plan-dose',
+        route: 'injection',
+        ester: 'EV',
+        doseMG: 2.5,
+        timeH: nowHours() - 1,
+        extras: {},
+        updatedAt: stamp(),
+    };
+    await seedStorage(
+        context,
+        baseStorage({
+            'hrt-lang': 'de',
+            'hrt-plan': JSON.stringify([plan]),
+            'hrt-events': JSON.stringify([dose]),
+        }),
+    );
+    await page.goto('/');
+    await expect(bottomNav(page).getByRole('button', { name: de.home, exact: true })).toBeVisible();
+
+    // The plan row writes its dose and rhythm in the app's de-DE formatting:
+    // 2,5 mg every 3,5 days, never the point decimals of the stored numbers.
+    await page.getByRole('button', { name: de.planTitle, exact: true }).tap();
+    await expect(page.getByRole('button', { name: /^Medikationsplan\s*,\s*Zurück$/ })).toBeVisible();
+    await expect(page.getByText('2,5 mg').first()).toBeVisible();
+    await expect(page.getByText('Alle 3,5 Tage', { exact: true })).toBeVisible();
+
+    // The forecast's current regimen states the same numbers through its own
+    // interval path.
+    await bottomNav(page).getByRole('button', { name: de.home, exact: true }).tap();
+    await page.getByRole('button', { name: de.forecastEntry, exact: true }).tap();
+    await expect(page.getByRole('button', { name: /^Was-wäre-wenn\s*,\s*Zurück$/ })).toBeVisible();
+    const currentRegimen = page.locator('section').filter({ has: page.getByText(de.forecastCurrent, { exact: true }) });
+    await expect(currentRegimen.getByText('2,5 mg')).toBeVisible();
+    await expect(currentRegimen.getByText('alle 3,5 Tage', { exact: true })).toBeVisible();
 });
 
 test('a fractional German dose template shows 2,5 mg and loads with a comma', async ({ page, context }) => {

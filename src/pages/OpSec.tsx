@@ -316,8 +316,13 @@ const OpSecArticle: React.FC<{ content: OpSecContent; onBack: () => void }> = ({
                 title={englishFallback ? t('opsec.title') : content.title}
                 columnClassName={OPSEC_COLUMN}
             />
-            <div className={`${OPSEC_COLUMN} pt-2`} lang={englishFallback ? 'en' : undefined}>
-                {englishFallback && <p className="mb-4 text-sm text-muted">English</p>}
+            {englishFallback && (
+                <p className={`${OPSEC_COLUMN} pt-2 mb-4 text-sm text-muted`}>{t('opsec.english_fallback')}</p>
+            )}
+            <div
+                className={englishFallback ? OPSEC_COLUMN : `${OPSEC_COLUMN} pt-2`}
+                lang={englishFallback ? 'en' : undefined}
+            >
                 <div className="grid grid-cols-1 gap-12 min-[1200px]:grid-cols-[minmax(0,40rem)_11rem]">
                     <article ref={articleRef} className="opsec-prose min-w-0">
                         <section className="opsec-disclaimer">

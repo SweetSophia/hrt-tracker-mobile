@@ -62,8 +62,11 @@ test.describe('share link expiry (L3 browser)', () => {
         await expect(page.getByText('Your share link is ready')).toBeVisible();
 
         // A German viewer opens the link: the shared renderer follows the
-        // viewer's app language and keeps the stored comma decimal.
-        const link = await page.locator('#created-share-link').inputValue();
+        // viewer's app language and keeps the stored comma decimal. The
+        // created URL points at the worker origin, whose static assets are a
+        // stale local dist, so the viewer opens the same share route — its
+        // path, query, and key fragment — against the Vite origin under test.
+        const link = new URL(await page.locator('#created-share-link').inputValue());
         const viewer = await browser.newContext({
             baseURL: new URL(page.url()).origin,
             locale: 'en-US',
@@ -71,9 +74,9 @@ test.describe('share link expiry (L3 browser)', () => {
         });
         await seedStorage(viewer, baseStorage({ 'hrt-lang': 'de' }));
         const viewerPage = await viewer.newPage();
-        await viewerPage.goto(link);
+        await viewerPage.goto(`${link.pathname}${link.search}${link.hash}`);
         await expect(
-            viewerPage.getByRole('heading', { name: 'Geteilter Dosierungsverlauf', exact: true }),
+            viewerPage.getByRole('heading', { name: 'Geteilter Verlauf der Dosen', exact: true }),
         ).toBeVisible();
         await expect(viewerPage.getByText('2,50 mg', { exact: true })).toBeVisible();
         await viewer.close();

@@ -31,7 +31,7 @@ import { AddCancelLabel, SwapLabel } from '../components/StableLabel';
 import { CopyTick } from '../components/Tick';
 import { scrollParent } from '../utils/scrollParent';
 import { inertWhen } from '../utils/inert';
-import { formatRecordSummary } from '../utils/recordDecimal';
+import { formatRecordPercent, formatRecordSummary } from '../utils/recordDecimal';
 
 interface LabProps {
     t: (key: string) => string;
@@ -128,7 +128,6 @@ const Lab: React.FC<LabProps> = ({
     const hasCal = modelReady && calibration.points.length > 0;
     const hormoneAdvisory = useMemo(() => getHormoneLevelAdvisory(labResults), [labResults]);
     const locale = LOCALE_MAP[lang];
-    const percent = lang === 'de' ? ' %' : '%';
 
     // One-line summary of the active calibration for the settings entry row.
     // Before any usable labs exist there's no fit to show, so we fall back to
@@ -141,7 +140,9 @@ const Lab: React.FC<LabProps> = ({
               : [
                     t(`cal.${calibrationMethod}`),
                     `×${formatRecordSummary(calibration.scale.toFixed(2), locale)}`,
-                    calibration.fitErrPct !== null ? `±${calibration.fitErrPct.toFixed(0)}${percent}` : null,
+                    calibration.fitErrPct !== null
+                        ? `±${formatRecordPercent(calibration.fitErrPct.toFixed(0), locale)}`
+                        : null,
                 ]
                     .filter(Boolean)
                     .join(', ');
@@ -330,7 +331,7 @@ const Lab: React.FC<LabProps> = ({
                                                                 }}
                                                             >
                                                                 {pct === 0
-                                                                    ? `±0${percent}`
+                                                                    ? `±${formatRecordPercent(0, locale)}`
                                                                     : fill(
                                                                           t(
                                                                               pct > 0

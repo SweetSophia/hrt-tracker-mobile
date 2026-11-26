@@ -42,9 +42,16 @@ export function formatRecordDecimal(value: number | string, locale: string): str
     return String(value).replace('.', numberSeparators(locale).decimal);
 }
 
+const isGermanLocale = (locale: string) => locale.split('-')[0].toLowerCase() === 'de';
+
 /** German summaries use the app's decimal marker. Earlier locales use canonical record notation. */
-export function formatRecordSummary(value: number | string, locale?: string): string {
-    return formatRecordDecimal(value, locale === 'de-DE' ? locale : 'en-US');
+export function formatRecordSummary(value: number | string, locale = 'en-US'): string {
+    return formatRecordDecimal(value, isGermanLocale(locale) ? locale : 'en-US');
+}
+
+/** Accept an already rounded percent value, so each display keeps its precision. */
+export function formatRecordPercent(value: number | string, locale: string): string {
+    return `${formatRecordSummary(value, locale)}${isGermanLocale(locale) ? '\u00a0' : ''}%`;
 }
 
 /** For previews and controls that only need a complete number. */

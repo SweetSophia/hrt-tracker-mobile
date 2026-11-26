@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { Ester, Route } from '../logic';
 import * as locale from '../src/i18n/locale';
 import { sinceDoseLabel } from '../src/utils/labReport';
-import { formatRecordDecimal, formatRecordSummary, parseRecordDecimal } from '../src/utils/recordDecimal';
+import {
+    formatRecordDecimal,
+    formatRecordPercent,
+    formatRecordSummary,
+    parseRecordDecimal,
+} from '../src/utils/recordDecimal';
 import { frequencyLabel, regimenLabel } from '../src/utils/regimenText';
 
 describe('record decimal entry', () => {
@@ -52,8 +57,15 @@ describe('record decimal entry', () => {
 
     it('keeps summary precision with a German decimal comma', () => {
         expect(formatRecordSummary(34.125, 'de-DE')).toBe('34,125');
-        expect(formatRecordSummary('2.50', 'de-DE')).toBe('2,50');
+        expect(formatRecordSummary('2.50', 'de')).toBe('2,50');
+        expect(formatRecordSummary('2.50', 'ru-RU')).toBe('2.50');
         expect(formatRecordSummary('2.50')).toBe('2.50');
+    });
+
+    it('keeps German percentage spacing consistent across summaries', () => {
+        expect(formatRecordPercent('5', 'de-DE')).toBe('5\u00a0%');
+        expect(formatRecordPercent(85, 'de')).toBe('85\u00a0%');
+        expect(formatRecordPercent(85, 'en-US')).toBe('85%');
     });
 
     it('formats German amounts and intervals in Plan and Forecast', () => {

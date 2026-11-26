@@ -42,6 +42,11 @@ test('the German OpSec heading stays localized when the English guide loads', as
     await page.getByRole('button', { name: 'Alltagssicherheit', exact: true }).click();
 
     const guide = page.locator('[lang="en"]').filter({ has: page.locator('article.opsec-prose') });
-    await expect(guide.getByText('English', { exact: true })).toBeVisible();
+    await expect(guide).toBeVisible();
+    const marker = page.getByText('Englische Fassung', { exact: true });
+    await expect(marker).toBeVisible();
+    // The marker stays outside the English body so screen readers announce
+    // it in German before the English guide.
+    await expect(guide.getByText('Englische Fassung')).toHaveCount(0);
     await expect(page.getByText('Alltagssicherheit', { exact: true })).toBeVisible();
 });
