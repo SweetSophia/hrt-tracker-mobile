@@ -20,16 +20,16 @@
    setup, translations, and releases.
 4. The document for the area you are touching:
 
-| If you touch                            | Read first                                                                                                               |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Pharmacokinetic model or dosing         | [`Algorithm Explanation.md`](../Algorithm%20Explanation.md)                                                              |
-| Security, auth, crypto, privacy         | [`SECURITY.md`](../SECURITY.md), [`PRIVACY.md`](../PRIVACY.md), [`wiki/Security.md`](../wiki/Security.md)                |
-| Worker API, D1, R2                      | [`wiki/Architecture.md`](../wiki/Architecture.md), [`docs/tool-interface/TOOL_API.md`](./tool-interface/TOOL_API.md)     |
-| Share links and backups                 | [`docs/backup-schema-audit/BACKUP_TEST_VECTORS.md`](./backup-schema-audit/BACKUP_TEST_VECTORS.md)                        |
-| F2F cohorts or the raw `hrt/1` protocol | [`docs/hrt-protocol/F2F_SERVICE.md`](./hrt-protocol/F2F_SERVICE.md), [`hrt-server/README.md`](../hrt-server/README.md)   |
-| UI, styling, motion                     | [`design/system/README.md`](../design/system/README.md), [`src/styles/oyama-tokens.css`](../src/styles/oyama-tokens.css) |
-| Deployment, versions, wiki              | [`wiki/Deployment.md`](../wiki/Deployment.md), [`wiki/Deployment-Docker.md`](../wiki/Deployment-Docker.md)               |
-| Security reports                        | [`wiki/Security-Reporting.md`](../wiki/Security-Reporting.md)                                                            |
+| If you touch                            | Read first                                                                                                                                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pharmacokinetic model or dosing         | [`Algorithm Explanation.md`](../Algorithm%20Explanation.md)                                                                                                                       |
+| Security, auth, crypto, privacy         | [`SECURITY.md`](../SECURITY.md), [`PRIVACY.md`](../PRIVACY.md), [`wiki/Security.md`](../wiki/Security.md)                                                                         |
+| Worker API, D1, R2                      | [`wiki/Architecture.md`](../wiki/Architecture.md), [`docs/tool-interface/TOOL_API.md`](./tool-interface/TOOL_API.md)                                                              |
+| Share links and backups                 | [`docs/backup-schema-audit/BACKUP_TEST_VECTORS.md`](./backup-schema-audit/BACKUP_TEST_VECTORS.md)                                                                                 |
+| F2F cohorts or the raw `hrt/1` protocol | [`docs/hrt-protocol/F2F_SERVICE.md`](./hrt-protocol/F2F_SERVICE.md), [`hrt-server/README.md`](../hrt-server/README.md)                                                            |
+| UI, styling, motion                     | [`design/system/README.md`](../design/system/README.md), [`src/styles/oyama-tokens.css`](../src/styles/oyama-tokens.css), [`src/styles/palettes.css`](../src/styles/palettes.css) |
+| Deployment, versions, wiki              | [`wiki/Deployment.md`](../wiki/Deployment.md), [`wiki/Deployment-Docker.md`](../wiki/Deployment-Docker.md)                                                                        |
+| Security reports                        | [`wiki/Security-Reporting.md`](../wiki/Security-Reporting.md)                                                                                                                     |
 
 `CONTRIBUTING.md` and the wiki are useful, but they are summaries. The source
 files named below are canonical.
@@ -194,9 +194,9 @@ The share key must never be sent to the server. It belongs in the URL fragment
 ### UI, design, and translations
 
 - Read [`design/system/README.md`](../design/system/README.md) before visual
-  changes. It is the v3 design system; the editor rule
-  `.cursor/rules/design-system.mdc` is the older v2 summary. When they differ,
-  the v3 document and `src/styles/oyama-tokens.css` win.
+  changes. It describes the v3 design system. Use `src/styles/oyama-tokens.css`
+  for base tokens and `src/styles/palettes.css` for palette overrides. The
+  editor rule `.cursor/rules/design-system.mdc` summarizes v2.
 - Use the existing tokens and components. Do not hard-code colors, spacing,
   radii, or shadows.
 - Every visible string goes through `t()`. Add the key to every language

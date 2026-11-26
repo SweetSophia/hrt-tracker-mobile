@@ -32,15 +32,7 @@ type Cell = { col: number; row: number; date: Date; key: string; count: number; 
  * `isMono` branch: nothing here is distinguished by colour alone, only by
  * lightness, and lightness survives the filter.
  */
-const DoseHeatmap = ({
-    events,
-    isDarkMode = false,
-    className = '',
-}: {
-    events: DoseEvent[];
-    isDarkMode?: boolean;
-    className?: string;
-}) => {
+const DoseHeatmap = ({ events, className = '' }: { events: DoseEvent[]; className?: string }) => {
     const { t, lang } = useTranslation();
     const locale = LOCALE_MAP[lang] || 'en-US';
 
@@ -65,13 +57,6 @@ const DoseHeatmap = ({
         }, 60000);
         return () => clearInterval(id);
     }, []);
-
-    // Same terracotta family as the chart. Empty is the chart's grid neutral;
-    // the four filled steps climb from a light tint to a deep burnt shade.
-    const c = isDarkMode
-        ? // heatmap-0…4 and chart-axis from the design tokens, as hex for SVG.
-          { empty: '#2c2a26', axis: '#a7a49e', ring: '#df8f74', levels: ['#4d271a', '#924833', '#cc785c', '#f0ad96'] }
-        : { empty: '#eeedea', axis: '#6b6860', ring: '#cc785c', levels: ['#fee7de', '#f0ad96', '#cc785c', '#924833'] };
 
     // The plot is laid out in raw SVG units, so unlike the rest of the UI it
     // does not follow the root font size. Reading that size back keeps the
@@ -310,7 +295,7 @@ const DoseHeatmap = ({
                                 x={x(m.col)}
                                 y={header - 5 * ui}
                                 fontSize={13 * ui}
-                                fill={c.axis}
+                                fill="var(--chart-axis)"
                             >
                                 {m.label}
                             </text>
@@ -324,7 +309,7 @@ const DoseHeatmap = ({
                                 y={y(w.row) + cell / 2 + 4 * ui}
                                 textAnchor="end"
                                 fontSize={13 * ui}
-                                fill={c.axis}
+                                fill="var(--chart-axis)"
                             >
                                 {w.label}
                             </text>
@@ -350,8 +335,8 @@ const DoseHeatmap = ({
                                             width={cell}
                                             height={cell}
                                             rx={Math.max(2, cell * 0.22)}
-                                            fill={level === 0 ? c.empty : c.levels[level - 1]}
-                                            stroke={isHover || isToday ? c.ring : 'none'}
+                                            fill={`var(--heatmap-${level})`}
+                                            stroke={isHover || isToday ? 'var(--heatmap-ring)' : 'none'}
                                             strokeWidth={1}
                                             /* Empty days sit back a little. Fixed, not
                                                keyed off hover — an outline is the hover

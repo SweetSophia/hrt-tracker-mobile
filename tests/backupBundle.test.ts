@@ -34,7 +34,7 @@ import {
 } from '../src/utils/syncMerge';
 import { normalizePlanItem, regimensFromPlan } from '../src/utils/plan';
 import { planCompleteBackup } from '../src/records';
-import { namespacesFor, type RecordScope } from '../src/records/scope';
+import { namespacesFor, PORTABLE_PREFERENCE_KEYS, type RecordScope } from '../src/records/scope';
 import type { RecordContext } from '../src/records/snapshot';
 import type { StoreSnapshots } from '../src/platform/contracts';
 import { WebRecordStore } from '../src/platform/web/recordStore';
@@ -542,8 +542,9 @@ describe('complete backup bundle data layer', () => {
         expect(target.getItem('app-auto-backup')).toBeNull();
     });
 
-    it('carries a validated palette through merge and replace planning and keeps an old backup from overwriting one', async () => {
+    it('round-trips portable preferences and keeps the saved palette when an older backup omits it', async () => {
         const bundle = build(seed());
+        expect(Object.keys(bundle.preferences).sort()).toEqual([...PORTABLE_PREFERENCE_KEYS].sort());
 
         const mergeStorage = new MemoryStorage();
         const mergeStore = new WebRecordStore(mergeStorage, 'offline');
@@ -589,6 +590,7 @@ describe('complete backup bundle data layer', () => {
         const planned = planCompleteBackup(await planningContext(keepStore), imported, 'merge', NOW);
         await keepStore.commit(planned.changes);
         expect(keepStorage.getItem('app-palette')).toBe('plum');
+        expect(keepStorage.getItem('app-theme')).toBe('dark');
     });
 
     it('keeps credentials out of the exported JSON even when storage is seeded with them', () => {
@@ -598,16 +600,6 @@ describe('complete backup bundle data layer', () => {
         expect(serialized).not.toContain('synthetic-password');
         expect(serialized).not.toContain('synthetic-passes');
         expect(serialized).not.toContain('synthetic-key');
-        expect(Object.keys(bundle.preferences).sort()).toEqual(
-            [
-                'app-hide-site-label',
-                'app-palette',
-                'app-show-prediction',
-                'app-theme',
-                'hrt-lang',
-                'hrt-supply-lead-days',
-            ].sort(),
-        );
     });
 
     it('names no account when exported signed out, and leaves formatVersion at 1', () => {

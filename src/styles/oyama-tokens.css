@@ -50,6 +50,7 @@
     --heatmap-2: oklch(80.5% 0.085 40);
     --heatmap-3: oklch(65.8% 0.1131 39.15);
     --heatmap-4: oklch(49% 0.105 37);
+    --heatmap-ring: var(--heatmap-3);
     --illustration-line: oklch(65.8% 0.1131 39.15);
     --illustration-wash: oklch(97.5% 0.012 45);
     /* For a drawing with volume (the injection syringe): the body of what's
@@ -297,7 +298,9 @@
     --heatmap-0: oklch(28.5% 0.008 87);
     --heatmap-1: oklch(32% 0.062 38);
     --heatmap-2: oklch(49% 0.105 37);
+    --heatmap-3: oklch(65.8% 0.1131 39.15);
     --heatmap-4: oklch(80.5% 0.085 40);
+    --heatmap-ring: oklch(72.5% 0.105 39);
     --illustration-line: oklch(72.5% 0.105 39);
     --illustration-wash: oklch(24.5% 0.04 40);
     --illustration-shade: oklch(31% 0.05 38);

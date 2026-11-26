@@ -20,7 +20,8 @@ A palette recolours the accent and the primary estimated series of the charts
 (`--accent`, `--chart-line` and `--chart-band`) in light and dark. Lab
 markers (`--chart-lab`) and the dose heatmap keep their clay colours in
 every palette, so measured levels and recorded doses stay distinct from the
-estimated levels.
+estimated levels. Black & white uses the Terracotta tokens under a grayscale
+filter. The saved palette returns when the display mode changes.
 
 ## Rules
 

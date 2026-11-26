@@ -116,10 +116,10 @@ controls. Language changes apply immediately and are stored with your local
 settings.
 
 In Appearance, choose a display mode and a color theme. The app respects the
-system preference where the browser exposes it. The color theme offers
-Terracotta, Plum, and Teal for the accent and the estimated curve in the
-charts. Black & white pauses the palette. The saved palette returns when you
-switch display modes.
+system preference where the browser exposes it. Terracotta, Plum, and Teal
+set the app accent and the estimated curves in Overview and What-if.
+Public shared records use the default Terracotta palette. Black & white
+pauses the palette. The saved palette returns when you switch display modes.
 
 ## Administrators
 

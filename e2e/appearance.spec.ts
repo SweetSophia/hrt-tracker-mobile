@@ -74,7 +74,7 @@ test('Black & white keeps its legacy look and remembers the last color theme', a
     await expect(root).toHaveCSS('filter', 'grayscale(1)');
     await expect.poll(() => accent(page)).toBe(monoAccent);
     await expect(teal).toBeDisabled();
-    await expect(teal).not.toHaveAttribute('aria-pressed', 'true');
+    expect(await teal.getAttribute('aria-pressed')).toBeNull();
     await expect(page.getByRole('region', { name: 'Color theme' })).toHaveAccessibleDescription(
         'Your saved color theme returns when you switch to another display mode.',
     );
@@ -112,17 +112,54 @@ test('each registered palette supplies a distinct swatch, accent and chart color
             swatches.add(await swatch.evaluate(element => getComputedStyle(element).backgroundColor));
             await choice.click();
             await expect(choice).toHaveAttribute('aria-pressed', 'true');
-            accents.add(await accent(page));
+            const accentColor = await accent(page);
+            expect(accentColor).not.toBe('');
+            accents.add(accentColor);
             const chartLine = await page
                 .locator('html')
                 .evaluate(root => getComputedStyle(root).getPropertyValue('--chart-line').trim());
             expect(chartLine).not.toBe('');
+            if (mode === 'Dark') expect(chartLine).toBe(accentColor);
+            else expect(chartLine).not.toBe(accentColor);
             chartLines.add(chartLine);
         }
         expect(swatches.size).toBe(COLOR_PALETTES.length);
         expect(accents.size).toBe(COLOR_PALETTES.length);
         expect(chartLines.size).toBe(COLOR_PALETTES.length);
     }
+});
+
+test('the dose heatmap follows live System scheme changes', async ({ page, context }) => {
+    const events = [
+        {
+            id: 'heatmap-scheme-dose',
+            route: 'oral',
+            ester: 'E2',
+            doseMG: 2,
+            timeH: Math.floor(Date.now() / 3_600_000) - 24,
+            extras: {},
+        },
+    ];
+    await page.emulateMedia({ colorScheme: 'light' });
+    await seedStorage(context, baseStorage({ 'hrt-weight': '70', 'hrt-events': JSON.stringify(events) }));
+    await gotoApp(page);
+
+    const root = page.locator('html');
+    const firstDay = page
+        .getByRole('img', { name: /in the last \d+ days/ })
+        .locator('rect')
+        .first();
+    const dayColor = () => firstDay.evaluate(day => getComputedStyle(day).fill);
+    await expect(root).toHaveClass(/\blight\b/);
+    await expect(page.locator('svg g[clip-path^="url(#clip-p-"] > path').first()).toBeVisible();
+    const light = await dayColor();
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(root).toHaveClass(/\bdark\b/);
+    await expect.poll(dayColor, { timeout: 4000 }).not.toBe(light);
+
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect.poll(dayColor).toBe(light);
 });
 
 test('a color theme recolors the main trends while the comparison series keeps its color', async ({
