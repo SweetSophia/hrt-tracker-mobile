@@ -38,7 +38,12 @@ import { useEscapeLayer, SelectChevron } from './CustomSelect';
 import GuideFold from './dose_form/GuideFold';
 import Tick from './Tick';
 import { cleanDoseMG } from '../utils/cleanDose';
-import { formatRecordDecimal, parseRecordDecimal, recordDecimalValue } from '../utils/recordDecimal';
+import {
+    formatRecordDecimal,
+    formatRecordSummary,
+    parseRecordDecimal,
+    recordDecimalValue,
+} from '../utils/recordDecimal';
 import { inertWhen } from '../utils/inert';
 
 export interface DoseTemplate {
@@ -734,7 +739,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
         const what =
             ev.route === Route.patchRemove
                 ? t('route.patchRemove')
-                : doseOf(rate ? `${rate} µg/d` : `${trimDose(ev.doseMG)} mg`, drugLabel(ev.ester, t), t);
+                : doseOf(
+                      rate
+                          ? `${formatRecordSummary(rate, lang)} µg/d`
+                          : `${formatRecordSummary(trimDose(ev.doseMG), lang)} mg`,
+                      drugLabel(ev.ester, t),
+                      t,
+                  );
         const when = new Date(ev.timeH * 3600000).toLocaleString(LOCALE_MAP[lang] || 'en-US', {
             month: 'short',
             day: 'numeric',
@@ -822,8 +833,8 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                             <span className="block">{t(`route.${template.route}`)}</span>
                                             <span className="block">
                                                 {template.extras[ExtraKey.releaseRateUGPerDay]
-                                                    ? `${template.extras[ExtraKey.releaseRateUGPerDay]} µg/d`
-                                                    : `${trimDose(template.doseMG)} mg`}
+                                                    ? `${formatRecordSummary(template.extras[ExtraKey.releaseRateUGPerDay], lang)} µg/d`
+                                                    : `${formatRecordSummary(trimDose(template.doseMG), lang)} mg`}
                                             </span>
                                         </div>
                                     </button>

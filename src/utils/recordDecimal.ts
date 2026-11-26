@@ -1,3 +1,5 @@
+import type { Lang } from '../i18n/translations';
+
 export type RecordDecimal = { kind: 'empty' | 'incomplete' | 'invalid' } | { kind: 'number'; value: number };
 
 type NumberSeparators = { decimal: '.' | ','; group?: string };
@@ -40,6 +42,12 @@ export function parseRecordDecimal(text: string, locale: string): RecordDecimal 
 /** Keep the stored number's precision and never add group separators. */
 export function formatRecordDecimal(value: number, locale: string): string {
     return String(value).replace('.', numberSeparators(locale).decimal);
+}
+
+/** German record summaries use comma decimals and keep the caller's precision. */
+export function formatRecordSummary(value: number | string, lang: Lang): string {
+    const text = String(value);
+    return lang === 'de' ? text.replace('.', ',') : text;
 }
 
 /** For previews and controls that only need a complete number. */

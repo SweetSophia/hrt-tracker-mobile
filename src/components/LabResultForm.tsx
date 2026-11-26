@@ -10,7 +10,12 @@ import CustomSelect, { SelectChevron } from './CustomSelect';
 import Segmented from './Segmented';
 import { LOCALE_MAP } from '../utils/helpers';
 import { clinicalUnit } from '../utils/clinicalUnit';
-import { formatRecordDecimal, parseRecordDecimal, type RecordDecimal } from '../utils/recordDecimal';
+import {
+    formatRecordDecimal,
+    formatRecordSummary,
+    parseRecordDecimal,
+    type RecordDecimal,
+} from '../utils/recordDecimal';
 
 type LabUnit = LabResult['unit'];
 
@@ -347,7 +352,7 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                         onClick={() =>
                             showDialog(
                                 'confirm',
-                                `${formatRecordDecimal(resultToEdit.concValue, lang === 'de' ? locale : 'en-US')} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
+                                `${formatRecordSummary(resultToEdit.concValue, lang)} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
                                 async () => {
                                     if (!(await onDelete(resultToEdit.id))) return;
                                     onCancel();

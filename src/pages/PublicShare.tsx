@@ -6,6 +6,7 @@ import ResultChart from '../components/ResultChart';
 import { useTranslation } from '../contexts/LanguageContext';
 import { getShareCopy } from '../i18n/share';
 import { LOCALE_MAP, formatWearDays } from '../utils/helpers';
+import { formatRecordSummary } from '../utils/recordDecimal';
 import { drugLabel } from '../utils/regimenText';
 import {
     LockedShare,
@@ -527,7 +528,7 @@ const SharedRecord = ({ details }: { details: ShareDetails }) => {
 
 /** A record as the History tab shows it, without the editing. */
 const DoseHistoryRow = ({ event, time, wornH }: { event: DoseEvent; time: string; wornH?: number }) => {
-    const { t } = useTranslation();
+    const { t, lang } = useTranslation();
     const isRemoval = event.route === Route.patchRemove;
     const releaseRate = event.extras[ExtraKey.releaseRateUGPerDay];
     const wearHours = event.extras[ExtraKey.patchWearH];
@@ -558,19 +559,30 @@ const DoseHistoryRow = ({ event, time, wornH }: { event: DoseEvent; time: string
                     <div className="mt-1 flex flex-wrap items-baseline gap-x-3 text-xs tabular-nums text-muted">
                         <span>{t(`route.${event.route}`)}</span>
                         {releaseRate ? (
-                            <span className="text-body">{releaseRate} µg/d</span>
+                            <span className="text-body">{formatRecordSummary(releaseRate, lang)} µg/d</span>
                         ) : (
                             <>
-                                <span className="font-medium text-body">{event.doseMG.toFixed(2)} mg</span>
+                                <span className="font-medium text-body">
+                                    {formatRecordSummary(event.doseMG.toFixed(2), lang)} mg
+                                </span>
                                 {event.ester !== Ester.E2 && isEstradiolEster(event.ester) && (
                                     <span className="opacity-70">
-                                        ({t('label.e2')} eq: {(event.doseMG * getToE2Factor(event.ester)).toFixed(2)}{' '}
+                                        ({t('label.e2')} eq:{' '}
+                                        {formatRecordSummary(
+                                            (event.doseMG * getToE2Factor(event.ester)).toFixed(2),
+                                            lang,
+                                        )}{' '}
                                         mg)
                                     </span>
                                 )}
                                 {isTestosteroneEster(event.ester) && event.ester !== Ester.T && (
                                     <span className="opacity-70">
-                                        ({t('label.t')} eq: {(event.doseMG * getToE2Factor(event.ester)).toFixed(2)} mg)
+                                        ({t('label.t')} eq:{' '}
+                                        {formatRecordSummary(
+                                            (event.doseMG * getToE2Factor(event.ester)).toFixed(2),
+                                            lang,
+                                        )}{' '}
+                                        mg)
                                     </span>
                                 )}
                             </>

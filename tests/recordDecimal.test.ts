@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRecordDecimal, parseRecordDecimal } from '../src/utils/recordDecimal';
+import { formatRecordDecimal, formatRecordSummary, parseRecordDecimal } from '../src/utils/recordDecimal';
 
 describe('record decimal entry', () => {
     it.each([
@@ -44,6 +44,12 @@ describe('record decimal entry', () => {
 
     it('keeps a blank amount separate from unfinished or malformed input', () => {
         expect(parseRecordDecimal(' ', 'ru-RU')).toEqual({ kind: 'empty' });
+    });
+
+    it('keeps summary precision with a German decimal comma', () => {
+        expect(formatRecordSummary(34.125, 'de')).toBe('34,125');
+        expect(formatRecordSummary('2.50', 'de')).toBe('2,50');
+        expect(formatRecordSummary('2.50', 'ru')).toBe('2.50');
     });
 
     it.each([
