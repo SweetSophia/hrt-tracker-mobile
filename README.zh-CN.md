@@ -8,13 +8,14 @@
 
 - **本机记录。** 支持女性化和男性化模式，可以记录用药和化验结果。记录加密保存在本机的 SQLCipher 数据库中，数据库密钥由 Android Keystore 保护。
 - **图表与用药计划。** 查看随时间变化的激素水平估算，与化验结果对照，并使用用药计划、库存和方案试算功能。换贴片时，也可以顺手把揭下旧贴片的时间一起记下来。
+- **主题配色。** 可以选陶土色、梅紫色或青绿色，搭配浅色、深色或跟随系统。完整备份也会保存你选好的配色。
 - **可迁移的备份。** 通过 Android 系统文件选择器保存或还原包含两种模式的完整备份。兼容的备份文件可以用于迁移网页版或早期 Android 预览版的记录。完整备份文件中的健康记录可直接读取。
 - **可选的更新检查。** 在「设置 → 关于」里可以检查 Android 版有没有更新。自动检查默认关闭，开启后会读取 GitHub 上的公开发布信息。
 - **手机操作与九种语言。** 支持 Android 返回操作，界面适配手机屏幕。可选简体中文、繁体中文、粤语、英语、日语、韩语、土耳其语、俄语和乌克兰语。
 
 ## 下载 Android 版
 
-[下载已签名的 Android 安装包（1.2.0）](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.2.0/hrt-tracker-1.2.0.apk) · [查看英文和简体中文发布说明](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.2.0)
+[下载已签名的 Android 安装包（1.3.0）](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.3.0/hrt-tracker-1.3.0.apk) · [查看英文和简体中文发布说明](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.3.0)
 
 HRT Tracker 支持 Android 7.0 及以上版本。如果已经装过正式版或 **HRT Tracker** 签名测试版，打开安装包，点“更新”就行。Android 包名为 `org.askarys.hrttracker`。iPhone 版计划在后续阶段推出。
 
