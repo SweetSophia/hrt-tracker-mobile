@@ -1280,10 +1280,10 @@ const DoseForm: React.FC<DoseFormProps> = ({
             {/* Footer Buttons. On a phone the template controls and Save
                 share one row, Save taking the rest of it; on rows of their own
                 they put Save under the floating nav for an injection at
-                390x844. Save keeps a 12rem basis and doesn't shrink, so when
-                the template name field opens it drops to a full row below.
-                Cancel and Save (the edit form in the list) keep a row of their
-                own, where neither label has to wrap. */}
+                390x844. Save keeps a 12rem basis, so when the template name
+                field opens it drops to a full row below. Cancel and Save (the
+                edit form in the list) keep a row of their own; at the largest
+                text sizes the two wrap and each takes the full width. */}
             <div
                 className={`flex flex-wrap gap-x-2 gap-y-2 justify-between items-center shrink-0 border-t-(length:--hairline) border-[var(--border)] ${!isInline ? 'px-6 py-3' : hideHeader ? 'py-2' : 'py-3'}`}
             >
@@ -1402,7 +1402,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                                     },
                                 );
                             }}
-                            className="p-2 text-[var(--text-muted)] hover:text-[var(--danger)] rounded flex items-center justify-center"
+                            className="logging-touch-target p-2 text-[var(--text-muted)] hover:text-[var(--danger)] rounded flex items-center justify-center"
                             title={t('btn.delete')}
                             aria-label={t('btn.delete')}
                         >
@@ -1412,13 +1412,13 @@ const DoseForm: React.FC<DoseFormProps> = ({
                 </div>
 
                 <div
-                    className={`flex gap-2 ml-auto shrink-0 grow ${hideHeader ? 'basis-full' : 'basis-48'} sm:grow-0 sm:basis-auto justify-end`}
+                    className={`flex flex-wrap gap-x-2 gap-y-2 ml-auto grow ${hideHeader ? 'basis-full' : 'basis-48'} sm:grow-0 sm:basis-auto justify-end`}
                 >
                     {hideHeader && (
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="flex-1 sm:flex-none sm:min-w-[88px] flex items-center justify-center px-4 py-2 text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-md text-sm"
+                            className="logging-touch-target flex-1 sm:flex-none sm:min-w-[88px] flex items-center justify-center px-4 py-2 text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-md text-sm"
                         >
                             {t('btn.cancel')}
                         </button>
@@ -1427,7 +1427,7 @@ const DoseForm: React.FC<DoseFormProps> = ({
                         type="submit"
                         disabled={isSaving || Boolean(saveBlockedReason)}
                         aria-describedby={saveBlockedReason ? saveBlockedReasonId : undefined}
-                        className="btn-primary flex-1 sm:flex-none sm:min-w-[88px]"
+                        className="btn-primary logging-touch-target flex-1 sm:flex-none sm:min-w-[88px]"
                     >
                         {isSaving ? (
                             <Busy size={16} className="animate-spin" />

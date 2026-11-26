@@ -408,6 +408,7 @@ npm run lint
 npm run format:check
 npm test
 npm run test:e2e            # needs `npx playwright install chromium`
+npm run test:e2e:mobile     # builds and previews the mobile bundle with Chromium
 python3 scripts/set_version.py --check
 ```
 
@@ -415,10 +416,10 @@ python3 scripts/set_version.py --check
 
 The `CI` workflow (`.github/workflows/ci.yml`) runs two jobs:
 
-| Job                 | Gates                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| Typecheck and build | version agreement, lint, Prettier check, `tsc --noEmit`, unit tests, production build          |
-| Browser E2E         | build, then Playwright against Vite + `wrangler dev --local` with throwaway D1/R2 under `/tmp` |
+| Job                 | Gates                                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| Typecheck and build | version agreement, lint, Prettier check, `tsc --noEmit`, unit tests, production build        |
+| Browser E2E         | Playwright against the web app and a local Worker, plus Playwright against the mobile bundle |
 
 Separate workflows cover CodeQL, desktop builds, Docker publishing, and
 releases. A change is not done because one test passed: run the gates that the

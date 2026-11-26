@@ -80,21 +80,20 @@ export const SwapLabel: React.FC<{
 /**
  * The page's add button that, while its form is open, turns into Cancel. The
  * form unfolding below is the motion; the button only cross-fades from "+ Add"
- * to "x Cancel" in place. A plus spinning into a cross while the label rolled
- * up read as a toy next to a calm unfold, so neither travels here. The button
- * sits at the end of the page's header, so its label fits the word shown and
- * the button slides to the new width: kept to "Add lab result", "Cancel" left
- * the open button's fill empty at its end.
+ * to "x Cancel" in place. A one-line button slides to the width of the shown
+ * label. In wrap mode the visible label determines the capsule size and the
+ * other label fades out over it.
  */
-export const AddCancelLabel: React.FC<{ open: boolean; add: React.ReactNode; cancel: React.ReactNode }> = ({
-    open,
-    add,
-    cancel,
-}) => {
-    const { offRef, onRef, width } = useShownWidth(open, true);
+export const AddCancelLabel: React.FC<{
+    open: boolean;
+    add: React.ReactNode;
+    cancel: React.ReactNode;
+    wrap?: boolean;
+}> = ({ open, add, cancel, wrap = false }) => {
+    const { offRef, onRef, width } = useShownWidth(open, !wrap);
     return (
         <>
-            <span className="swap-label grid" aria-hidden="true">
+            <span className="swap-label grid shrink-0" aria-hidden="true">
                 <span className="col-start-1 row-start-1" data-shown={!open}>
                     <Plus size={15} />
                 </span>
@@ -102,7 +101,10 @@ export const AddCancelLabel: React.FC<{ open: boolean; add: React.ReactNode; can
                     <Close size={15} />
                 </span>
             </span>
-            <span className="swap-label swap-label-fit grid justify-items-end text-end" style={{ width }}>
+            <span
+                className={`swap-label grid min-w-0 justify-items-end text-end ${wrap ? 'swap-label-wrap' : 'swap-label-fit'}`}
+                style={wrap ? undefined : { width }}
+            >
                 <span ref={offRef} className="col-start-1 row-start-1" data-shown={!open} aria-hidden={open}>
                     {add}
                 </span>

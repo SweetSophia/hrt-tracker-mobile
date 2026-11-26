@@ -336,41 +336,45 @@ const LabResultForm: React.FC<LabResultFormProps> = ({
                 {!resultToEdit && <p className="text-xs text-[var(--text-muted)] pt-2">{t('lab.dual_hint')}</p>}
             </div>
 
-            {/* Footer */}
-            <div className="pt-4 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2">
-                    {resultToEdit && onDelete && (
-                        <button
-                            // The question is the heading; the body names the one
-                            // result going, as saved, so the right row is deleted.
-                            onClick={() =>
-                                showDialog(
-                                    'confirm',
-                                    `${resultToEdit.concValue} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
-                                    async () => {
-                                        if (!(await onDelete(resultToEdit.id))) return;
-                                        onCancel();
-                                    },
-                                    { danger: true, title: t('lab.delete_confirm'), confirmLabel: t('btn.delete') },
-                                )
-                            }
-                            className="tap-target p-2 text-[var(--text-muted)] hover:text-[var(--danger)] rounded"
-                            title={t('btn.delete')}
-                            aria-label={t('btn.delete')}
-                        >
-                            <Trash size={16} />
-                        </button>
-                    )}
-                </div>
+            {/* Footer. Cancel and Save share the row at rest; at the largest
+                text sizes they wrap onto full-width rows rather than clip. */}
+            <div className="pt-4 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                {resultToEdit && onDelete && (
+                    <button
+                        type="button"
+                        // The question is the heading; the body names the one
+                        // result going, as saved, so the right row is deleted.
+                        onClick={() =>
+                            showDialog(
+                                'confirm',
+                                `${resultToEdit.concValue} ${clinicalUnit(resultToEdit.unit)}\n${formatWhen(new Date(resultToEdit.timeH * 3600000))}`,
+                                async () => {
+                                    if (!(await onDelete(resultToEdit.id))) return;
+                                    onCancel();
+                                },
+                                { danger: true, title: t('lab.delete_confirm'), confirmLabel: t('btn.delete') },
+                            )
+                        }
+                        className="logging-touch-target flex items-center justify-center p-2 text-[var(--text-muted)] hover:text-[var(--danger)] rounded"
+                        title={t('btn.delete')}
+                        aria-label={t('btn.delete')}
+                    >
+                        <Trash size={16} />
+                    </button>
+                )}
 
-                <div className="flex gap-2 ml-auto">
+                <div className="flex flex-wrap gap-x-2 gap-y-2 ml-auto grow justify-end sm:grow-0">
                     <button
                         onClick={onCancel}
-                        className="min-w-[88px] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-md flex items-center justify-center"
+                        className="logging-touch-target flex-1 sm:flex-none sm:min-w-[88px] px-4 py-2 text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] rounded-md flex items-center justify-center"
                     >
                         {t('btn.cancel')}
                     </button>
-                    <button onClick={handleSave} disabled={!canSave || !dateStr} className="btn-primary min-w-[88px]">
+                    <button
+                        onClick={handleSave}
+                        disabled={!canSave || !dateStr}
+                        className="btn-primary logging-touch-target flex-1 sm:flex-none sm:min-w-[88px]"
+                    >
                         <Check size={14} />
                         {t('btn.save')}
                     </button>

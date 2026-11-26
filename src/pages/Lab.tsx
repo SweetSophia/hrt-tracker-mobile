@@ -1,7 +1,7 @@
 import { NativeBackScope } from '../hooks/useNativeBackOwner';
 import { useMounted } from '../hooks/useMounted';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import PageHeader, { PAGE_COLUMN, headerActionAccent } from '../components/PageHeader';
+import PageHeader, { PAGE_COLUMN, loggingHeaderActionAccent } from '../components/PageHeader';
 import { ChevronRight } from '../components/icons';
 import {
     LabResult,
@@ -67,6 +67,7 @@ const Lab: React.FC<LabProps> = ({
     lang,
 }) => {
     const isMounted = useMounted();
+    const quickAddId = React.useId();
     const [editingLabId, setEditingLabId] = useState<string | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const { isTransmasc } = useHRTMode();
@@ -146,19 +147,32 @@ const Lab: React.FC<LabProps> = ({
         <div ref={rootRef} className="relative md:pb-32">
             {/* Header */}
             <PageHeader
+                reflow
                 title={t('lab.title')}
                 actions={
                     <button
                         onClick={() => setIsQuickAddLabOpen(!isQuickAddLabOpen)}
-                        className={`${headerActionAccent}`}
+                        aria-expanded={isQuickAddLabOpen}
+                        aria-controls={quickAddId}
+                        className={loggingHeaderActionAccent}
                     >
-                        <AddCancelLabel open={isQuickAddLabOpen} add={t('lab.add_title')} cancel={t('btn.cancel')} />
+                        <AddCancelLabel
+                            wrap
+                            open={isQuickAddLabOpen}
+                            add={t('lab.add_title')}
+                            cancel={t('btn.cancel')}
+                        />
                     </button>
                 }
             />
 
             {/* Expandable add form */}
-            <div className="disclosure" data-open={isQuickAddLabOpen} {...inertWhen(!isQuickAddLabOpen)}>
+            <div
+                id={quickAddId}
+                className="disclosure"
+                data-open={isQuickAddLabOpen}
+                {...inertWhen(!isQuickAddLabOpen)}
+            >
                 <div className="disclosure-inner">
                     <div className={`${PAGE_COLUMN} mb-6`}>
                         <NativeBackScope active={isQuickAddLabOpen}>
@@ -218,7 +232,10 @@ const Lab: React.FC<LabProps> = ({
                         {/* Adding a result is the one thing this page is waiting
                             for. Gone while the form is open above. */}
                         {!isQuickAddLabOpen && (
-                            <button onClick={() => setIsQuickAddLabOpen(true)} className="btn-primary mt-6">
+                            <button
+                                onClick={() => setIsQuickAddLabOpen(true)}
+                                className="btn-primary mt-6 h-auto min-h-9 max-w-full py-2 [overflow-wrap:anywhere] logging-touch-target"
+                            >
                                 {t('lab.add_title')}
                             </button>
                         )}
@@ -284,10 +301,12 @@ const Lab: React.FC<LabProps> = ({
                                                         {formatTime(d)}
                                                     </span>
                                                 </span>
-                                                <span className="flex items-center justify-between gap-2">
+                                                <span className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                                                     {/* How long after the dose it was drawn rides on the
                                                         date: what makes a lab comparable with the curve. */}
-                                                    <span className={`text-xs tabular-nums ${muted}`}>
+                                                    <span
+                                                        className={`max-w-full text-xs tabular-nums [overflow-wrap:anywhere] ${muted}`}
+                                                    >
                                                         {formatDate(d, lang)}
                                                         {timing &&
                                                             `, ${fill(t('lab.after_dose'), { when: sinceDoseLabel(timing.hoursBefore, t) })}`}
@@ -295,7 +314,7 @@ const Lab: React.FC<LabProps> = ({
                                                     {/* Against the raw model, named as the plot names it, and
                                                         in words: "13% above" rather than a bare ×1.13. */}
                                                     {cmp && (
-                                                        <span className="flex items-center gap-1.5 text-xs tabular-nums shrink-0">
+                                                        <span className="ms-auto flex max-w-full flex-wrap items-center justify-end gap-1.5 text-end text-xs tabular-nums [overflow-wrap:anywhere]">
                                                             <span className={muted}>
                                                                 {t('cal.plot.before')} {Math.round(cmp.pred)}
                                                             </span>
@@ -359,17 +378,17 @@ const Lab: React.FC<LabProps> = ({
                             })}
 
                         {/* Clear all — the last result row's border-b is the divider above this */}
-                        <div className="flex items-center justify-between gap-4 py-4">
+                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4">
                             <button
                                 onClick={copyDetails}
-                                className="tap-target inline-flex items-center gap-1 text-sm font-medium text-[var(--accent-ink)]"
+                                className="logging-touch-target inline-flex max-w-full items-center gap-1 text-start text-sm font-medium text-[var(--accent-ink)] [overflow-wrap:anywhere]"
                             >
                                 <CopyTick copied={copied} size={14} />
                                 <SwapLabel show={copied} off={t('lab.copy_details')} on={t('lab.copied')} />
                             </button>
                             <button
                                 onClick={onClearLabResults}
-                                className="tap-target text-sm font-medium text-[var(--danger)] hover:text-[var(--danger)]"
+                                className="logging-touch-target ms-auto max-w-full text-end text-sm font-medium text-[var(--danger)] [overflow-wrap:anywhere]"
                             >
                                 {t('lab.clear_all')}
                             </button>

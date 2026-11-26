@@ -17,6 +17,13 @@ export const headerAction =
 export const headerActionAccent =
     'inline-flex h-8 items-center gap-1 px-2.5 text-sm font-medium rounded-full text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]';
 
+/** A logging action with room for wrapped text and a 48px touch target. */
+export const loggingHeaderAction =
+    'logging-touch-target inline-flex min-h-8 max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium leading-snug [overflow-wrap:anywhere]';
+
+/** The accent treatment for a logging page's Add and Cancel capsule. */
+export const loggingHeaderActionAccent = `${loggingHeaderAction} text-[var(--accent-ink)] hover:bg-[var(--accent-subtle)]`;
+
 const on = 'text-[var(--text)]';
 const muted = 'text-[var(--text-muted)]';
 
@@ -42,8 +49,13 @@ const PageHeader: React.FC<{
     onBack?: () => void;
     actions?: React.ReactNode;
     columnClassName?: string;
-}> = ({ title, subtitle, onBack, actions, columnClassName = PAGE_COLUMN }) => {
+    reflow?: boolean;
+    /** Called for the initial measurement and when the rendered height changes. */
+    onHeightChange?: (height: number) => void;
+}> = ({ title, subtitle, onBack, actions, columnClassName = PAGE_COLUMN, reflow = false, onHeightChange }) => {
     const { t } = useTranslation();
+    const barRef = React.useRef<HTMLDivElement>(null);
+    const onHeightChangeRef = React.useRef(onHeightChange);
     // A zero-height marker just above the sticky bar: once it has scrolled out
     // of view, content is passing under the bar and the hairline shows.
     const [marker, setMarker] = React.useState<HTMLDivElement | null>(null);
@@ -55,14 +67,43 @@ const PageHeader: React.FC<{
         return () => io.disconnect();
     }, [marker]);
 
+    React.useLayoutEffect(() => {
+        onHeightChangeRef.current = onHeightChange;
+    }, [onHeightChange]);
+
+    React.useLayoutEffect(() => {
+        const bar = barRef.current;
+        if (!reflow || !bar) return;
+        const scroller = bar.closest<HTMLElement>('.main-view');
+        let measured = 0;
+        const measure = () => {
+            const height = bar.getBoundingClientRect().height;
+            if (height <= 0 || measured === height) return;
+            measured = height;
+            scroller?.style.setProperty('--page-header-h', `${height}px`);
+            onHeightChangeRef.current?.(height);
+        };
+        measure();
+        const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+        observer?.observe(bar, { box: 'border-box' });
+        return () => {
+            observer?.disconnect();
+            scroller?.style.removeProperty('--page-header-h');
+        };
+    }, [reflow]);
+
+    const titleLayout = reflow ? 'leading-tight [overflow-wrap:anywhere]' : 'leading-8 truncate';
     return (
         <>
             <div ref={setMarker} aria-hidden="true" className="h-0" />
             <div
+                ref={barRef}
                 className={`glass glass-bar sticky top-0 z-20 transition-shadow ${scrolled ? 'shadow-[inset_0_calc(-1*var(--hairline))_0_var(--border)]' : ''}`}
             >
-                <div className={`${columnClassName} pt-4 pb-3 flex items-end justify-between gap-4`}>
-                    <div className="min-w-0 flex-1">
+                <div
+                    className={`${columnClassName} pt-4 pb-3 flex items-end justify-between gap-x-4 ${reflow ? 'flex-wrap gap-y-2' : ''}`}
+                >
+                    <div className={`min-w-0 ${reflow ? 'max-w-full flex-auto' : 'flex-1'}`}>
                         {onBack ? (
                             <button
                                 onClick={onBack}
@@ -70,24 +111,30 @@ const PageHeader: React.FC<{
                             >
                                 <ArrowLeft size={22} aria-hidden="true" className={`${muted} shrink-0`} />
                                 <span
-                                    className={`font-display text-[1.625rem] leading-8 font-semibold tracking-[-0.02em] truncate ${on}`}
+                                    className={`font-display text-[1.625rem] font-semibold tracking-[-0.02em] ${titleLayout} ${on}`}
                                 >
                                     {title}
                                 </span>
                                 <span className="sr-only">, {t('nav.back')}</span>
                             </button>
                         ) : (
-                            <h1 className={`text-[1.625rem] leading-8 font-semibold tracking-[-0.02em] truncate ${on}`}>
+                            <h1 className={`text-[1.625rem] font-semibold tracking-[-0.02em] ${titleLayout} ${on}`}>
                                 {title}
                             </h1>
                         )}
-                        {/* History pins its day labels at exactly this header's
-                            height (top-[5rem]): 16 + 32 + 2 + 18 + 12 at the base
-                            size. All of it is in rem, so on a wide screen, where
-                            --ui-scale lifts the root size, the two grow together. */}
-                        {subtitle && <p className={`text-xs ${muted} mt-0.5`}>{subtitle}</p>}
+                        {subtitle && (
+                            <p className={`text-xs ${muted} mt-0.5 ${reflow ? '[overflow-wrap:anywhere]' : ''}`}>
+                                {subtitle}
+                            </p>
+                        )}
                     </div>
-                    {actions && <div className="flex items-center gap-1 -mr-2 shrink-0">{actions}</div>}
+                    {actions && (
+                        <div
+                            className={`flex items-center shrink-0 ${reflow ? 'ms-auto max-w-full flex-wrap justify-end gap-2' : 'gap-1 -mr-2'}`}
+                        >
+                            {actions}
+                        </div>
+                    )}
                 </div>
             </div>
         </>

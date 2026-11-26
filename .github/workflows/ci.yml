@@ -103,6 +103,11 @@ jobs:
         # store under /tmp. No Cloudflare credentials, real data, or secrets.
         run: npm run test:e2e
 
+      - name: Mobile Browser E2E
+        # Mobile-only specs; they reuse the Chromium installed above. The
+        # mobile config's webServer builds and previews the mobile bundle.
+        run: npm run test:e2e:mobile
+
       - name: Upload failure evidence
         if: failure()
         uses: actions/upload-artifact@v7
