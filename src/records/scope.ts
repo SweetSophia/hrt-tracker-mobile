@@ -14,11 +14,12 @@ export const PREFERENCES_NAMESPACE = 'preferences:v1';
 export const DEVICE_PREFERENCES_NAMESPACE = 'device-preferences:v1';
 export const PORTABLE_PREFERENCE_KEYS = Object.freeze([
     'app-theme',
+    'app-palette',
     'hrt-lang',
     'app-show-prediction',
     'app-hide-site-label',
     'hrt-supply-lead-days',
-]);
+] as const);
 const DEVICE_PREFERENCE_KEYS = Object.freeze(['hrt-mode']);
 const DEVICE_MODES: readonly string[] = Object.freeze(['transfem', 'transmasc']);
 const MODE_SUFFIXES = [

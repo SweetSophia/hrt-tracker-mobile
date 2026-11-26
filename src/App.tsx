@@ -13,7 +13,8 @@ import { HRTModeProvider, useHRTMode } from './contexts/HRTModeContext';
 import { PixelCatProvider } from './contexts/PixelCatContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageLoading from './components/PageLoading';
-import { AppTheme } from './constants';
+import { isAppTheme, type AppTheme } from './constants';
+import { isColorPalette, type ColorPalette } from './appearance/palettes';
 import { DoseEvent, decompressData, encryptData, decryptData } from '../logic';
 import { v4 as uuidv4 } from 'uuid';
 import { PlanItem, planEvent } from './utils/plan';
@@ -302,7 +303,10 @@ const AppContent = ({ session }: { session: UiSession }) => {
     // --- Site label: the host name strip above the mobile view. Switched off
     // from Settings while developer mode is on, and kept off after that. ---
     const [hideSiteLabel, setHideSiteLabel] = usePortablePreference('app-hide-site-label', raw => raw === 'true');
-    const [theme, setTheme] = usePortablePreference<AppTheme>('app-theme', raw => (raw as AppTheme) || 'system');
+    const [theme, setTheme] = usePortablePreference<AppTheme>('app-theme', raw => (isAppTheme(raw) ? raw : 'system'));
+    const [palette, setPalette] = usePortablePreference<ColorPalette>('app-palette', raw =>
+        isColorPalette(raw) ? raw : 'terracotta',
+    );
 
     // Dialogs stay open across renders, so their callbacks must not keep the
     // arrays/functions captured when the dialog opened. Every confirm path
@@ -321,10 +325,6 @@ const AppContent = ({ session }: { session: UiSession }) => {
             build: buildCompleteBackupBundle,
         };
     });
-    // Same reading as the Overview's: an explicit dark theme, or the system's under "system".
-    const isDarkMode =
-        theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
     // Two-way sync with the cloud backup: pull, reconcile, push. Replaces both
     // the upload-only auto-backup and the startup "your data differs" prompt —
     // the prompt could only add records the cloud had and this device lacked, so
@@ -349,8 +349,8 @@ const AppContent = ({ session }: { session: UiSession }) => {
         modelSettings,
     });
 
-    // --- Theme Effect ---
-    useEffect(() => {
+    // Apply the stored appearance before the first app frame is painted.
+    useLayoutEffect(() => {
         const root = window.document.documentElement;
 
         const applyTheme = (isDark: boolean) => {
@@ -367,8 +367,10 @@ const AppContent = ({ session }: { session: UiSession }) => {
                 .forEach(meta => meta.setAttribute('content', isDark ? '#181714' : '#ffffff'));
         };
 
-        // Mono renders as light with a grayscale filter (see html.mono in index.css)
-        root.classList.toggle('mono', theme === 'mono');
+        // Black & white uses the original light palette under its grayscale filter.
+        const isMono = theme === 'mono';
+        root.classList.toggle('mono', isMono);
+        root.dataset.palette = isMono ? 'terracotta' : palette;
 
         if (theme === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -379,7 +381,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
         } else {
             applyTheme(theme === 'dark');
         }
-    }, [theme]);
+    }, [theme, palette]);
 
     const languageOptions = useMemo(
         () => [
@@ -1062,7 +1064,6 @@ const AppContent = ({ session }: { session: UiSession }) => {
                                 calibrationHistoryMode={calibrationHistoryMode}
                                 regimens={regimens}
                                 nowH={nowH}
-                                isDarkMode={isDarkMode}
                                 onSaveTemplate={addTemplate}
                             />
                         )}
@@ -1211,6 +1212,8 @@ const AppContent = ({ session }: { session: UiSession }) => {
                             <AppearanceSettings
                                 theme={theme}
                                 setTheme={setTheme}
+                                palette={palette}
+                                setPalette={setPalette}
                                 onBack={() => handleViewChange('settings')}
                             />
                         )}

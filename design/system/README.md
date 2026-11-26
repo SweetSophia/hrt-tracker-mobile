@@ -3,15 +3,25 @@
 v2's colours, type scale, spacing, shapes and the desktop sidebar carry over
 unchanged. v3 overturns the parts that made the app feel generic: a borrowed
 icon library, fields that light up, dialogs that cover the page, and motion
-with no system behind it. The tokens are in `src/styles/oyama-tokens.css`,
-every animation in `src/styles/motion.css`, and the components below in
-`src/components`.
+with no system behind it. The base tokens are in `src/styles/oyama-tokens.css`,
+the accent palettes in `src/styles/palettes.css`, every animation in
+`src/styles/motion.css`, and the components below in `src/components`.
 
 ## What it should feel like
 
 A calm, precise instrument kept by hand. A white page, warm neutrals, one
-terracotta accent, large light numerals, and everything that isn't a number
-drawn with the same pen as the doodles. Nothing performs; things settle.
+accent from the chosen palette (terracotta, plum, or teal), large light
+numerals, and everything that isn't a number drawn with the same pen as the
+doodles. Nothing performs; things settle.
+
+## Colour palettes
+
+A palette recolours the accent and the primary estimated series of the charts
+(`--accent`, `--chart-line` and `--chart-band`) in light and dark. Lab
+markers (`--chart-lab`) and the dose heatmap keep their clay colours in
+every palette, so measured levels and recorded doses stay distinct from the
+estimated levels. Black & white uses the Terracotta tokens under a grayscale
+filter. The saved palette returns when the display mode changes.
 
 ## Rules
 
@@ -47,7 +57,7 @@ space stays at least 3px across so it still reads open at a 1.75 stroke.
 - A glyph can have depth in its own ink: a `tint` stroke washes a shape with
   the ink at 28% (the sample in the Labs tube) and a `thin` stroke is a
   lighter line (an edge seen through glass, a glint), so it still turns
-  terracotta as one colour when it's the current tab.
+  as one colour in the active accent when it's the current tab.
 - To add one, draw it in the same hand, add it to `GLYPHS`, export a
   component from `index.tsx`, and check it at 20px and 48px.
 - Never a key, never a fingerprint. Passwords are `password` (a field of

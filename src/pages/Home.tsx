@@ -118,8 +118,6 @@ const Home: React.FC<HomeProps> = ({
     onNavigateToCommunityVote,
     onCommunityVoteSignIn,
 }) => {
-    const isDarkMode =
-        theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const isMono = theme === 'mono';
     const [isEstimateInfoOpen, setIsEstimateInfoOpen] = React.useState(false);
     const { isTransmasc } = useHRTMode();
@@ -804,17 +802,12 @@ const Home: React.FC<HomeProps> = ({
                                     labResults={labResults}
                                     calibrationFn={calibrationFn}
                                     modelNowMs={modelNowMs}
-                                    isDarkMode={isDarkMode}
                                     isMono={isMono}
                                     fillShort={chartFirst}
                                 />
                             </ModelBoundary>
                         </div>
-                        <DoseHeatmap
-                            events={events}
-                            isDarkMode={isDarkMode}
-                            className="min-w-0 xl:flex-1 xl:min-w-[16rem] xl:max-w-[26rem]"
-                        />
+                        <DoseHeatmap events={events} className="min-w-0 xl:flex-1 xl:min-w-[16rem] xl:max-w-[26rem]" />
                     </div>
                 )}
                 {events.length > 0 && (

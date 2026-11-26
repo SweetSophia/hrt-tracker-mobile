@@ -92,7 +92,6 @@ interface ForecastProps {
     calibrationHistoryMode: CalibrationHistoryMode;
     regimens: Regimen[];
     nowH: number;
-    isDarkMode: boolean;
     onSaveTemplate: (template: DoseTemplate) => Promise<boolean>;
 }
 
@@ -110,7 +109,6 @@ const Forecast: React.FC<ForecastProps> = ({
     calibrationHistoryMode,
     regimens,
     nowH,
-    isDarkMode,
     onSaveTemplate,
 }) => {
     const { t, lang } = useTranslation();
@@ -500,7 +498,6 @@ const Forecast: React.FC<ForecastProps> = ({
                         horizonH={horizonH}
                         target={target}
                         unit={unit}
-                        isDarkMode={isDarkMode}
                         lang={lang}
                         labels={{
                             history: t('forecast.legend.history'),

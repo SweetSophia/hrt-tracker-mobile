@@ -4,7 +4,14 @@
   "valid": [
     {
       "namespace": "preferences:v1",
-      "keys": ["app-theme", "hrt-lang", "app-show-prediction", "app-hide-site-label", "hrt-supply-lead-days"]
+      "keys": [
+        "app-theme",
+        "app-palette",
+        "hrt-lang",
+        "app-show-prediction",
+        "app-hide-site-label",
+        "hrt-supply-lead-days"
+      ]
     },
     {
       "namespace": "records:v1:[\"offline\",\"local\"]",

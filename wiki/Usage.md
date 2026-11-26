@@ -115,8 +115,11 @@ language, export/import, sharing, transparency, and the optional hrt:// pairing
 controls. Language changes apply immediately and are stored with your local
 settings.
 
-Appearance settings include the theme. The app respects the system preference
-where the browser exposes it.
+In Appearance, choose a display mode and a color theme. The app respects the
+system preference where the browser exposes it. Terracotta, Plum, and Teal
+set the app accent and the estimated curves in Overview and What-if.
+Public shared records use the default Terracotta palette. Black & white
+pauses the palette. The saved palette returns when you switch display modes.
 
 ## Administrators
 

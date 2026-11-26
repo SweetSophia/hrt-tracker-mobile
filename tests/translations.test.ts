@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { APP_THEMES } from '../src/constants';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { TRANSLATIONS } from '../src/i18n/translations';
 
@@ -29,6 +30,15 @@ describe('language packs', () => {
             for (const key of MOBILE_CREDIT_KEYS) {
                 expect(TRANSLATIONS[locale][key]).toBe(MOBILE_CREDITS[locale][key]);
                 expect(TRANSLATIONS[locale][key].trim()).toBeTruthy();
+            }
+        }
+    });
+
+    it('has a label for every display mode in each supported locale', () => {
+        for (const locale of Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[]) {
+            for (const mode of APP_THEMES) {
+                const key = `theme.${mode}` as const;
+                expect(TRANSLATIONS[locale][key]?.trim(), `${locale} ${key}`).toBeTruthy();
             }
         }
     });

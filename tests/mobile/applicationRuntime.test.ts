@@ -74,11 +74,12 @@ it('publishes complete-restore preferences from the same acknowledged snapshot a
         mode: 'transfem',
         modes: { transfem: {}, transmasc: {} },
         weight: 72,
-        preferences: { 'app-theme': 'dark' },
+        preferences: { 'app-theme': 'dark', 'app-palette': 'plum' },
     };
     await runtime.controller.dispatch(context => planCompleteBackup(context, raw, 'merge', Date.now()));
     expect(seen).toEqual([['dark', '72']]);
     expect(storage.getItem('app-theme')).toBe('dark');
+    expect(storage.getItem('app-palette')).toBe('plum');
 });
 it('retains only the onboarding presence flag from other accounts and excludes credentials', async () => {
     const storage = new MemoryStorage();

@@ -1,0 +1,59 @@
+/* Swatches stay tied to their own palette when another palette is active. */
+:root {
+    --palette-swatch-terracotta: oklch(55.5% 0.118 38);
+    --palette-swatch-plum: oklch(51% 0.148 307);
+    --palette-swatch-teal: oklch(49% 0.082 199);
+}
+
+:root.dark {
+    --palette-swatch-terracotta: oklch(72.5% 0.105 39);
+    --palette-swatch-plum: oklch(76% 0.128 307);
+    --palette-swatch-teal: oklch(76% 0.1 199);
+}
+
+/* Terracotta inherits the defaults from oyama-tokens.css. The light blocks
+   carry :not(.dark) so a light value cannot beat the base .dark block on
+   specificity, and --accent is stated in all four blocks. */
+:root:not(.dark)[data-palette="plum"] {
+    --accent: var(--palette-swatch-plum);
+    --accent-hover: oklch(44% 0.135 307);
+    --accent-ink: var(--accent);
+    --accent-subtle: oklch(97% 0.017 307);
+    --accent-subtle-hover: oklch(93.5% 0.033 307);
+    --on-accent-subtle: var(--accent-hover);
+    --chart-line: oklch(57.5% 0.153 307);
+    --chart-band: color-mix(in srgb, var(--chart-line) 10%, transparent);
+}
+
+:root.dark[data-palette="plum"] {
+    --accent: var(--palette-swatch-plum);
+    --accent-hover: oklch(82% 0.09 307);
+    --accent-ink: var(--accent-hover);
+    --accent-subtle: oklch(26% 0.05 307);
+    --accent-subtle-hover: oklch(33% 0.065 307);
+    --on-accent-subtle: oklch(87% 0.064 307);
+    --chart-line: var(--accent);
+    --chart-band: color-mix(in srgb, var(--chart-line) 12%, transparent);
+}
+
+:root:not(.dark)[data-palette="teal"] {
+    --accent: var(--palette-swatch-teal);
+    --accent-hover: oklch(42% 0.071 199);
+    --accent-ink: var(--accent);
+    --accent-subtle: oklch(97% 0.018 199);
+    --accent-subtle-hover: oklch(93.5% 0.032 199);
+    --on-accent-subtle: var(--accent-hover);
+    --chart-line: oklch(55% 0.092 199);
+    --chart-band: color-mix(in srgb, var(--chart-line) 10%, transparent);
+}
+
+:root.dark[data-palette="teal"] {
+    --accent: var(--palette-swatch-teal);
+    --accent-hover: oklch(82% 0.092 199);
+    --accent-ink: var(--accent-hover);
+    --accent-subtle: oklch(26% 0.04 199);
+    --accent-subtle-hover: oklch(33% 0.051 199);
+    --on-accent-subtle: oklch(87% 0.065 199);
+    --chart-line: var(--accent);
+    --chart-band: color-mix(in srgb, var(--chart-line) 12%, transparent);
+}

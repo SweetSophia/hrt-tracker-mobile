@@ -410,6 +410,7 @@ export async function runBackupQualification(store: RecordStore, owner: string) 
 function replacementFixture() {
     const next = structuredClone(complete);
     next.preferences['app-theme'] = 'light';
+    (next.preferences as Record<string, unknown>)['app-palette'] = 'plum';
     next.weight = 78;
     next.calibration = { method: 'mipd', historyMode: 'retrospective' };
     next.modes.transmasc.events = Array.from({ length: MAX_IMPORT_ENTRIES }, (_, i) => ({
