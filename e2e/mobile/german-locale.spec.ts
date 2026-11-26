@@ -373,7 +373,8 @@ test('the German plan and forecast read 2,5 mg alle 3,5 Tage', async ({ page, co
     // 2,5 mg every 3,5 days, never the point decimals of the stored numbers.
     await page.getByRole('button', { name: de.planTitle, exact: true }).tap();
     await expect(page.getByRole('button', { name: /^Medikationsplan\s*,\s*Zurück$/ })).toBeVisible();
-    await expect(page.getByText('2,5 mg').first()).toBeVisible();
+    const regimenLabel = 'Estradiolvalerat 2,5 mg injektion';
+    await expect(page.getByText(regimenLabel, { exact: true })).toBeVisible();
     await expect(page.getByText('Alle 3,5 Tage', { exact: true })).toBeVisible();
 
     // The forecast's current regimen states the same numbers through its own
@@ -382,8 +383,30 @@ test('the German plan and forecast read 2,5 mg alle 3,5 Tage', async ({ page, co
     await page.getByRole('button', { name: de.forecastEntry, exact: true }).tap();
     await expect(page.getByRole('button', { name: /^Was-wäre-wenn\s*,\s*Zurück$/ })).toBeVisible();
     const currentRegimen = page.locator('section').filter({ has: page.getByText(de.forecastCurrent, { exact: true }) });
-    await expect(currentRegimen.getByText('2,5 mg')).toBeVisible();
+    await expect(currentRegimen.getByText(regimenLabel, { exact: true })).toBeVisible();
     await expect(currentRegimen.getByText('alle 3,5 Tage', { exact: true })).toBeVisible();
+});
+
+test('an unsupported saved language falls back to English in Forecast and Labs', async ({ page, context }) => {
+    const dose: DoseEventFixture = {
+        id: 'unsupported-language-dose',
+        route: 'injection',
+        ester: 'EV',
+        doseMG: 2.5,
+        timeH: nowHours() - 1,
+        extras: {},
+        updatedAt: stamp(),
+    };
+    await seedStorage(
+        context,
+        baseStorage({ 'hrt-lang': 'unsupported-language', 'hrt-events': JSON.stringify([dose]) }),
+    );
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await page.getByRole('button', { name: 'What-if', exact: true }).tap();
+    await expect(page.getByRole('button', { name: /^What-if\s*,\s*Back$/ })).toBeVisible();
+    await bottomNav(page).getByRole('button', { name: 'Labs', exact: true }).tap();
+    await expect(page.getByRole('heading', { name: 'Lab results', exact: true })).toBeVisible();
 });
 
 test('a fractional German dose template shows 2,5 mg and loads with a comma', async ({ page, context }) => {

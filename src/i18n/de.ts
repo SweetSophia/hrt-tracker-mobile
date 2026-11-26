@@ -1201,7 +1201,7 @@ export const DE = {
     'export.val.lab': 'Laborwert',
     'export.pdf.title': 'HRT-Tracker-Bericht',
     'export.pdf.generated_on': 'Erstellt am:',
-    'export.pdf.history': 'Verlauf der Dosen',
+    'export.pdf.history': 'Dosierungsverlauf',
     'export.pdf.labs': 'Laborwerte',
     'settings.pk_params': 'Parameter bearbeiten',
     'pk.title': 'PK-Parameter bearbeiten',

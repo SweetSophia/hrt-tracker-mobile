@@ -50,7 +50,7 @@ export function formatRecordSummary(value: number | string, locale = 'en-US'): s
 }
 
 /** Accept an already rounded percent value, so each display keeps its precision. */
-export function formatRecordPercent(value: number | string, locale: string): string {
+export function formatRecordPercent(value: number | string, locale = 'en-US'): string {
     return `${formatRecordSummary(value, locale)}${isGermanLocale(locale) ? '\u00a0' : ''}%`;
 }
 

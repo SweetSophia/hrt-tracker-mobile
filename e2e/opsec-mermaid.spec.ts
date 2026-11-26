@@ -48,5 +48,11 @@ test('the German OpSec heading stays localized when the English guide loads', as
     // The marker stays outside the English body so screen readers announce
     // it in German before the English guide.
     await expect(guide.getByText('Englische Fassung')).toHaveCount(0);
+    expect(
+        await marker.evaluate(el => {
+            const article = document.querySelector('[lang="en"] article.opsec-prose');
+            return !!article && !!(el.compareDocumentPosition(article) & Node.DOCUMENT_POSITION_FOLLOWING);
+        }),
+    ).toBe(true);
     await expect(page.getByText('Alltagssicherheit', { exact: true })).toBeVisible();
 });

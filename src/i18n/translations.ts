@@ -175,7 +175,7 @@ export const TRANSLATIONS_BASE = {
         'status.level.low': '低于参考范围',
 
         'label.e2': '雌二醇',
-        'label.equivalent': '{hormone} eq:',
+        'label.equivalent': '{hormone}当量：',
         'label.cpa_chart': '醋酸环丙孕酮',
         'label.t': '睾酮',
         'label.total_t': '总睾酮',
@@ -4017,6 +4017,7 @@ const ZH_TW = {
     'supplies.lead': '提前提醒',
     'supplies.days': '{n} 天',
     'settings.show_intro': '重新看一遍新手導覽',
+    'label.equivalent': '{hormone}當量：',
     'label.t': '睪固酮',
     'label.total_t': '總睪固酮',
     'mode.transfem': '女性化 HRT',

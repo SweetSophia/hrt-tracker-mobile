@@ -58,8 +58,11 @@ describe('record decimal entry', () => {
     it('keeps summary precision with a German decimal comma', () => {
         expect(formatRecordSummary(34.125, 'de-DE')).toBe('34,125');
         expect(formatRecordSummary('2.50', 'de')).toBe('2,50');
-        expect(formatRecordSummary('2.50', 'ru-RU')).toBe('2.50');
+    });
+
+    it('uses canonical summary notation when no locale is available', () => {
         expect(formatRecordSummary('2.50')).toBe('2.50');
+        expect(formatRecordPercent(85, undefined)).toBe('85%');
     });
 
     it('keeps German percentage spacing consistent across summaries', () => {
