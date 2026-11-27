@@ -114,9 +114,12 @@ label follows the language selected inside the app.
 
 Use the offline beta preview for installed launcher checks.
 
-For automated coverage, run `LauncherShortcutColdLaunchTest` on a dedicated
-API 36 emulator with synthetic records only. Set `ANDROID_SERIAL` to the
-emulator serial and run these commands from the repository root:
+CI tests the shortcut with a simulated bridge. Run the focused browser tests
+with `npm run test:e2e:mobile -- launcher-shortcut.spec.ts`.
+
+Run `LauncherShortcutColdLaunchTest` to exercise the installed Android shortcut.
+Use a dedicated API 36 emulator with synthetic records. Set `ANDROID_SERIAL`
+to the emulator serial and run these commands from the repository root.
 
 ```sh
 npm run android:sync:storage
