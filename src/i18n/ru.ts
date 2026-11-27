@@ -232,6 +232,7 @@ export const RU = {
     'home.empty_title': 'Доз пока нет',
     'home.empty_subtitle': 'Отметьте первую дозу, чтобы увидеть расчётный уровень гормонов',
     'home.empty_cta': 'Отметить дозу',
+    // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
     'regimen.route.injection': 'Инъекция',
     'regimen.route.sc': 'Подкожная инъекция',
     'regimen.route.nasal': 'Назальный спрей',

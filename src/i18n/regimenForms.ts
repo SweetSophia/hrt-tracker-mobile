@@ -3,7 +3,6 @@ import type { Lang } from './languages';
 
 type RegimenForms = Record<`regimen.form.${Exclude<Route, Route.patchRemove>}`, string>;
 
-/** Use {drug} once and {dose} once. The optional dose includes its leading space. */
 const ZH_TW_FORMS: RegimenForms = {
     'regimen.form.injection': '{drug}肌肉注射{dose}',
     'regimen.form.sc': '{drug}皮下注射{dose}',
@@ -15,6 +14,10 @@ const ZH_TW_FORMS: RegimenForms = {
     'regimen.form.patchApply': '{drug}貼片{dose}',
 };
 
+/**
+ * Drug-and-route phrases use {drug} and {dose} once each. The optional dose includes its leading space.
+ * Plan and Forecast pickers use the standalone names under regimen.route.* in the language packs.
+ */
 export const REGIMEN_FORMS: Record<Lang, RegimenForms> = {
     zh: {
         'regimen.form.injection': '{drug}肌肉注射{dose}',

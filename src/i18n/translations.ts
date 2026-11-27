@@ -231,6 +231,7 @@ export const TRANSLATIONS_BASE = {
         'home.empty_title': '暂无剂量记录',
         'home.empty_subtitle': '记录你的第一次剂量以查看激素水平估算',
         'home.empty_cta': '记录剂量',
+        // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
         'regimen.route.injection': '肌肉注射',
         'regimen.route.sc': '皮下注射',
         'regimen.route.nasal': '鼻喷',
@@ -1681,6 +1682,7 @@ export const TRANSLATIONS_BASE = {
         'home.empty_title': 'No doses logged yet',
         'home.empty_subtitle': 'Log your first dose to see your estimated hormone levels',
         'home.empty_cta': 'Log a dose',
+        // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
         'regimen.route.injection': 'Injection',
         'regimen.route.sc': 'Subcutaneous injection',
         'regimen.route.nasal': 'Nasal spray',
@@ -3942,7 +3944,7 @@ const ZH_TW = {
     'onboarding.weight_subtitle': '用來估算血藥濃度。',
     'onboarding.plan_title': '你現在在用哪些藥？',
     'onboarding.plan_subtitle': '填好後，在總覽上點一下就能記下用藥。不確定可以先跳過。',
-    // The medication plan, and the prescription-line words its items are written in.
+    // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
     'regimen.route.injection': '肌肉注射',
     'regimen.route.sc': '皮下注射',
     'regimen.route.nasal': '鼻噴',
@@ -5073,7 +5075,7 @@ export const TRANSLATIONS = {
         'onboarding.weight_subtitle': '用嚟估算血藥濃度。',
         'onboarding.plan_title': '你而家用緊邊啲藥？',
         'onboarding.plan_subtitle': '填好之後，喺總覽撳一下就記低用藥。未確定可以先跳過。',
-        // The medication plan, and the prescription-line words its items are written in.
+        // Names come from the Traditional Chinese pack above; only the routes below differ.
         'regimen.daily': '每日',
         'regimen.every_days': '每 {n} 日',
         'regimen.weekly': '每星期',
@@ -6221,7 +6223,7 @@ export const TRANSLATIONS = {
         'onboarding.plan_title': '今どんな薬を使っていますか？',
         'onboarding.plan_subtitle':
             '入れておくと、概要からタップ一つで記録できます。わからなければ飛ばしても大丈夫です。',
-        // The medication plan, and the prescription-line words its items are written in.
+        // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
         'regimen.route.injection': '筋注',
         'regimen.route.sc': '皮下注射',
         'regimen.route.nasal': '点鼻',
@@ -7415,7 +7417,7 @@ export const TRANSLATIONS = {
         'onboarding.plan_title': '지금 어떤 약을 쓰고 있나요?',
         'onboarding.plan_subtitle':
             '입력해 두면 개요에서 한 번 탭으로 기록할 수 있습니다. 잘 모르겠다면 건너뛰어도 됩니다.',
-        // The medication plan, and the prescription-line words its items are written in.
+        // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
         'regimen.route.injection': '주사',
         'regimen.route.sc': '피하 주사',
         'regimen.route.nasal': '비강 스프레이',
@@ -8699,7 +8701,7 @@ export const TRANSLATIONS = {
         'onboarding.weight_subtitle': 'Hormon düzeylerini tahmin etmek için kullanılır.',
         'onboarding.plan_title': 'Neler kullanıyorsun?',
         'onboarding.plan_subtitle': "Girersen Genel Bakış'ta tek dokunuşla doz kaydedebilirsin. Emin değilsen atla.",
-        // The medication plan, and the prescription-line words its items are written in.
+        // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
         'regimen.route.injection': 'Enjeksiyon',
         'regimen.route.sc': 'Deri altı enjeksiyon',
         'regimen.route.nasal': 'Burun spreyi',

@@ -63,14 +63,15 @@ function formatDrugForm(item: { route: Route; ester: Ester }, t: T, dose = ''): 
     const name = esterName(item.ester, t);
     const amount = dose ? ` ${dose}` : '';
     const pattern = t(`regimen.form.${item.route}`);
-    const [before, after] = pattern.replace('{dose}', amount).split('{drug}');
-    if (after === undefined) {
-        // Older imports can contain a patch-removal event in a plan.
+    const slots = pattern.match(/\{\w+\}/g);
+    if (slots?.length !== 2 || !slots.includes('{drug}') || !slots.includes('{dose}')) {
+        // Keep the event name and amount for legacy patch removals or an incomplete translation.
         const key = `route.${item.route}`;
         const route = t(key);
         return route === key ? name + amount : `${name}${amount} (${route})`;
     }
 
+    const [before, after] = pattern.replace('{dose}', amount).split('{drug}');
     const drug = before && isKnownEster(item.ester) ? inPhrase(name) : name;
     // A Latin drug code alongside Chinese or Japanese text still needs a word boundary.
     const start = CJK.test(before.slice(-1)) ? glue(before, drug) : before + drug;

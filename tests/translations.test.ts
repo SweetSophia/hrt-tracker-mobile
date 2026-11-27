@@ -7,10 +7,12 @@ import { PK_SANDBOX_MODELS } from '../src/domain/pkSandbox';
 import { Route } from '../src/domain/types';
 import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
 import { DE } from '../src/i18n/de';
+import type { Lang } from '../src/i18n/languages';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { REGIMEN_FORMS } from '../src/i18n/regimenForms';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
+import { PLAN_DRUGS } from '../src/utils/plan';
 
 // A language pack may start from another one with a spread, but a spread
 // further down overwrites every key written above it. That is how the Turkish
@@ -21,6 +23,24 @@ const source = readFileSync(resolve(root, 'src/i18n/translations.ts'), 'utf8').s
 const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
 const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
+
+// The five routes the plan wizard offers; the other enum routes are not in it.
+const planWizardRoutes = [Route.injection, Route.oral, Route.sublingual, Route.gel, Route.patchApply] as const;
+type PlanWizardRoute = (typeof planWizardRoutes)[number];
+
+// Standalone route names per language; a composed form here (German "Zur Injektion") is a bug.
+const expectedPlanRouteLabels: Record<Lang, Record<PlanWizardRoute, string>> = {
+    zh: { injection: '肌肉注射', oral: '口服', sublingual: '舌下', gel: '凝胶', patchApply: '贴片' },
+    'zh-TW': { injection: '肌肉注射', oral: '口服', sublingual: '舌下', gel: '凝膠', patchApply: '貼片' },
+    yue: { injection: '肌肉注射', oral: '口服', sublingual: '舌下', gel: '凝膠', patchApply: '貼片' },
+    en: { injection: 'Injection', oral: 'Oral', sublingual: 'Sublingual', gel: 'Gel', patchApply: 'Patch' },
+    de: { injection: 'Injektion', oral: 'Oral', sublingual: 'Sublingual', gel: 'Gel', patchApply: 'Pflaster' },
+    ja: { injection: '筋注', oral: '経口', sublingual: '舌下', gel: 'ジェル', patchApply: 'パッチ' },
+    ko: { injection: '주사', oral: '경구', sublingual: '설하', gel: '젤', patchApply: '패치' },
+    tr: { injection: 'Enjeksiyon', oral: 'Ağızdan', sublingual: 'Dil altı', gel: 'Jel', patchApply: 'Yama' },
+    ru: { injection: 'Инъекция', oral: 'Перорально', sublingual: 'Сублингвально', gel: 'Гель', patchApply: 'Пластырь' },
+    uk: { injection: 'Ін’єкція', oral: 'Перорально', sublingual: 'Сублінгвально', gel: 'Гель', patchApply: 'Пластир' },
+};
 
 describe('language packs', () => {
     it('spread a base pack only before their own strings', () => {
@@ -93,6 +113,21 @@ describe('language packs', () => {
                 const label = pack[key]?.trim();
                 if (locale === 'de' && label === sharedGermanLabels[route]) continue;
                 expect(label, `${locale} ${key}`).not.toBe(en[key]);
+            }
+        }
+    });
+
+    it('offers the same five routes in the plan wizard as the route labels cover', () => {
+        const offered = [...new Set(Object.values(PLAN_DRUGS).flatMap(mode => Object.keys(mode)))] as Route[];
+        expect(offered.sort()).toEqual([...planWizardRoutes].sort());
+    });
+
+    it('names the plan wizard routes on their own in every language', () => {
+        for (const locale of locales) {
+            const pack = TRANSLATIONS[locale] as Record<string, string>;
+            const expected = expectedPlanRouteLabels[locale];
+            for (const route of planWizardRoutes) {
+                expect(pack[`regimen.route.${route}`], `${locale} regimen.route.${route}`).toBe(expected[route]);
             }
         }
     });

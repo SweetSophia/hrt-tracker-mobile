@@ -231,6 +231,7 @@ export const UK = {
     'home.empty_title': 'Доз поки немає',
     'home.empty_subtitle': 'Позначте першу дозу, щоб побачити розрахунковий рівень гормонів',
     'home.empty_cta': 'Позначити дозу',
+    // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
     'regimen.route.injection': 'Ін’єкція',
     'regimen.route.sc': 'Підшкірна ін’єкція',
     'regimen.route.nasal': 'Назальний спрей',

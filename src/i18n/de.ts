@@ -233,6 +233,7 @@ export const DE = {
     'home.empty_title': 'Noch keine Dosen eingetragen',
     'home.empty_subtitle': 'Trage deine erste Dosis ein, um deine geschätzten Hormonspiegel zu sehen',
     'home.empty_cta': 'Dosis eintragen',
+    // Plan and Forecast use these names on their own. See regimenForms.ts for drug-and-dose phrases.
     'regimen.route.injection': 'Injektion',
     'regimen.route.sc': 'Subkutane Injektion',
     'regimen.route.nasal': 'Nasenspray',
