@@ -19,7 +19,11 @@ import { PLAN_DRUGS } from '../src/utils/plan';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/i18n/translations.ts'), 'utf8').split('\n');
 const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
-const calibrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
+const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
+const supplyRoutes = new Set([
+    ...administrationRoutes,
+    ...Object.values(PLAN_DRUGS).flatMap(drugs => Object.keys(drugs)),
+]);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
 describe('language packs', () => {
@@ -63,27 +67,28 @@ describe('language packs', () => {
         }
     });
 
-    it('labels every route that can have a per-route calibration factor', () => {
+    it.each([
+        ['Calibration', 'cal.route', administrationRoutes],
+        ['Supplies', 'regimen.route', supplyRoutes],
+    ] as const)('labels every route in %s in every supported language', (_screen, namespace, routes) => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
-            for (const route of calibrationRoutes) {
-                const key = `cal.route.${route}`;
+            for (const route of routes) {
+                const key = `${namespace}.${route}`;
                 expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
                 expect(pack[key]).not.toBe(key);
             }
         }
     });
 
-    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and medication plans', () => {
+    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and Supplies', () => {
         const doseKeys = Object.values(Route).map(route => `route.${route}`);
         const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
-        const calibrationKeys = calibrationRoutes.map(route => `cal.route.${route}`);
-        const planKeys = Object.values(PLAN_DRUGS).flatMap(drugs =>
-            Object.keys(drugs).map(route => `regimen.route.${route}`),
-        );
+        const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
+        const regimenKeys = Array.from(supplyRoutes, route => `regimen.route.${route}`);
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
-        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys, ...planKeys])) {
+        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys, ...regimenKeys])) {
             const label = tr[key]?.trim();
             expect(label, `tr ${key}`).toBeTruthy();
             expect(label, `tr ${key}`).not.toBe(key);
