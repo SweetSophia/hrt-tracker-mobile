@@ -37,8 +37,11 @@ const de = {
     skip: 'Überspringen',
     timelineTitle: 'Verlauf der Dosen',
     planTitle: 'Medikationsplan',
+    planAdd: 'Medikament hinzufügen',
+    planQRoute: 'Wie verabreichst du es?',
     forecastEntry: 'Was-wäre-wenn',
     forecastCurrent: 'Aktuell',
+    forecastRoute: 'Verabreichungsart',
     labAdd: 'Laborwert hinzufügen',
     labE2: 'Estradiolwert',
     addDose: 'Dosis hinzufügen',
@@ -373,9 +376,18 @@ test('the German plan and forecast read 2,5 mg alle 3,5 Tage', async ({ page, co
     // 2,5 mg every 3,5 days, never the point decimals of the stored numbers.
     await page.getByRole('button', { name: de.planTitle, exact: true }).tap();
     await expect(page.getByRole('button', { name: /^Medikationsplan\s*,\s*Zurück$/ })).toBeVisible();
-    const regimenLabel = 'Estradiolvalerat 2,5 mg injektion';
+    const regimenLabel = 'Estradiolvalerat 2,5 mg zur Injektion';
     await expect(page.getByText(regimenLabel, { exact: true })).toBeVisible();
     await expect(page.getByText('Alle 3,5 Tage', { exact: true })).toBeVisible();
+
+    // A route is a choice, so the wizard names each form on its own
+    // ("Injektion"), not in the sentence form the summary keeps.
+    await page.getByRole('button', { name: de.planAdd, exact: true }).tap();
+    await expect(page.getByRole('heading', { name: de.planQRoute, exact: true })).toBeVisible();
+    const routeRows = page.locator('button[aria-pressed]');
+    for (const form of ['Injektion', 'Gel', 'Pflaster']) {
+        await expect(routeRows.filter({ has: page.getByText(form, { exact: true }) }), form).toHaveCount(1);
+    }
 
     // The forecast's current regimen states the same numbers through its own
     // interval path.
@@ -385,6 +397,10 @@ test('the German plan and forecast read 2,5 mg alle 3,5 Tage', async ({ page, co
     const currentRegimen = page.locator('section').filter({ has: page.getByText(de.forecastCurrent, { exact: true }) });
     await expect(currentRegimen.getByText(regimenLabel, { exact: true })).toBeVisible();
     await expect(currentRegimen.getByText('alle 3,5 Tage', { exact: true })).toBeVisible();
+
+    // The forecast's own route choice is a standalone button, and it names
+    // the form on its own as well.
+    await expect(page.getByRole('button', { name: new RegExp('^' + de.forecastRoute) })).toHaveText('Injektion');
 });
 
 test('an unsupported saved language falls back to English in Forecast and Labs', async ({ page, context }) => {

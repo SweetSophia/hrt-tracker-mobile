@@ -58,13 +58,34 @@ export const doseOf = (dose: string, drug: string, t: T) => {
     return fill(template, { dose, drug: template.startsWith('{drug}') ? drug : inPhrase(drug) });
 };
 
+const DRUG_FORM_PATTERN = /^[^{}]*\{drug\}[^{}]*\{dose\}[^{}]*$/;
+
+/** The language chooses where the drug, form and optional dose go in a prescription line. */
+function formatDrugForm(item: { route: Route; ester: Ester }, t: T, dose = ''): string {
+    const name = esterName(item.ester, t);
+    const amount = dose ? ` ${dose}` : '';
+    const pattern = t(`regimen.form.${item.route}`);
+    if (!DRUG_FORM_PATTERN.test(pattern)) {
+        // Keep the event name and amount for legacy patch removals or an incomplete translation.
+        const key = `route.${item.route}`;
+        const route = t(key);
+        return route === key ? name + amount : `${name}${amount} (${route})`;
+    }
+
+    const [before, after] = pattern.replace(/\s*\{dose\}/, amount).split('{drug}');
+    const drug = before && isKnownEster(item.ester) ? inPhrase(name) : name;
+    // A Latin drug code alongside Chinese or Japanese text still needs a word boundary.
+    const start = CJK.test(before.slice(-1)) ? glue(before, drug) : before + drug;
+    return CJK.test(after.charAt(0)) ? glue(start, after) : start + after;
+}
+
+export const supplyLabel = (s: { route: Route; ester: Ester }, t: T) => formatDrugForm(s, t);
+
 /** "雌二醇凝胶", "雌二醇贴片"; a pill or an injection is just the drug's name. */
 const drugForm = (i: { route: Route; ester: Ester }, t: T) =>
-    i.route === Route.gel || i.route === Route.patchApply
-        ? glue(esterName(i.ester, t), inPhrase(t(`regimen.route.${i.route}`)))
-        : esterName(i.ester, t);
+    i.route === Route.gel || i.route === Route.patchApply ? supplyLabel(i, t) : esterName(i.ester, t);
 
-/** How a plan item is named in a sentence. Two items that would read the same get their route in front: "口服雌二醇". */
+/** Use the Supplies label to distinguish plan rows that would otherwise have the same name. */
 export function planItemLabel(
     item: { id: string; route: Route; ester: Ester },
     plan: readonly { id: string; route: Route; ester: Ester }[],
@@ -72,7 +93,7 @@ export function planItemLabel(
 ): string {
     const base = drugForm(item, t);
     const clash = plan.some(o => o.id !== item.id && drugForm(o, t) === base);
-    return clash ? glue(t(`regimen.route.${item.route}`), inPhrase(esterName(item.ester, t))) : base;
+    return clash ? supplyLabel(item, t) : base;
 }
 
 /** "手臂": where a gel goes, without the English the settings list carries ("手臂 (Arm)"). */
@@ -121,16 +142,10 @@ export function regimenLabel(
     r: { route: Route; ester: Ester; doseMG: number; extras: Partial<Record<ExtraKey, number>> },
     t: T,
 ): string {
-    const route = inPhrase(t(`regimen.route.${r.route}`));
     const rate = r.extras[ExtraKey.releaseRateUGPerDay];
-    if (r.route === Route.patchApply && rate)
-        return `${glue(esterName(r.ester, t), route)} ${trimNum(rate)} µg${t('regimen.per_day')}`;
-    return `${esterName(r.ester, t)} ${trimNum(r.doseMG)} mg ${route}`;
+    if (r.route === Route.patchApply && rate) return `${supplyLabel(r, t)} ${trimNum(rate)} µg${t('regimen.per_day')}`;
+    return formatDrugForm(r, t, `${trimNum(r.doseMG)} mg`);
 }
-
-/** "戊酸雌二醇 肌注": a supply is a drug and a form, not a dose. */
-export const supplyLabel = (s: { route: Route; ester: Ester }, t: T) =>
-    `${esterName(s.ester, t)} ${inPhrase(t(`regimen.route.${s.route}`))}`;
 
 /** "每周", "每 3.5 天", "每 12 小时". */
 export function intervalLabel(h: number, t: T): string {

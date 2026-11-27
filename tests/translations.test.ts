@@ -7,10 +7,11 @@ import { PK_SANDBOX_MODELS } from '../src/domain/pkSandbox';
 import { Route } from '../src/domain/types';
 import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
 import { DE } from '../src/i18n/de';
+import type { Lang } from '../src/i18n/languages';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
+import { REGIMEN_FORMS } from '../src/i18n/regimenForms';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
-import { PLAN_DRUGS } from '../src/utils/plan';
 
 // A language pack may start from another one with a spread, but a spread
 // further down overwrites every key written above it. That is how the Turkish
@@ -19,8 +20,115 @@ import { PLAN_DRUGS } from '../src/utils/plan';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/i18n/translations.ts'), 'utf8').split('\n');
 const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
-const calibrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
+const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
+
+// Plan and Forecast show standalone route names. Drug-and-route phrases live in src/i18n/regimenForms.ts.
+// After a drug name, German uses “zur Injektion” for “Injektion”, “zum Einnehmen” for “Oral”
+// and “zur sublingualen Anwendung” for “Sublingual”.
+// German and English share the standalone spellings “Oral”, “Sublingual”, “Gel” and “Pellet”.
+const standaloneRouteLabels: Record<Lang, Record<Exclude<Route, Route.patchRemove>, string>> = {
+    zh: {
+        sc: '皮下注射',
+        nasal: '鼻喷',
+        pellet: '皮下埋植',
+        injection: '肌肉注射',
+        oral: '口服',
+        sublingual: '舌下',
+        gel: '凝胶',
+        patchApply: '贴片',
+    },
+    'zh-TW': {
+        sc: '皮下注射',
+        nasal: '鼻噴',
+        pellet: '皮下植入',
+        injection: '肌肉注射',
+        oral: '口服',
+        sublingual: '舌下',
+        gel: '凝膠',
+        patchApply: '貼片',
+    },
+    yue: {
+        sc: '皮下注射',
+        nasal: '噴鼻劑',
+        pellet: '皮下植入劑',
+        injection: '肌肉注射',
+        oral: '口服',
+        sublingual: '舌下',
+        gel: '凝膠',
+        patchApply: '貼片',
+    },
+    en: {
+        sc: 'Subcutaneous injection',
+        nasal: 'Nasal spray',
+        pellet: 'Pellet',
+        injection: 'Injection',
+        oral: 'Oral',
+        sublingual: 'Sublingual',
+        gel: 'Gel',
+        patchApply: 'Patch',
+    },
+    de: {
+        sc: 'Subkutane Injektion',
+        nasal: 'Nasenspray',
+        pellet: 'Pellet',
+        injection: 'Injektion',
+        oral: 'Oral',
+        sublingual: 'Sublingual',
+        gel: 'Gel',
+        patchApply: 'Pflaster',
+    },
+    ja: {
+        sc: '皮下注射',
+        nasal: '点鼻',
+        pellet: 'ペレット',
+        injection: '筋注',
+        oral: '経口',
+        sublingual: '舌下',
+        gel: 'ジェル',
+        patchApply: 'パッチ',
+    },
+    ko: {
+        sc: '피하 주사',
+        nasal: '비강 스프레이',
+        pellet: '펠릿',
+        injection: '주사',
+        oral: '경구',
+        sublingual: '설하',
+        gel: '젤',
+        patchApply: '패치',
+    },
+    tr: {
+        sc: 'Deri altı enjeksiyon',
+        nasal: 'Burun spreyi',
+        pellet: 'Pelet',
+        injection: 'Enjeksiyon',
+        oral: 'Ağızdan',
+        sublingual: 'Dil altı',
+        gel: 'Jel',
+        patchApply: 'Yama',
+    },
+    ru: {
+        sc: 'Подкожная инъекция',
+        nasal: 'Назальный спрей',
+        pellet: 'Имплант',
+        injection: 'Инъекция',
+        oral: 'Перорально',
+        sublingual: 'Сублингвально',
+        gel: 'Гель',
+        patchApply: 'Пластырь',
+    },
+    uk: {
+        sc: 'Підшкірна ін’єкція',
+        nasal: 'Назальний спрей',
+        pellet: 'Імплант',
+        injection: 'Ін’єкція',
+        oral: 'Перорально',
+        sublingual: 'Сублінгвально',
+        gel: 'Гель',
+        patchApply: 'Пластир',
+    },
+};
 
 describe('language packs', () => {
     it('spread a base pack only before their own strings', () => {
@@ -66,7 +174,7 @@ describe('language packs', () => {
     it('labels every route that can have a per-route calibration factor', () => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
-            for (const route of calibrationRoutes) {
+            for (const route of administrationRoutes) {
                 const key = `cal.route.${route}`;
                 expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
                 expect(pack[key]).not.toBe(key);
@@ -74,16 +182,34 @@ describe('language packs', () => {
         }
     });
 
-    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and medication plans', () => {
+    it.each(locales)('names every administration route on its own in %s', locale => {
+        const pack: Record<string, string> = TRANSLATIONS[locale];
+        for (const route of administrationRoutes) {
+            const key = `regimen.route.${route}`;
+            expect(pack[key], `${locale} standalone ${key}`).toBe(standaloneRouteLabels[locale][route]);
+        }
+    });
+
+    it('ships a complete drug-and-dose phrase for every administration route in every language', () => {
+        const en: Record<string, string> = TRANSLATIONS.en;
+        for (const lang of locales) {
+            const pack: Record<string, string> = TRANSLATIONS[lang];
+            for (const route of administrationRoutes) {
+                const key = `regimen.form.${route}`;
+                const slots = pack[key]?.match(/\{(?:drug|dose)\}|[{}]/g);
+                expect(slots, `${lang} ${key}`).toEqual(['{drug}', '{dose}']);
+                if (lang !== 'en') expect(pack[key], `${lang} ${key}`).not.toBe(en[key]);
+            }
+        }
+    });
+
+    it('keeps Turkish route labels in dose entry, the PK calculator, and Calibration', () => {
         const doseKeys = Object.values(Route).map(route => `route.${route}`);
         const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
-        const calibrationKeys = calibrationRoutes.map(route => `cal.route.${route}`);
-        const planKeys = Object.values(PLAN_DRUGS).flatMap(drugs =>
-            Object.keys(drugs).map(route => `regimen.route.${route}`),
-        );
+        const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
-        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys, ...planKeys])) {
+        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys])) {
             const label = tr[key]?.trim();
             expect(label, `tr ${key}`).toBeTruthy();
             expect(label, `tr ${key}`).not.toBe(key);
@@ -131,7 +257,7 @@ describe('age model copy', () => {
 describe('complete language packs', () => {
     const en = TRANSLATIONS.en as Record<string, string>;
     const authored = {
-        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de },
+        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de, ...REGIMEN_FORMS.de },
         ru: TRANSLATIONS.ru,
         uk: TRANSLATIONS.uk,
     };
