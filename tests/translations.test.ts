@@ -23,7 +23,9 @@ const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
 const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
-// Plan and Forecast show these names on their own. German uses “Injektion” here and “zur Injektion” after a drug.
+// Plan and Forecast show standalone route names. Drug-and-route phrases live in src/i18n/regimenForms.ts.
+// After a drug name, German uses “zur Injektion” for “Injektion”, “zum Einnehmen” for “Oral”
+// and “zur sublingualen Anwendung” for “Sublingual”.
 // German and English share the standalone spellings “Oral”, “Sublingual”, “Gel” and “Pellet”.
 const standaloneRouteLabels: Record<Lang, Record<Exclude<Route, Route.patchRemove>, string>> = {
     zh: {

@@ -197,6 +197,8 @@ it('keeps the short drug name on Overview when the plan has no ambiguity', () =>
 it.each([
     '{drug} und {drug}{dose}',
     '{drug}{dose} oder {dose}',
+    '{drug} {drug}',
+    '{dose} {dose}',
     '{drug} zur Injektion',
     '{dose} zur Injektion',
     '{drug}{dose} {unknown}',
