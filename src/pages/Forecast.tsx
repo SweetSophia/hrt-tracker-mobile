@@ -65,7 +65,6 @@ const LETTERS = ['A', 'B', 'C'];
 const DASHES = ['5 3', '2 3', '8 3 2 3'];
 
 interface Draft {
-    id: string;
     route: Route;
     ester: Ester;
     dose: string;
@@ -76,9 +75,24 @@ interface Draft {
     replace: boolean;
 }
 
-// Each copy gets its own tab ID, even when all of its editable values match.
-const hasPlanEdits = (plan: Draft, initial: Draft) =>
-    (Object.keys(initial) as (keyof Draft)[]).some(key => key !== 'id' && plan[key] !== initial[key]);
+interface PlanState extends Draft {
+    id: string;
+    originalStartH: number;
+}
+
+// A new editable field must take part in the shortcut's draft check.
+const EDITABLE_PLAN_FIELDS = Object.keys({
+    route: true,
+    ester: true,
+    dose: true,
+    intervalH: true,
+    slTier: true,
+    wearDays: true,
+    startH: true,
+    replace: true,
+} satisfies Record<keyof Draft, true>) as (keyof Draft)[];
+
+const hasPlanEdits = (plan: Draft, initial: Draft) => EDITABLE_PLAN_FIELDS.some(key => plan[key] !== initial[key]);
 
 const num = (v: string) => {
     const n = parseFloat(v);
@@ -139,7 +153,6 @@ const Forecast: React.FC<ForecastProps> = ({
         const rate = main?.extras[ExtraKey.releaseRateUGPerDay];
         const wearH = main?.extras[ExtraKey.patchWearH];
         return {
-            id: uuidv4(),
             route: main?.route ?? Route.injection,
             ester: main?.ester ?? (isTransmasc ? Ester.TC : Ester.EV),
             dose: main
@@ -155,7 +168,9 @@ const Forecast: React.FC<ForecastProps> = ({
         };
     };
     const [initialPlan] = useState(fromMain);
-    const [plans, setPlans] = useState(() => [{ ...initialPlan, originalStartH: initialPlan.startH }]);
+    const [plans, setPlans] = useState<PlanState[]>(() => [
+        { ...initialPlan, id: uuidv4(), originalStartH: initialPlan.startH },
+    ]);
     const [activeId, setActiveId] = useState(() => plans[0].id);
     const [horizonWeeks, setHorizonWeeks] = useState<number>(HORIZONS[1]);
     const [pickingStart, setPickingStart] = useState(false);
