@@ -64,7 +64,7 @@ const drugForm = (i: { route: Route; ester: Ester }, t: T) =>
         ? glue(esterName(i.ester, t), inPhrase(t(`regimen.route.${i.route}`)))
         : esterName(i.ester, t);
 
-/** How a plan item is named in a sentence. Two items that would read the same get their route in front: "口服雌二醇". */
+/** A plan item only needs its route when another item would have the same name. */
 export function planItemLabel(
     item: { id: string; route: Route; ester: Ester },
     plan: readonly { id: string; route: Route; ester: Ester }[],
@@ -72,7 +72,12 @@ export function planItemLabel(
 ): string {
     const base = drugForm(item, t);
     const clash = plan.some(o => o.id !== item.id && drugForm(o, t) === base);
-    return clash ? glue(t(`regimen.route.${item.route}`), inPhrase(esterName(item.ester, t))) : base;
+    if (!clash) return base;
+    // Imported plans can contain these forms. Use the same drug-first phrase as the Supplies picker.
+    if (item.route === Route.sc || item.route === Route.nasal || item.route === Route.pellet) {
+        return supplyLabel(item, t);
+    }
+    return glue(t(`regimen.route.${item.route}`), inPhrase(esterName(item.ester, t)));
 }
 
 /** "手臂": where a gel goes, without the English the settings list carries ("手臂 (Arm)"). */

@@ -234,6 +234,7 @@ export const DE = {
     'home.empty_subtitle': 'Trage deine erste Dosis ein, um deine geschätzten Hormonspiegel zu sehen',
     'home.empty_cta': 'Dosis eintragen',
     'regimen.route.injection': 'Injektion',
+    // These phrases follow the drug name, e.g. "Estradiol als Nasenspray".
     'regimen.route.sc': 'Zur subkutanen Injektion',
     'regimen.route.nasal': 'Als Nasenspray',
     'regimen.route.pellet': 'Als Pellet',

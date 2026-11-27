@@ -10,7 +10,6 @@ import { DE } from '../src/i18n/de';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
-import { PLAN_DRUGS } from '../src/utils/plan';
 
 // A language pack may start from another one with a spread, but a spread
 // further down overwrites every key written above it. That is how the Turkish
@@ -20,10 +19,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/i18n/translations.ts'), 'utf8').split('\n');
 const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
 const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
-const supplyRoutes = new Set([
-    ...administrationRoutes,
-    ...Object.values(PLAN_DRUGS).flatMap(drugs => Object.keys(drugs)),
-]);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
 describe('language packs', () => {
@@ -68,15 +63,34 @@ describe('language packs', () => {
     });
 
     it.each([
-        ['Calibration', 'cal.route', administrationRoutes],
-        ['Supplies', 'regimen.route', supplyRoutes],
-    ] as const)('labels every route in %s in every supported language', (_screen, namespace, routes) => {
+        ['Calibration', 'cal.route'],
+        ['Supplies', 'regimen.route'],
+    ] as const)('labels every route in %s in every supported language', (_screen, namespace) => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
-            for (const route of routes) {
+            for (const route of administrationRoutes) {
                 const key = `${namespace}.${route}`;
                 expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
                 expect(pack[key]).not.toBe(key);
+            }
+        }
+    });
+
+    it('translates Supplies labels except for words shared with English', () => {
+        const en = TRANSLATIONS.en as Record<string, string>;
+        const sharedGermanLabels: Partial<Record<Route, string>> = {
+            [Route.oral]: 'Oral',
+            [Route.sublingual]: 'Sublingual',
+            [Route.gel]: 'Gel',
+        };
+        for (const locale of locales) {
+            if (locale === 'en') continue;
+            const pack: Record<string, string> = TRANSLATIONS[locale];
+            for (const route of administrationRoutes) {
+                const key = `regimen.route.${route}`;
+                const label = pack[key]?.trim();
+                if (locale === 'de' && label === sharedGermanLabels[route]) continue;
+                expect(label, `${locale} ${key}`).not.toBe(en[key]);
             }
         }
     });
@@ -85,7 +99,7 @@ describe('language packs', () => {
         const doseKeys = Object.values(Route).map(route => `route.${route}`);
         const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
         const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
-        const regimenKeys = Array.from(supplyRoutes, route => `regimen.route.${route}`);
+        const regimenKeys = administrationRoutes.map(route => `regimen.route.${route}`);
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
         for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys, ...regimenKeys])) {

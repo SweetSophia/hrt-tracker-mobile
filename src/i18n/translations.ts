@@ -5049,7 +5049,6 @@ export const TRANSLATIONS = {
         'regimen.daily': '每日',
         'regimen.every_days': '每 {n} 日',
         'regimen.weekly': '每星期',
-        'regimen.route.sc': '皮下注射',
         'regimen.route.nasal': '噴鼻劑',
         'regimen.route.pellet': '皮下植入劑',
         'plan.empty': '未有用藥方案',

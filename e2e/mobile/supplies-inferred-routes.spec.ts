@@ -68,4 +68,22 @@ for (const copy of languages) {
         await expect(page.getByRole('button', { name: copy.addSupply, exact: true })).toBeVisible();
         await expect(page.getByRole('button', { name: new RegExp(`^${copy.routes.nasal} `) })).toBeVisible();
     });
+
+    test(`Overview distinguishes saved plan entries for the same drug in ${copy.lang}`, async ({ page, context }) => {
+        const plan = Object.keys(copy.routes).map(route => ({
+            id: route,
+            route,
+            ester: 'E2',
+            doseMG: 1,
+            extras: {},
+            everyDays: 7,
+            timesPerDay: 1,
+        }));
+        await seedStorage(context, baseStorage({ 'hrt-lang': copy.lang, 'hrt-plan': JSON.stringify(plan) }));
+        await page.goto('/');
+
+        for (const label of Object.values(copy.routes)) {
+            await expect(page.getByText(label, { exact: true })).toBeVisible();
+        }
+    });
 }
