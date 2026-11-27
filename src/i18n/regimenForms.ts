@@ -1,6 +1,8 @@
 import type { Route } from '../domain/types';
 import type { Lang } from './languages';
 
+// This type requires a {drug} before a {dose}. The pack test in tests/translations.test.ts and
+// formatDrugForm in src/utils/regimenText.ts also require exactly one of each and reject other placeholders.
 type RegimenForms = Record<
     `regimen.form.${Exclude<Route, Route.patchRemove>}`,
     `${string}{drug}${string}{dose}${string}`
