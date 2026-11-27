@@ -15,7 +15,8 @@ const ZH_TW_FORMS: RegimenForms = {
 };
 
 /**
- * Drug-and-route phrases use {drug} and {dose} once each. The optional dose includes its leading space.
+ * Use {drug} before {dose}, once each. The optional dose supplies its own leading space.
+ * Place the route before, between or after those slots to suit the language.
  * Plan and Forecast pickers use the standalone names under regimen.route.* in the language packs.
  */
 export const REGIMEN_FORMS: Record<Lang, RegimenForms> = {

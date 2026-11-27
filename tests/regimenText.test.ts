@@ -199,6 +199,7 @@ it.each([
     '{drug}{dose} oder {dose}',
     '{drug} {drug}',
     '{dose} {dose}',
+    '{dose}{drug}',
     '{drug} zur Injektion',
     '{dose} zur Injektion',
     '{drug}{dose} {unknown}',
@@ -207,6 +208,6 @@ it.each([
     const t = (key: string) => (key === 'regimen.form.injection' ? pattern : (pack[key] ?? key));
     const item = { route: Route.injection, ester: Ester.E2, doseMG: 2.5, extras: {} };
     vi.spyOn(locale, 'appLocale').mockReturnValue('de');
-    expect(supplyLabel(item, t)).toBe('Estradiol (Injektion)');
     expect(regimenLabel(item, t)).toBe('Estradiol 2,5 mg (Injektion)');
+    expect(supplyLabel(item, t)).toBe('Estradiol (Injektion)');
 });

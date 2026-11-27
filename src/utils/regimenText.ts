@@ -64,7 +64,7 @@ function formatDrugForm(item: { route: Route; ester: Ester }, t: T, dose = ''): 
     const amount = dose ? ` ${dose}` : '';
     const pattern = t(`regimen.form.${item.route}`);
     const slots = pattern.match(/\{\w+\}/g);
-    if (slots?.length !== 2 || !slots.includes('{drug}') || !slots.includes('{dose}')) {
+    if (slots?.length !== 2 || slots[0] !== '{drug}' || slots[1] !== '{dose}') {
         // Keep the event name and amount for legacy patch removals or an incomplete translation.
         const key = `route.${item.route}`;
         const route = t(key);
