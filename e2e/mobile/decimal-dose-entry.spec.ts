@@ -93,7 +93,7 @@ for (const [source, label, input, storedAmount] of [
         if (source === 'equivalent') {
             await form.getByRole('button', { name: /^Route / }).click();
             await form
-                .getByRole('listbox', { name: 'Route' })
+                .getByRole('listbox', { name: 'Route', exact: true })
                 .getByRole('option', { name: 'Injection', exact: true })
                 .click();
             await form.getByRole('button', { name: /^Compound / }).click();
@@ -123,7 +123,10 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
     const form = await openAddDose(page);
 
     await form.getByRole('button', { name: /^Route / }).click();
-    await form.getByRole('listbox', { name: 'Route' }).getByRole('option', { name: 'Patch apply' }).click();
+    await form
+        .getByRole('listbox', { name: 'Route', exact: true })
+        .getByRole('option', { name: 'Patch apply' })
+        .click();
     const rate = form.getByLabel('Rate (µg/day)', { exact: true });
     const wear = form.getByLabel('Wear duration (days)', { exact: true });
     const save = form.getByRole('button', { name: 'Save', exact: true });

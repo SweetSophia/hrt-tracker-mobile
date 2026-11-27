@@ -49,7 +49,7 @@ describe('language packs', () => {
         }
     });
 
-    it('names every dose route in every supported language', () => {
+    it('labels every route in the dose form and History in every supported language', () => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
             for (const route of Object.values(Route)) {
@@ -57,6 +57,23 @@ describe('language packs', () => {
                 expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
                 expect(pack[key]).not.toBe(key);
             }
+        }
+    });
+
+    it('labels every route that can have a per-route calibration factor', () => {
+        for (const locale of locales) {
+            const pack: Record<string, string> = TRANSLATIONS[locale];
+            for (const route of Object.values(Route).filter(route => route !== Route.patchRemove)) {
+                const key = `cal.route.${route}`;
+                expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
+                expect(pack[key]).not.toBe(key);
+            }
+        }
+    });
+
+    it('keeps the Turkish dose labels when inheriting the English pack', () => {
+        for (const route of [Route.sc, Route.nasal, Route.pellet] as const) {
+            expect(TRANSLATIONS.tr[`route.${route}`]).toBe(TRANSLATIONS.tr[`pk_calc.route.${route}`]);
         }
     });
 

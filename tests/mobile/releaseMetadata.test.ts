@@ -1,18 +1,23 @@
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-// The Android version the app is built from. Everything the repository
-// advertises has to point at this release: the READMEs, both languages of the
-// release notes and the APK SHA-256 the verification record confirms.
-const version = JSON.parse(readFileSync('mobile/version.json', 'utf8'));
+const read = (file: string): string => readFileSync(file, 'utf8');
+function readVersion(file: string) {
+    const { versionName, versionCode }: { versionName?: unknown; versionCode?: unknown } = JSON.parse(read(file)) ?? {};
+    if (typeof versionName !== 'string' || !/^\d+\.\d+\.\d+$/.test(versionName))
+        throw new Error(`${file}: expected versionName in X.Y.Z format`);
+    if (typeof versionCode !== 'number' || !Number.isSafeInteger(versionCode) || versionCode < 1)
+        throw new Error(`${file}: expected a positive integer versionCode`);
+    return { versionName, versionCode };
+}
+
+const version = readVersion('mobile/version.json');
 const release = 'https://github.com/SweetSophia/hrt-tracker-mobile/releases';
 const apk = `${release}/download/android-v${version.versionName}/hrt-tracker-${version.versionName}.apk`;
 const tag = `${release}/tag/android-v${version.versionName}`;
 const notes = `docs/releases/android-${version.versionName}.md`;
 const verification = `docs/releases/android-${version.versionName}-verification.md`;
 
-const read = (file: string): string => readFileSync(file, 'utf8');
 const links = (text: string): string[] => [...text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)].map(match => match[1]);
 const releaseLinks = (text: string): string[] => links(text).filter(link => link.startsWith(release));
 // A second-level section, selected by its heading alone: a release link in
@@ -50,14 +55,12 @@ describe('Android release metadata', () => {
         expect(published?.[1], `${notes} and ${verification} disagree on the APK SHA-256`).toBe(row?.[2]);
     });
 
-    const base = process.env.GITHUB_BASE_SHA;
-    it.skipIf(!base)('raises the Android version code when the Android version changes', () => {
-        // The checkout carries the base commit, so a missing object is a
-        // broken comparison rather than a reason to skip it.
-        const previous = JSON.parse(execFileSync('git', ['show', `${base}:mobile/version.json`], { encoding: 'utf8' }));
-        if (previous.versionName === version.versionName) return; // Not a release.
-        expect(version.versionCode, 'the Android version code has to rise above the base branch').toBeGreaterThan(
-            previous.versionCode,
-        );
+    it('increases versionCode when the Android version name or code changes', ({ skip }) => {
+        const file = process.env.HRT_ANDROID_BASE_VERSION_FILE;
+        if (!file) return skip('No predecessor supplied');
+        const previous = readVersion(file);
+        if (version.versionName === previous.versionName && version.versionCode === previous.versionCode)
+            return skip('Android version name and code are unchanged');
+        expect(version.versionCode).toBeGreaterThan(previous.versionCode);
     });
 });

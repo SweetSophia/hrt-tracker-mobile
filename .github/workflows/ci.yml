@@ -23,10 +23,19 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
-          # Depth 2 carries both parents of the pull request merge commit, so
-          # the base commit's mobile/version.json is readable in the tests.
-          fetch-depth: 2
           persist-credentials: false
+
+      - name: Read previous Android version
+        id: android_base
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          file="$RUNNER_TEMP/android-base-version.json"
+          gh api -H 'Accept: application/vnd.github.raw+json' \
+            "repos/$GITHUB_REPOSITORY/contents/mobile/version.json?ref=${BASE_SHA:?missing predecessor SHA}" > "$file"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
 
       - name: Set up Node
         uses: actions/setup-node@v7
@@ -60,9 +69,7 @@ jobs:
       - name: Unit tests
         # Dose and concentration math in logic.ts; see tests/.
         env:
-          # The base commit of a pull request; the release metadata test
-          # compares the Android version code against it.
-          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HRT_ANDROID_BASE_VERSION_FILE: ${{ steps.android_base.outputs.file }}
         run: npm test
 
       - name: Renderer attribution replay
