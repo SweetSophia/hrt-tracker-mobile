@@ -3,6 +3,7 @@ import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { REGIMEN_FORMS } from './regimenForms';
 import { RU } from './ru';
+import { TR_CALIBRATION_ROUTES } from './trCalibrationRoutes';
 import { UK } from './uk';
 import type { Lang } from './languages';
 
@@ -7661,6 +7662,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.tr,
         ...APPEARANCE_COPY.tr,
         ...REGIMEN_FORMS.tr,
+        ...TR_CALIBRATION_ROUTES,
         'storage.startup_title': 'Yerel kayıtlar açılamadı',
         'storage.startup_retry': 'Yeniden yükle',
         'storage.startup_detail':
@@ -8299,14 +8301,6 @@ export const TRANSLATIONS = {
         'cal.mcmc.pro.2': 'Emilim hızınızı öğrenir; tepe ve dip noktaları da buna göre kayar',
         'cal.mcmc.con.1': 'Bu uygulamaya özgü, hâlâ doğrulanan bir yöntem; zamanla kaymayı modellemez',
         'cal.absorption': 'emilim hızı',
-        'cal.route.injection': 'enjeksiyon',
-        'cal.route.sc': 'deri altı enjeksiyon',
-        'cal.route.nasal': 'burun spreyi',
-        'cal.route.pellet': 'pelet',
-        'cal.route.oral': 'oral',
-        'cal.route.sublingual': 'dil altı',
-        'cal.route.gel': 'jel',
-        'cal.route.patchApply': 'bant',
         'cal_guide.title': 'Kalibrasyon nasıl çalışır',
         'cal_guide.entry': 'Bu yöntemler nasıl hesaplar',
         'cal_guide.lead':

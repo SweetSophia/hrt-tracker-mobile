@@ -12,6 +12,7 @@ import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { REGIMEN_FORMS } from '../src/i18n/regimenForms';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
+import { TR_CALIBRATION_ROUTES } from '../src/i18n/trCalibrationRoutes';
 
 // A language pack may start from another one with a spread, but a spread
 // further down overwrites every key written above it. That is how the Turkish
@@ -209,13 +210,14 @@ describe('language packs', () => {
         const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
+        const displayedCalibration = Object.fromEntries(calibrationKeys.map(key => [key, tr[key]]));
+        expect(displayedCalibration).toStrictEqual(TR_CALIBRATION_ROUTES);
         for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys])) {
             const label = tr[key]?.trim();
             expect(label, `tr ${key}`).toBeTruthy();
             expect(label, `tr ${key}`).not.toBe(key);
-            // Turkish and English both use "oral" for this calibration factor.
-            if (key === 'cal.route.oral') expect(label, `tr ${key}`).toBe('oral');
-            else expect(label, `tr ${key}`).not.toBe(en[key]);
+            // The Turkish translator can choose the same word as English for the oral calibration factor.
+            if (key !== 'cal.route.oral') expect(label, `tr ${key}`).not.toBe(en[key]);
         }
     });
 
