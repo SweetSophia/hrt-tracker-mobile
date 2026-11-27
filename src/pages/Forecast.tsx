@@ -76,6 +76,10 @@ interface Draft {
     replace: boolean;
 }
 
+// Each copy gets its own tab ID, even when all of its editable values match.
+const hasPlanEdits = (plan: Draft, initial: Draft) =>
+    (Object.keys(initial) as (keyof Draft)[]).some(key => key !== 'id' && plan[key] !== initial[key]);
+
 const num = (v: string) => {
     const n = parseFloat(v);
     return Number.isFinite(n) ? n : NaN;
@@ -156,7 +160,7 @@ const Forecast: React.FC<ForecastProps> = ({
     const [horizonWeeks, setHorizonWeeks] = useState<number>(HORIZONS[1]);
     const [pickingStart, setPickingStart] = useState(false);
     useLauncherShortcutBlocker(
-        pickingStart || plans.length > 1 || plans[0] !== initialPlan || horizonWeeks !== HORIZONS[1],
+        pickingStart || plans.length > 1 || hasPlanEdits(plans[0], initialPlan) || horizonWeeks !== HORIZONS[1],
     );
     const active = plans.find(p => p.id === activeId) ?? plans[0];
     const update = (patch: Partial<Draft>) =>

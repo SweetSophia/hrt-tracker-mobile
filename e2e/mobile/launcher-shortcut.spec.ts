@@ -188,8 +188,6 @@ test('a repeated shortcut keeps the typed draft and still saves nothing', async 
 test('a shortcut during a lab edit explains how to retry without interrupting the draft', async ({ page }) => {
     const lab: LabFixture = { id: 'shortcut-lab', timeH: Date.now() / 3600000 - 1, concValue: 123, unit: 'pmol/l' };
     await launch(page, null, { 'hrt-lab-results': JSON.stringify([lab]) });
-    const session = await page.context().newCDPSession(page);
-    await session.send('Emulation.setSafeAreaInsetsOverride', { insets: { bottom: 36 } });
     await page.getByRole('button', { name: 'Labs', exact: true }).click();
     const row = page.getByRole('button', { name: /^123 pmol/ });
     await row.click();
@@ -203,8 +201,17 @@ test('a shortcut during a lab edit explains how to retry without interrupting th
     await open(page);
     await expect(shortcutHint(page)).toBeVisible();
     expect(await page.locator('.main-view').evaluate(el => el.getBoundingClientRect().top)).toBe(pageTop);
+    const nav = page.locator('.bottom-nav');
+    const navBottom = () => nav.evaluate(el => el.getBoundingClientRect().bottom);
+    const bottomBeforeInset = await navBottom();
+    const bottomInset = 36;
+    const session = await page.context().newCDPSession(page);
+    await session.send('Emulation.setSafeAreaInsetsOverride', { insets: { bottom: bottomInset } });
+    await expect.poll(navBottom).toBe(bottomBeforeInset - bottomInset);
+    await expect(nav).toBeInViewport({ ratio: 1 });
+    await expect(shortcutHint(page)).toBeInViewport({ ratio: 1 });
     const noticeBottom = await shortcutHint(page).evaluate(el => el.getBoundingClientRect().bottom);
-    const navTop = await page.locator('.bottom-nav').evaluate(el => el.getBoundingClientRect().top);
+    const navTop = await nav.evaluate(el => el.getBoundingClientRect().top);
     expect(noticeBottom).toBeLessThan(navTop);
     await expect(reading).toHaveValue('124.5');
     await expect(reading).toBeFocused();
@@ -298,7 +305,7 @@ for (const { screen, row, placeholder, draft } of [
     });
 }
 
-test('a shortcut keeps an unsaved What-if dose in the editor', async ({ page }) => {
+test('a shortcut preserves a changed What-if dose and opens after the original dose is restored', async ({ page }) => {
     await launch(page, null, { 'hrt-events': JSON.stringify([backupDose]) });
     const forecast = page.getByRole('button', { name: 'What-if', exact: true });
     const amount = page.getByRole('spinbutton', { name: /Dose/ });
@@ -308,6 +315,7 @@ test('a shortcut keeps an unsaved What-if dose in the editor', async ({ page }) 
     await expect(doseForm(page)).toBeVisible();
     await page.getByRole('button', { name: 'Overview', exact: true }).click();
     await forecast.click();
+    const originalDose = await amount.inputValue();
     await amount.fill('4.5');
 
     await pauseBeforeShortcut(page);
@@ -316,6 +324,27 @@ test('a shortcut keeps an unsaved What-if dose in the editor', async ({ page }) 
     await expect(amount).toHaveValue('4.5');
     await expect(amount).toBeFocused();
     await expect(doseForm(page)).toHaveCount(0);
+
+    await amount.fill(originalDose);
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
+    expect(await events(page)).toMatchObject([backupDose]);
+});
+
+test('a shortcut preserves a second What-if plan and opens when only an unchanged copy remains', async ({ page }) => {
+    await launch(page, null, { 'hrt-events': JSON.stringify([backupDose]) });
+    await page.getByRole('button', { name: 'What-if', exact: true }).click();
+    await page.getByRole('button', { name: 'Add plan', exact: true }).click();
+
+    await pauseBeforeShortcut(page);
+    await open(page);
+    await expect(shortcutHint(page)).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Plan B', exact: true })).toHaveAttribute('aria-selected', 'true');
+
+    await page.getByRole('tab', { name: 'Plan A', exact: true }).click();
+    await page.getByRole('button', { name: 'Remove plan', exact: true }).click();
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
     expect(await events(page)).toMatchObject([backupDose]);
 });
 
