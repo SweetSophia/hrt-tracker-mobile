@@ -5,7 +5,7 @@ import { connectLaunchActions, getLauncherShortcutPort } from '../platform/launc
 let activeEditors = 0;
 
 /** Keep an active editor in place when the launcher shortcut arrives. */
-export function useLauncherShortcutBlocker(active = true) {
+export function useLauncherShortcutBlocker(active: boolean) {
     useLayoutEffect(() => {
         if (!active) return;
         activeEditors++;

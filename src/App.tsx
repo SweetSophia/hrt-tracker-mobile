@@ -1014,7 +1014,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
                     <div
                         role="status"
                         aria-atomic="true"
-                        className="pointer-events-none absolute inset-x-4 bottom-[var(--nav-clearance)] z-30 md:bottom-4"
+                        className="pointer-events-none absolute inset-x-4 bottom-[calc(var(--nav-clearance)+env(safe-area-inset-bottom,0px))] z-30 md:bottom-4"
                     >
                         {shortcutNotice > 0 && (
                             <p

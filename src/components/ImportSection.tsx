@@ -28,7 +28,7 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
     const runtime = useApplicationRuntime();
     const importing = useRef(false);
     const [busy, setBusy] = useState(false);
-    useLauncherShortcutBlocker(showPaste || busy);
+    useLauncherShortcutBlocker(busy || (showPaste && text !== ''));
     const runImport = async (run: () => Promise<void>) => {
         if (importing.current) return;
         importing.current = true;

@@ -32,17 +32,18 @@ const NOTICE_KEY = {
 // dose is modelled at the age it was taken. Optional, so it can be removed.
 const AgeSettings: React.FC<AgeSettingsProps> = ({ birthYear, onSave, onBack }) => {
     const isMounted = useMounted();
-    useLauncherShortcutBlocker();
     const { t } = useTranslation();
     const thisYear = new Date().getFullYear();
-    const [yearStr, setYearStr] = useState(birthYear === null ? '' : String(birthYear));
+    const savedYear = birthYear === null ? '' : String(birthYear);
+    const [yearStr, setYearStr] = useState(savedYear);
+    useLauncherShortcutBlocker(yearStr !== savedYear);
     // Set by a Save that was turned down; the message then stays only for as
     // long as the value is still out of range.
     const [tried, setTried] = useState(false);
 
     useEffect(() => {
-        setYearStr(birthYear === null ? '' : String(birthYear));
-    }, [birthYear]);
+        setYearStr(savedYear);
+    }, [savedYear]);
 
     const year = Number(yearStr);
     const valid = yearStr.trim() !== '' && isPlausibleBirthYear(year, thisYear);

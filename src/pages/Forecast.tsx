@@ -117,7 +117,6 @@ const Forecast: React.FC<ForecastProps> = ({
     const { t, lang } = useTranslation();
     const { mode, isTransmasc } = useHRTMode();
     const { showDialog } = useDialog();
-    useLauncherShortcutBlocker();
     const target = isTransmasc ? { low: 300, high: 1000 } : { low: 100, high: 200 };
     const unit = isTransmasc ? 'ng/dL' : 'pg/mL';
     const hourNow = Math.floor(nowH);
@@ -151,10 +150,14 @@ const Forecast: React.FC<ForecastProps> = ({
             replace: true,
         };
     };
-    const [plans, setPlans] = useState<Draft[]>(() => [fromMain()]);
+    const [initialPlan] = useState(fromMain);
+    const [plans, setPlans] = useState<Draft[]>(() => [initialPlan]);
     const [activeId, setActiveId] = useState(() => plans[0].id);
-    const [horizonWeeks, setHorizonWeeks] = useState<number>(8);
+    const [horizonWeeks, setHorizonWeeks] = useState<number>(HORIZONS[1]);
     const [pickingStart, setPickingStart] = useState(false);
+    useLauncherShortcutBlocker(
+        pickingStart || plans.length > 1 || plans[0] !== initialPlan || horizonWeeks !== HORIZONS[1],
+    );
     const active = plans.find(p => p.id === activeId) ?? plans[0];
     const update = (patch: Partial<Draft>) =>
         setPlans(ps => ps.map(p => (p.id === active.id ? { ...p, ...patch } : p)));

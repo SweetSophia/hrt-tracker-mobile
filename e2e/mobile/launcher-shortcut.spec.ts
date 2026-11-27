@@ -188,6 +188,8 @@ test('a repeated shortcut keeps the typed draft and still saves nothing', async 
 test('a shortcut during a lab edit explains how to retry without interrupting the draft', async ({ page }) => {
     const lab: LabFixture = { id: 'shortcut-lab', timeH: Date.now() / 3600000 - 1, concValue: 123, unit: 'pmol/l' };
     await launch(page, null, { 'hrt-lab-results': JSON.stringify([lab]) });
+    const session = await page.context().newCDPSession(page);
+    await session.send('Emulation.setSafeAreaInsetsOverride', { insets: { bottom: 36 } });
     await page.getByRole('button', { name: 'Labs', exact: true }).click();
     const row = page.getByRole('button', { name: /^123 pmol/ });
     await row.click();
@@ -201,6 +203,9 @@ test('a shortcut during a lab edit explains how to retry without interrupting th
     await open(page);
     await expect(shortcutHint(page)).toBeVisible();
     expect(await page.locator('.main-view').evaluate(el => el.getBoundingClientRect().top)).toBe(pageTop);
+    const noticeBottom = await shortcutHint(page).evaluate(el => el.getBoundingClientRect().bottom);
+    const navTop = await page.locator('.bottom-nav').evaluate(el => el.getBoundingClientRect().top);
+    expect(noticeBottom).toBeLessThan(navTop);
     await expect(reading).toHaveValue('124.5');
     await expect(reading).toBeFocused();
     await expect(doseForm(page)).toHaveCount(0);
@@ -225,6 +230,7 @@ for (const { setting, label, draft } of [
         await page.getByRole('button', { name: /^General\b/ }).click();
         await page.getByRole('button', { name: setting }).click();
         const field = page.getByRole('spinbutton', { name: label, exact: true });
+        const saved = await field.inputValue();
         await field.fill(draft);
 
         await pauseBeforeShortcut(page);
@@ -234,6 +240,11 @@ for (const { setting, label, draft } of [
         await expect(field).toBeFocused();
         await expect(doseForm(page)).toHaveCount(0);
         expect(await events(page)).toEqual([]);
+
+        await field.fill(saved);
+        await field.blur();
+        await open(page);
+        await expect(doseForm(page)).toBeVisible();
     });
 }
 
@@ -279,6 +290,8 @@ for (const { screen, row, placeholder, draft } of [
 
         await editor.click();
         await expect(field).toHaveCount(0);
+        await editor.click();
+        await expect(field).toHaveValue('');
         await open(page);
         await expect(doseForm(page)).toBeVisible();
         expect(await events(page)).toMatchObject([backupDose]);
@@ -287,8 +300,14 @@ for (const { screen, row, placeholder, draft } of [
 
 test('a shortcut keeps an unsaved What-if dose in the editor', async ({ page }) => {
     await launch(page, null, { 'hrt-events': JSON.stringify([backupDose]) });
-    await page.getByRole('button', { name: 'What-if', exact: true }).click();
+    const forecast = page.getByRole('button', { name: 'What-if', exact: true });
     const amount = page.getByRole('spinbutton', { name: /Dose/ });
+    await forecast.click();
+    await expect(amount).toBeVisible();
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
+    await page.getByRole('button', { name: 'Overview', exact: true }).click();
+    await forecast.click();
     await amount.fill('4.5');
 
     await pauseBeforeShortcut(page);

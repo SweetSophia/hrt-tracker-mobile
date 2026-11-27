@@ -14,16 +14,17 @@ interface WeightSettingsProps {
 
 const WeightSettings: React.FC<WeightSettingsProps> = ({ weight, onSave, onBack }) => {
     const isMounted = useMounted();
-    useLauncherShortcutBlocker();
     const { t } = useTranslation();
-    const [weightStr, setWeightStr] = useState(weight.toString());
+    const savedWeight = String(weight);
+    const [weightStr, setWeightStr] = useState(savedWeight);
+    useLauncherShortcutBlocker(weightStr !== savedWeight);
     // Set by a Save that was turned down; the message then stays only for as
     // long as the value is still out of range.
     const [tried, setTried] = useState(false);
 
     useEffect(() => {
-        setWeightStr(weight.toString());
-    }, [weight]);
+        setWeightStr(savedWeight);
+    }, [savedWeight]);
 
     const valid = isPlausibleBodyWeightKG(parseFloat(weightStr));
     const showError = tried && !valid;

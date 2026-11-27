@@ -94,7 +94,6 @@ const clampTo = (f: FieldDef, n: number) => Math.max(f.min, Math.min(f.max, n));
 
 const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, onBack }) => {
     const isMounted = useMounted();
-    useLauncherShortcutBlocker();
     const { t } = useTranslation();
     const { showDialog } = useDialog();
 
@@ -144,6 +143,7 @@ const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, 
 
     const settled = settle();
     const dirty = FIELDS.some(f => settled[f.key] !== savedParams[f.key]);
+    useLauncherShortcutBlocker(dirty || Object.keys(text).length > 0);
 
     const handleSave = async () => {
         if (!(await onSave(settled)) || !isMounted()) return;
