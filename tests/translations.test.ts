@@ -210,15 +210,14 @@ describe('language packs', () => {
         const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
-        // Translators may choose the English spelling for oral. Verify the Turkish declaration and its displayed value.
-        const oralKey = 'cal.route.oral';
-        expect(Object.hasOwn(TR_CALIBRATION_ROUTES, oralKey), `tr must declare ${oralKey}`).toBe(true);
-        expect(tr[oralKey], `tr ${oralKey}`).toBe(TR_CALIBRATION_ROUTES[oralKey]);
+        const displayedCalibration = Object.fromEntries(calibrationKeys.map(key => [key, tr[key]]));
+        expect(displayedCalibration).toStrictEqual(TR_CALIBRATION_ROUTES);
         for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys])) {
             const label = tr[key]?.trim();
             expect(label, `tr ${key}`).toBeTruthy();
             expect(label, `tr ${key}`).not.toBe(key);
-            if (key !== oralKey) expect(label, `tr ${key}`).not.toBe(en[key]);
+            // The Turkish translator can choose the same word as English for the oral calibration factor.
+            if (key !== 'cal.route.oral') expect(label, `tr ${key}`).not.toBe(en[key]);
         }
     });
 
