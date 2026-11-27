@@ -172,6 +172,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
         prepareImportedData,
         mergeImportedData,
         buildExportPayload,
+        readOtherReportMode,
         buildCompleteBackupBundle,
         previewCompleteBackupBundle,
         applyCompleteBackupBundle,
@@ -1282,6 +1283,20 @@ const AppContent = ({ session }: { session: UiSession }) => {
 
                         {currentView === 'settings-export' && (
                             <ExportSettings
+                                key={scope}
+                                readOtherMode={readOtherReportMode}
+                                reportNow={currentTime}
+                                estimate={
+                                    modelStatus === 'ready' && simulation
+                                        ? {
+                                              mode,
+                                              events,
+                                              simulation,
+                                              calibrationFn,
+                                              nowH: (modelNowMs ?? currentTime.getTime()) / 3_600_000,
+                                          }
+                                        : undefined
+                                }
                                 events={events}
                                 labResults={labResults}
                                 weight={weight}

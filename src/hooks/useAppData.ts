@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { ShowDialog } from '../contexts/DialogContext';
 import {
@@ -28,6 +28,7 @@ import { useHRTMode } from '../contexts/HRTModeContext';
 import { useRecordController } from '../contexts/RecordsContext';
 import { SyncState, fingerprintState, normalizeSyncState } from '../utils/syncMerge';
 import {
+    readReportRecords,
     planCompleteBackup,
     planSyncedState,
     planRecordOperation,
@@ -386,6 +387,13 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         }
     };
     const mergeImportedData = (raw: unknown) => importLegacy(raw, 'merge');
+    const snapshots = state.snapshots;
+    const readOtherReportMode = useCallback(() => {
+        const other = identity.mode === 'transfem' ? 'transmasc' : 'transfem';
+        return planRecordOperation({ scope: identity, snapshots }, storage =>
+            readReportRecords(storage, identity.owner, other),
+        ).result;
+    }, [identity, snapshots]);
     const buildExportPayload = () => exportRecordState(liveContext());
     const buildCompleteBackupBundle = (createdAt?: string) => {
         const context = liveContext();
@@ -504,6 +512,7 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         prepareImportedData,
         mergeImportedData,
         buildExportPayload,
+        readOtherReportMode,
         buildCompleteBackupBundle,
         previewCompleteBackupBundle,
         applyCompleteBackupBundle,

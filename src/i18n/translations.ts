@@ -2,6 +2,7 @@ import { APPEARANCE_COPY } from './appearanceCopy';
 import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { REGIMEN_FORMS } from './regimenForms';
+import { REPORT_COPY } from './reportCopy';
 import { RU } from './ru';
 import { UK } from './uk';
 import type { Lang } from './languages';
@@ -4319,6 +4320,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.zh,
         ...APPEARANCE_COPY.zh,
         ...REGIMEN_FORMS.zh,
+        ...REPORT_COPY.zh,
     },
 
     'zh-TW': {
@@ -4326,6 +4328,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS['zh-TW'],
         ...APPEARANCE_COPY['zh-TW'],
         ...REGIMEN_FORMS['zh-TW'],
+        ...REPORT_COPY['zh-TW'],
     },
 
     yue: {
@@ -4333,6 +4336,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.yue,
         ...APPEARANCE_COPY.yue,
         ...REGIMEN_FORMS.yue,
+        ...REPORT_COPY.yue,
         'storage.startup_title': '開唔到本機記錄',
         'storage.startup_retry': '重新載入',
         'storage.startup_detail':
@@ -5177,6 +5181,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.en,
         ...APPEARANCE_COPY.en,
         ...REGIMEN_FORMS.en,
+        ...REPORT_COPY.en,
         'app.title': 'HRT Tracker',
     },
     de: {
@@ -5184,11 +5189,13 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.de,
         ...APPEARANCE_COPY.de,
         ...REGIMEN_FORMS.de,
+        ...REPORT_COPY.de,
     },
     ja: {
         ...MOBILE_CREDITS.ja,
         ...APPEARANCE_COPY.ja,
         ...REGIMEN_FORMS.ja,
+        ...REPORT_COPY.ja,
         'storage.startup_title': '端末内の記録を開けませんでした',
         'storage.startup_retry': '再読み込み',
         'storage.startup_detail':
@@ -6433,6 +6440,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.ko,
         ...APPEARANCE_COPY.ko,
         ...REGIMEN_FORMS.ko,
+        ...REPORT_COPY.ko,
         'storage.startup_title': '기기에 저장된 기록을 열 수 없습니다',
         'storage.startup_retry': '새로고침',
         'storage.startup_detail':
@@ -7661,6 +7669,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.tr,
         ...APPEARANCE_COPY.tr,
         ...REGIMEN_FORMS.tr,
+        ...REPORT_COPY.tr,
         'storage.startup_title': 'Yerel kayıtlar açılamadı',
         'storage.startup_retry': 'Yeniden yükle',
         'storage.startup_detail':
@@ -8911,11 +8920,13 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.ru,
         ...APPEARANCE_COPY.ru,
         ...REGIMEN_FORMS.ru,
+        ...REPORT_COPY.ru,
     },
     uk: {
         ...UK,
         ...MOBILE_CREDITS.uk,
         ...APPEARANCE_COPY.uk,
         ...REGIMEN_FORMS.uk,
+        ...REPORT_COPY.uk,
     },
 } as const satisfies Record<Lang, Record<string, string>>;

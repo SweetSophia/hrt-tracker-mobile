@@ -1,0 +1,27 @@
+Third-party notices
+==================
+
+This distribution includes subsets of the Noto fonts.
+
+Noto Sans, Noto Sans SC, Noto Sans TC, Noto Sans HK, Noto Sans JP and
+Noto Sans KR
+Copyright The Noto Project Authors (https://github.com/notofonts)
+Licensed under the SIL Open Font License, Version 1.1.
+
+The full licence text is in noto-sans-OFL-1.1.txt next to this file.
+
+The font files in this distribution are modified subsets: each upstream
+variable font was pinned to one weight and cut down to the characters that
+language's report can draw. The subsets carry no Reserved Font Name: the
+upstream Noto fonts declare none.
+
+Upstream: https://github.com/google/fonts/tree/5026800714d07231937d92eb4cceabf06e05d74e/ofl
+Copyright The Noto Project Authors (https://github.com/notofonts)
+
+Shipped subsets:
+  NotoSans-Latin.ttf (Noto Sans) - en, de, tr, ru, uk
+  NotoSansSC-zh.ttf (Noto Sans SC) - zh
+  NotoSansTC-zh-TW.ttf (Noto Sans TC) - zh-TW
+  NotoSansHK-yue.ttf (Noto Sans HK) - yue
+  NotoSansJP-ja.ttf (Noto Sans JP) - ja
+  NotoSansKR-ko.ttf (Noto Sans KR) - ko

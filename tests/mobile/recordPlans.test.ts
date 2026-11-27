@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { Ester, Route } from '../../src/domain/engine';
-import { planCompleteBackup, planRecordOperation, planSyncedState } from '../../src/records';
+import { planCompleteBackup, planRecordOperation, planSyncedState, readReportRecords } from '../../src/records';
 import {
     allowedKeys,
     DEVICE_PREFERENCES_NAMESPACE,
@@ -59,6 +59,23 @@ it('separates backend/account namespaces but shares both modes of one account', 
     expect(recordNamespace({ ...scope, backend: 'a:b', owner: 'c' })).not.toBe(
         recordNamespace({ ...scope, backend: 'a', owner: 'b:c' }),
     );
+});
+
+it('reads only the selected mode’s doses and labs for a report', () => {
+    const activeDose = event('active-dose');
+    const otherDose = { ...event('other-dose'), ester: Ester.T };
+    const lab = { id: 'other-lab', timeH: 500_000, concValue: 12, unit: 'nmol/l' };
+    const input = context({
+        'hrt-events': JSON.stringify([activeDose]),
+        'hrt-masc-events': JSON.stringify([otherDose]),
+        'hrt-masc-lab-results': JSON.stringify([lab]),
+        'hrt-masc-dose-templates': 'unrelated unreadable template',
+    });
+    const read = (owner: string, mode: RecordScope['mode']) =>
+        planRecordOperation(input, storage => readReportRecords(storage, owner, mode)).result;
+    expect(read(scope.owner, 'transfem')).toEqual({ events: [activeDose], labResults: [] });
+    expect(read(scope.owner, 'transmasc')).toEqual({ events: [otherDose], labResults: [lab] });
+    expect(() => read('other-owner', 'transmasc')).toThrow('Record key outside scope');
 });
 
 it.each(['token', 'hrt-cloud-key', 'hrt-u123-events', 'hrt-replace-journal-v1', '__proto__', 'app-theme'])(

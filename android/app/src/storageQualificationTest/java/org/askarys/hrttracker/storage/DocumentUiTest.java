@@ -191,7 +191,7 @@ public final class DocumentUiTest {
                         StringBuilder text = new StringBuilder();
                         page.getTextContents().forEach(item -> text.append(item.getText()).append(' '));
                         String normalized = text.toString().replaceAll("\\s+", " ");
-                        for (String expected : new String[]{"Dose history", "12.5 mg", "injection", "EV", "Lab results", "E2", "95 pg/ml", "425 ng/dl"})
+                        for (String expected : new String[]{"Dose history", "12.5 mg", "injection", "valerate", "Lab results", "Estradiol", "Testosterone", "95 pg/mL", "425 ng/dL"})
                             assertTrue("Rendered PDF text: " + expected, normalized.contains(expected));
                         evidence.put("textVerified", true);
                         Bitmap bitmap = Bitmap.createBitmap(page.getWidth() * 2, page.getHeight() * 2, Bitmap.Config.ARGB_8888);
