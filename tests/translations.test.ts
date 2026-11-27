@@ -10,6 +10,7 @@ import { DE } from '../src/i18n/de';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
+import { PLAN_DRUGS } from '../src/utils/plan';
 
 // A language pack may start from another one with a spread, but a spread
 // further down overwrites every key written above it. That is how the Turkish
@@ -18,6 +19,7 @@ import { TRANSLATIONS } from '../src/i18n/translations';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = readFileSync(resolve(root, 'src/i18n/translations.ts'), 'utf8').split('\n');
 const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
+const calibrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
 describe('language packs', () => {
@@ -64,7 +66,7 @@ describe('language packs', () => {
     it('labels every route that can have a per-route calibration factor', () => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
-            for (const route of Object.values(Route).filter(route => route !== Route.patchRemove)) {
+            for (const route of calibrationRoutes) {
                 const key = `cal.route.${route}`;
                 expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
                 expect(pack[key]).not.toBe(key);
@@ -72,14 +74,22 @@ describe('language packs', () => {
         }
     });
 
-    it('keeps the Turkish route labels in the dose form and PK calculator when inheriting English', () => {
+    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and medication plans', () => {
         const doseKeys = Object.values(Route).map(route => `route.${route}`);
         const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
+        const calibrationKeys = calibrationRoutes.map(route => `cal.route.${route}`);
+        const planKeys = Object.values(PLAN_DRUGS).flatMap(drugs =>
+            Object.keys(drugs).map(route => `regimen.route.${route}`),
+        );
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
-        for (const key of new Set([...doseKeys, ...calculatorKeys])) {
-            expect(tr[key]?.trim(), `tr ${key}`).toBeTruthy();
-            expect(tr[key], `tr ${key}`).not.toBe(en[key]);
+        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys, ...planKeys])) {
+            const label = tr[key]?.trim();
+            expect(label, `tr ${key}`).toBeTruthy();
+            expect(label, `tr ${key}`).not.toBe(key);
+            // Turkish and English both use "oral" for this calibration factor.
+            if (key === 'cal.route.oral') expect(label, `tr ${key}`).toBe('oral');
+            else expect(label, `tr ${key}`).not.toBe(en[key]);
         }
     });
 
