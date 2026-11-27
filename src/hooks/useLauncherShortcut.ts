@@ -2,6 +2,21 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import type { LaunchAction } from '../platform/contracts/launchActions';
 import { connectLaunchActions, getLauncherShortcutPort } from '../platform/launcherShortcuts';
 
+let activeEditors = 0;
+
+/** Keep an active editor in place when the launcher shortcut arrives. */
+export function useLauncherShortcutBlocker(active = true) {
+    useLayoutEffect(() => {
+        if (!active) return;
+        activeEditors++;
+        return () => {
+            activeEditors--;
+        };
+    }, [active]);
+}
+
+export const hasLauncherShortcutBlocker = () => activeEditors > 0;
+
 /** Subscribe even during onboarding so an early intent is consumed there. */
 export function useLauncherShortcut(label: string | null, onAction: (action: LaunchAction) => void) {
     const latest = useRef(onAction);

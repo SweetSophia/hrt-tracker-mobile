@@ -39,8 +39,9 @@ import {
 import { useAppData } from './hooks/useAppData';
 import { ModelStatus } from './components/ModelStatus';
 import { useAppNavigation, tabForView, ViewKey } from './hooks/useAppNavigation';
+import { isSteppingBack } from './hooks/navHistory';
 import { appBackOwners } from './application/backNavigation';
-import { useLauncherShortcut } from './hooks/useLauncherShortcut';
+import { hasLauncherShortcutBlocker, useLauncherShortcut } from './hooks/useLauncherShortcut';
 import { useLiveShareSync } from './hooks/useLiveShareSync';
 import { describeSyncError, useCloudSync } from './hooks/useCloudSync';
 
@@ -289,11 +290,9 @@ const AppContent = ({ session }: { session: UiSession }) => {
     };
     useLauncherShortcut(showOnboarding ? null : t('btn.add'), () => {
         if (showOnboarding || (currentView === 'history' && isQuickAddOpen)) return;
-        // These settings editors hold their input locally until Save.
-        const editingSettings =
-            currentView === 'settings-weight' || currentView === 'settings-age' || currentView === 'pk-params';
         if (
-            editingSettings ||
+            isSteppingBack() ||
+            hasLauncherShortcutBlocker() ||
             isPasswordInputOpen ||
             (currentView === 'lab' && isQuickAddLabOpen) ||
             editFromOverview ||
@@ -721,6 +720,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
     };
 
     const handleEditEvent = (e: DoseEvent) => {
+        if (isSteppingBack()) return;
         setEditFromOverview(e.id);
         handleViewChange('history');
     };
@@ -1011,9 +1011,16 @@ const AppContent = ({ session }: { session: UiSession }) => {
                 <UpdatePrompt />
                 {androidUpdates && <AndroidUpdateNotice updates={androidUpdates} />}
                 {getBuildTarget() === 'mobile' && (
-                    <div role="status" aria-atomic="true" className="shrink-0">
+                    <div
+                        role="status"
+                        aria-atomic="true"
+                        className="pointer-events-none absolute inset-x-4 bottom-[var(--nav-clearance)] z-30 md:bottom-4"
+                    >
                         {shortcutNotice > 0 && (
-                            <p key={shortcutNotice} className="mx-auto max-w-2xl px-6 py-1 text-sm text-muted">
+                            <p
+                                key={shortcutNotice}
+                                className="mx-auto w-fit max-w-md wrap-break-word rounded-[var(--radius-md)] border-(length:--hairline) border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm text-[var(--text)] shadow-[var(--shadow-sm)]"
+                            >
                                 {fill(t('launcher.finish_current'), { action: t('btn.add') })}
                             </p>
                         )}

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { TRANSLATIONS } from '../../src/i18n/translations';
+import { fill } from '../../src/utils/regimenText';
 import { baseStorage, seedStorage, type DoseEventFixture, type LabFixture } from '../helpers';
 
 /**
@@ -46,8 +47,11 @@ const doseForm = (page: Page) =>
     page.locator('.disclosure[data-open="true"] form').filter({ has: page.getByLabel('Dose (mg)', { exact: true }) });
 const shortcutHint = (page: Page) =>
     page.getByRole('status').filter({
-        hasText: TRANSLATIONS.en['launcher.finish_current'].replace('{action}', TRANSLATIONS.en['btn.add']),
+        hasText: fill(TRANSLATIONS.en['launcher.finish_current'], { action: TRANSLATIONS.en['btn.add'] }),
     });
+
+// Pause before the shortcut starts its timer. Leave time for the browser round trip.
+const pauseBeforeShortcut = async (page: Page) => page.clock.pauseAt(await page.evaluate(() => Date.now() + 10_000));
 
 /** The bridge the bundled app sees. startup is delivered to the first appUrlOpen listener. */
 function installBridge(startup: string | null) {
@@ -130,6 +134,7 @@ function installBridge(startup: string | null) {
 
 /** An onboarded launch. startup is the intent the activity was opened with. */
 async function launch(page: Page, startup: string | null, extra: Record<string, string> = {}) {
+    await page.clock.install();
     await page.setViewportSize({ width: 390, height: 844 });
     await seedStorage(page.context(), baseStorage(extra));
     await page.addInitScript(installBridge, startup);
@@ -182,7 +187,6 @@ test('a repeated shortcut keeps the typed draft and still saves nothing', async 
 
 test('a shortcut during a lab edit explains how to retry without interrupting the draft', async ({ page }) => {
     const lab: LabFixture = { id: 'shortcut-lab', timeH: Date.now() / 3600000 - 1, concValue: 123, unit: 'pmol/l' };
-    await page.clock.install();
     await launch(page, null, { 'hrt-lab-results': JSON.stringify([lab]) });
     await page.getByRole('button', { name: 'Labs', exact: true }).click();
     const row = page.getByRole('button', { name: /^123 pmol/ });
@@ -192,10 +196,11 @@ test('a shortcut during a lab edit explains how to retry without interrupting th
     await expect(reading).toHaveValue('123');
     await reading.fill('124.5');
 
-    // Keep the notice's auto-dismiss timer paused through the retry.
-    await page.clock.pauseAt(await page.evaluate(() => Date.now() + 10_000));
+    await pauseBeforeShortcut(page);
+    const pageTop = await page.locator('.main-view').evaluate(el => el.getBoundingClientRect().top);
     await open(page);
     await expect(shortcutHint(page)).toBeVisible();
+    expect(await page.locator('.main-view').evaluate(el => el.getBoundingClientRect().top)).toBe(pageTop);
     await expect(reading).toHaveValue('124.5');
     await expect(reading).toBeFocused();
     await expect(doseForm(page)).toHaveCount(0);
@@ -217,11 +222,12 @@ for (const { setting, label, draft } of [
     test(`a shortcut preserves the settings draft for ${label}`, async ({ page }) => {
         await launch(page, null, { 'hrt-age-beta': 'true' });
         await page.getByRole('button', { name: 'Settings', exact: true }).click();
-        await page.getByRole('button').filter({ hasText: 'General' }).click();
+        await page.getByRole('button', { name: /^General\b/ }).click();
         await page.getByRole('button', { name: setting }).click();
         const field = page.getByRole('spinbutton', { name: label, exact: true });
         await field.fill(draft);
 
+        await pauseBeforeShortcut(page);
         await open(page);
         await expect(shortcutHint(page)).toBeVisible();
         await expect(field).toHaveValue(draft);
@@ -230,6 +236,102 @@ for (const { setting, label, draft } of [
         expect(await events(page)).toEqual([]);
     });
 }
+
+const backupDose: DoseEventFixture = {
+    id: 'shortcut-backup',
+    route: 'oral',
+    ester: 'EV',
+    doseMG: 2,
+    timeH: Date.now() / 3600000 - 2,
+    extras: {},
+};
+
+for (const { screen, row, placeholder, draft } of [
+    {
+        screen: 'Export data',
+        row: /^JSON \(Encrypted\)/,
+        placeholder: TRANSLATIONS.en['export.password_placeholder'],
+        draft: 'synthetic password for the shortcut test',
+    },
+    {
+        screen: 'Import data',
+        row: /^Paste JSON text/,
+        placeholder: TRANSLATIONS.en['import.paste_hint'],
+        draft: '{"synthetic":',
+    },
+]) {
+    test(`a shortcut preserves the backup draft in ${screen}`, async ({ page }) => {
+        await launch(page, null, { 'hrt-events': JSON.stringify([backupDose]) });
+        await page.getByRole('button', { name: 'Settings', exact: true }).click();
+        await page.getByRole('button', { name: /Data management/ }).click();
+        await page.getByRole('button', { name: screen, exact: true }).click();
+        const editor = page.getByRole('button', { name: row });
+        await editor.click();
+        const field = page.getByPlaceholder(placeholder, { exact: true });
+        await field.fill(draft);
+
+        await pauseBeforeShortcut(page);
+        await open(page);
+        await expect(shortcutHint(page)).toBeVisible();
+        await expect(field).toHaveValue(draft);
+        await expect(field).toBeFocused();
+        await expect(doseForm(page)).toHaveCount(0);
+
+        await editor.click();
+        await expect(field).toHaveCount(0);
+        await open(page);
+        await expect(doseForm(page)).toBeVisible();
+        expect(await events(page)).toMatchObject([backupDose]);
+    });
+}
+
+test('a shortcut keeps an unsaved What-if dose in the editor', async ({ page }) => {
+    await launch(page, null, { 'hrt-events': JSON.stringify([backupDose]) });
+    await page.getByRole('button', { name: 'What-if', exact: true }).click();
+    const amount = page.getByRole('spinbutton', { name: /Dose/ });
+    await amount.fill('4.5');
+
+    await pauseBeforeShortcut(page);
+    await open(page);
+    await expect(shortcutHint(page)).toBeVisible();
+    await expect(amount).toHaveValue('4.5');
+    await expect(amount).toBeFocused();
+    await expect(doseForm(page)).toHaveCount(0);
+    expect(await events(page)).toMatchObject([backupDose]);
+});
+
+test('an Overview edit ignored during Back does not block the next shortcut', async ({ page }) => {
+    const item = {
+        id: 'shortcut-plan',
+        route: 'oral',
+        ester: 'EV',
+        doseMG: 2,
+        extras: {},
+        everyDays: 1,
+        timesPerDay: 1,
+    };
+    await launch(page, null, {
+        'hrt-plan': JSON.stringify([item]),
+    });
+    await page.getByRole('button', { name: 'Took it', exact: true }).click();
+    const edit = page.getByRole('button', { name: /Edit dose/ });
+    const plan = page.getByRole('button', { name: 'Medication plan', exact: true });
+    await edit.evaluate(
+        (editButton, planButton) => {
+            // Start Back before the Plan transition replaces the Overview controls.
+            (planButton as HTMLButtonElement).click();
+            window.__launchHarness.back();
+            (editButton as HTMLButtonElement).click();
+        },
+        await plan.elementHandle(),
+    );
+    await expect.poll(() => page.evaluate(() => history.state?.view)).toBe('home');
+    await expect(plan).toBeVisible();
+
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
+    expect(await events(page)).toHaveLength(1);
+});
 
 test('a shortcut during a delete confirmation leaves the prompt in place', async ({ page }) => {
     const dose: DoseEventFixture = {
@@ -247,6 +349,7 @@ test('a shortcut during a delete confirmation leaves the prompt in place', async
     await editor.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(page.locator('[data-prompt="confirm"]')).toBeVisible();
 
+    await pauseBeforeShortcut(page);
     await open(page);
     await expect(shortcutHint(page)).toBeVisible();
     await expect(page.locator('[data-prompt="confirm"]')).toBeVisible();

@@ -92,6 +92,7 @@ public final class HrtLauncherShortcutPlugin extends Plugin {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(ADD_DOSE_URI));
             intent.setComponent(target);
             // Skip the rate-limited write when Android already has the intended shortcut.
+            // Android refreshes resource-backed shortcut icons by name on package updates.
             if (alreadyPublished(manager, label, intent)) { call.resolve(); return; }
             ShortcutInfo shortcut = new ShortcutInfo.Builder(context, ADD_DOSE_ID)
                 .setShortLabel(label).setLongLabel(label)

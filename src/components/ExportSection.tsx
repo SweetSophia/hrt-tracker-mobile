@@ -11,6 +11,7 @@ import { copyText } from '../utils/clipboard';
 import { MIN_PASSWORD_LENGTH, newPasswordLevel } from '../../passwordStrength';
 import PasswordStrengthHint from './PasswordStrengthHint';
 import { SwapLabel } from './StableLabel';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 
 import { EncryptedExportSession } from '../hooks/uiSession';
 
@@ -59,6 +60,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     const hasData = events.length > 0 || labResults.length > 0;
     const showEncryptedRow = hasData || encryptedExport !== undefined;
     const encryptedPanelOpen = showEncrypted || encryptedExport !== undefined;
+    useLauncherShortcutBlocker(showEncryptedRow && encryptedPanelOpen);
     const encryptedFormRef = useRef<HTMLDivElement>(null);
     const encryptedRowRef = useRef<HTMLButtonElement>(null);
     const backupRowRef = useRef<HTMLButtonElement>(null);

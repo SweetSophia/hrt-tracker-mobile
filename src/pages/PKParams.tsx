@@ -1,4 +1,5 @@
 import { useMounted } from '../hooks/useMounted';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import React, { useState } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { Undo, ChevronDown, Warning, Info, Check } from '../components/icons';
@@ -93,6 +94,7 @@ const clampTo = (f: FieldDef, n: number) => Math.max(f.min, Math.min(f.max, n));
 
 const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, onBack }) => {
     const isMounted = useMounted();
+    useLauncherShortcutBlocker();
     const { t } = useTranslation();
     const { showDialog } = useDialog();
 

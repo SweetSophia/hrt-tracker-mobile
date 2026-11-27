@@ -130,6 +130,7 @@ npm run android:sync:storage
 
 Gradle installs the `storageQualification` app and test APKs and writes the
 connected test report under `android/app/build/reports/androidTests/connected/`.
+Run `npm run android:sync` afterward to restore the ordinary prototype assets.
 
 ## Running feasibility probes
 

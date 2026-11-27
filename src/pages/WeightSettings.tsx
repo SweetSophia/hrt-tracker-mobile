@@ -1,4 +1,5 @@
 import { useMounted } from '../hooks/useMounted';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import React, { useState, useEffect } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { isPlausibleBodyWeightKG, BODY_WEIGHT_KG_MIN, BODY_WEIGHT_KG_MAX } from '../../logic';
@@ -13,6 +14,7 @@ interface WeightSettingsProps {
 
 const WeightSettings: React.FC<WeightSettingsProps> = ({ weight, onSave, onBack }) => {
     const isMounted = useMounted();
+    useLauncherShortcutBlocker();
     const { t } = useTranslation();
     const [weightStr, setWeightStr] = useState(weight.toString());
     // Set by a Save that was turned down; the message then stays only for as

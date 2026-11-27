@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import {
     CalibrationHistoryMode,
     CalibrationMethod,
@@ -116,6 +117,7 @@ const Forecast: React.FC<ForecastProps> = ({
     const { t, lang } = useTranslation();
     const { mode, isTransmasc } = useHRTMode();
     const { showDialog } = useDialog();
+    useLauncherShortcutBlocker();
     const target = isTransmasc ? { low: 300, high: 1000 } : { low: 100, high: 200 };
     const unit = isTransmasc ? 'ng/dL' : 'pg/mL';
     const hourNow = Math.floor(nowH);

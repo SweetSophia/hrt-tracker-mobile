@@ -1,4 +1,5 @@
 import { useMounted } from '../hooks/useMounted';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import React, { useState, useEffect } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { isPlausibleBirthYear, BIRTH_YEAR_MIN, AGE_REF_YEARS, ageModelInfo, ageNotice } from '../../logic';
@@ -31,6 +32,7 @@ const NOTICE_KEY = {
 // dose is modelled at the age it was taken. Optional, so it can be removed.
 const AgeSettings: React.FC<AgeSettingsProps> = ({ birthYear, onSave, onBack }) => {
     const isMounted = useMounted();
+    useLauncherShortcutBlocker();
     const { t } = useTranslation();
     const thisYear = new Date().getFullYear();
     const [yearStr, setYearStr] = useState(birthYear === null ? '' : String(birthYear));
