@@ -1,7 +1,10 @@
 import type { Route } from '../domain/types';
 import type { Lang } from './languages';
 
-type RegimenForms = Record<`regimen.form.${Exclude<Route, Route.patchRemove>}`, string>;
+type RegimenForms = Record<
+    `regimen.form.${Exclude<Route, Route.patchRemove>}`,
+    `${string}{drug}${string}{dose}${string}`
+>;
 
 const ZH_TW_FORMS: RegimenForms = {
     'regimen.form.injection': '{drug}肌肉注射{dose}',

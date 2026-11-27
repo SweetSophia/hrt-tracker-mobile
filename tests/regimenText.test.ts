@@ -195,6 +195,18 @@ it('keeps the short drug name on Overview when the plan has no ambiguity', () =>
 });
 
 it.each([
+    ['{drug} {dose} zur Injektion', 'Estradiol 2,5 mg zur Injektion'],
+    ['{drug} zur Injektion {dose}', 'Estradiol zur Injektion 2,5 mg'],
+])('handles a space before the optional dose in %s', (pattern, expected) => {
+    vi.spyOn(locale, 'appLocale').mockReturnValue('de');
+    const pack: Record<string, string> = TRANSLATIONS.de;
+    const t = (key: string) => (key === 'regimen.form.injection' ? pattern : (pack[key] ?? key));
+    const item = { route: Route.injection, ester: Ester.E2, doseMG: 2.5, extras: {} };
+    expect(regimenLabel(item, t)).toBe(expected);
+    expect(supplyLabel(item, t)).toBe('Estradiol zur Injektion');
+});
+
+it.each([
     '{drug} und {drug}{dose}',
     '{drug}{dose} oder {dose}',
     '{drug} {drug}',

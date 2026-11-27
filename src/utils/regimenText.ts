@@ -71,7 +71,7 @@ function formatDrugForm(item: { route: Route; ester: Ester }, t: T, dose = ''): 
         return route === key ? name + amount : `${name}${amount} (${route})`;
     }
 
-    const [before, after] = pattern.replace('{dose}', amount).split('{drug}');
+    const [before, after] = pattern.replace(/\s*\{dose\}/, amount).split('{drug}');
     const drug = before && isKnownEster(item.ester) ? inPhrase(name) : name;
     // A Latin drug code alongside Chinese or Japanese text still needs a word boundary.
     const start = CJK.test(before.slice(-1)) ? glue(before, drug) : before + drug;
