@@ -155,7 +155,7 @@ const Forecast: React.FC<ForecastProps> = ({
         };
     };
     const [initialPlan] = useState(fromMain);
-    const [plans, setPlans] = useState<Draft[]>(() => [initialPlan]);
+    const [plans, setPlans] = useState(() => [{ ...initialPlan, originalStartH: initialPlan.startH }]);
     const [activeId, setActiveId] = useState(() => plans[0].id);
     const [horizonWeeks, setHorizonWeeks] = useState<number>(HORIZONS[1]);
     const [pickingStart, setPickingStart] = useState(false);
@@ -165,6 +165,17 @@ const Forecast: React.FC<ForecastProps> = ({
     const active = plans.find(p => p.id === activeId) ?? plans[0];
     const update = (patch: Partial<Draft>) =>
         setPlans(ps => ps.map(p => (p.id === active.id ? { ...p, ...patch } : p)));
+
+    const confirmStart = (date: Date) => {
+        const selectedMs = date.getTime();
+        const selectedMinute = Math.floor(selectedMs / 60_000);
+        // The picker edits minutes. Keep the exact stored time when that minute is confirmed again or restored.
+        const storedStart = [active.startH, active.originalStartH].find(
+            startH => Math.floor((startH * 3_600_000) / 60_000) === selectedMinute,
+        );
+        update({ startH: storedStart ?? Math.max(hourNow, selectedMs / 3_600_000) });
+        setPickingStart(false);
+    };
 
     const drugsFor = (r: Route) => DRUGS[mode][r] ?? [];
     const pickRoute = (r: Route) => {
@@ -244,7 +255,7 @@ const Forecast: React.FC<ForecastProps> = ({
 
     const addPlan = () => {
         if (plans.length >= MAX_PLANS) return;
-        const d = { ...active, id: uuidv4() };
+        const d = { ...active, id: uuidv4(), originalStartH: active.startH };
         setPlans(ps => [...ps, d]);
         setActiveId(d.id);
     };
@@ -565,10 +576,7 @@ const Forecast: React.FC<ForecastProps> = ({
             <DateTimePicker
                 isOpen={pickingStart}
                 onClose={() => setPickingStart(false)}
-                onConfirm={date => {
-                    update({ startH: Math.max(hourNow, date.getTime() / 3600000) });
-                    setPickingStart(false);
-                }}
+                onConfirm={confirmStart}
                 initialDate={new Date(active.startH * 3600000)}
                 mode="datetime"
                 title={t('forecast.start')}

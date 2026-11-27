@@ -133,8 +133,8 @@ function installBridge(startup: string | null) {
 }
 
 /** An onboarded launch. startup is the intent the activity was opened with. */
-async function launch(page: Page, startup: string | null, extra: Record<string, string> = {}) {
-    await page.clock.install();
+async function launch(page: Page, startup: string | null, extra: Record<string, string> = {}, time?: Date) {
+    await page.clock.install({ time });
     await page.setViewportSize({ width: 390, height: 844 });
     await seedStorage(page.context(), baseStorage(extra));
     await page.addInitScript(installBridge, startup);
@@ -202,13 +202,14 @@ test('a shortcut during a lab edit explains how to retry without interrupting th
     await expect(shortcutHint(page)).toBeVisible();
     expect(await page.locator('.main-view').evaluate(el => el.getBoundingClientRect().top)).toBe(pageTop);
     const nav = page.locator('.bottom-nav');
+    await expect(nav).toBeInViewport({ ratio: 1 });
     const navBottom = () => nav.evaluate(el => el.getBoundingClientRect().bottom);
     const bottomBeforeInset = await navBottom();
     const bottomInset = 36;
     const session = await page.context().newCDPSession(page);
     await session.send('Emulation.setSafeAreaInsetsOverride', { insets: { bottom: bottomInset } });
-    await expect.poll(navBottom).toBe(bottomBeforeInset - bottomInset);
     await expect(nav).toBeInViewport({ ratio: 1 });
+    await expect.poll(navBottom).toBe(bottomBeforeInset - bottomInset);
     await expect(shortcutHint(page)).toBeInViewport({ ratio: 1 });
     const noticeBottom = await shortcutHint(page).evaluate(el => el.getBoundingClientRect().bottom);
     const navTop = await nav.evaluate(el => el.getBoundingClientRect().top);
@@ -346,6 +347,93 @@ test('a shortcut preserves a second What-if plan and opens when only an unchange
     await open(page);
     await expect(doseForm(page)).toBeVisible();
     expect(await events(page)).toMatchObject([backupDose]);
+});
+
+const forecastClock = new Date('2026-01-20T10:05:00Z');
+const forecastDose = { ...backupDose, timeH: forecastClock.getTime() / 3_600_000 - 2 };
+
+async function openWhatIfStartPicker(page: Page, records = [forecastDose]) {
+    await launch(page, null, { 'hrt-events': JSON.stringify(records) }, forecastClock);
+    await page.getByRole('button', { name: 'What-if', exact: true }).click();
+    const start = page.getByRole('button', { name: 'Start', exact: true });
+    await start.click();
+    const picker = page.getByRole('group', { name: 'Start', exact: true });
+    await expect(picker).toBeVisible();
+    return {
+        start,
+        hour: picker.getByRole('textbox', { name: 'Hour', exact: true }),
+        minute: picker.getByRole('textbox', { name: 'Min', exact: true }),
+        confirm: picker.getByRole('button', { name: 'OK', exact: true }),
+    };
+}
+
+test('confirming the displayed What-if start an hour later keeps the shortcut available', async ({ page }) => {
+    const { confirm } = await openWhatIfStartPicker(page);
+    await page.clock.fastForward(3_600_000);
+    await confirm.click();
+
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
+    expect(await events(page)).toMatchObject([forecastDose]);
+});
+
+test('an edited What-if start stays protected after its hour passes until the original time is restored', async ({
+    page,
+}) => {
+    // Three daily doses give the inferred regimen a start with seconds that the picker does not display.
+    const nextStart = new Date('2026-01-20T11:07:30Z');
+    const regimen = [72, 48, 24].map(hoursBefore => ({
+        ...backupDose,
+        id: `what-if-${hoursBefore}`,
+        timeH: nextStart.getTime() / 3_600_000 - hoursBefore,
+    }));
+    const { start, minute, confirm } = await openWhatIfStartPicker(page, regimen);
+    const originalMinute = await page.evaluate(
+        ms => String(new Date(ms).getMinutes()).padStart(2, '0'),
+        nextStart.getTime(),
+    );
+    await expect(minute).toHaveValue(originalMinute);
+    await minute.fill('15');
+    await confirm.click();
+    await page.clock.fastForward(2 * 3_600_000);
+    await start.click();
+    await confirm.click();
+
+    await open(page);
+    await expect(shortcutHint(page)).toBeVisible();
+    await start.click();
+    await expect(minute).toHaveValue('15');
+    await minute.fill(originalMinute);
+    await confirm.click();
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
+    expect(await events(page)).toMatchObject(regimen);
+});
+
+test('a copied What-if plan restores its own start and clamps a newly selected past time', async ({ page }) => {
+    const { start, hour, minute, confirm } = await openWhatIfStartPicker(page);
+    const firstPlanMinute = await minute.inputValue();
+    await minute.fill('20');
+    await confirm.click();
+    await page.getByRole('button', { name: 'Add plan', exact: true }).click();
+    await start.click();
+    await minute.fill('35');
+    await confirm.click();
+    await page.clock.fastForward(3_600_000);
+
+    await start.click();
+    await minute.fill('20');
+    await confirm.click();
+    await start.click();
+    await expect(minute).toHaveValue('20');
+    await minute.fill(firstPlanMinute);
+    await confirm.click();
+    await start.click();
+    const currentHour = await page.evaluate(() =>
+        String(new Date(Math.floor(Date.now() / 3_600_000) * 3_600_000).getHours()).padStart(2, '0'),
+    );
+    await expect(hour).toHaveValue(currentHour);
+    await expect(minute).toHaveValue(firstPlanMinute);
 });
 
 test('an Overview edit ignored during Back does not block the next shortcut', async ({ page }) => {
