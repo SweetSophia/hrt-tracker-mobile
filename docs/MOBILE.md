@@ -113,8 +113,20 @@ launcher that supports app shortcuts, then long-press the app icon. The
 label follows the language selected inside the app.
 
 Use the offline beta preview for installed launcher checks.
+
 For automated coverage, run `LauncherShortcutColdLaunchTest` on a dedicated
-emulator with the `storageQualification` app and test APKs.
+API 36 emulator with synthetic records only. Set `ANDROID_SERIAL` to the
+emulator serial and run these commands from the repository root:
+
+```sh
+npm run android:sync:storage
+./android/gradlew -p android -PstorageQualification \
+  -Pandroid.testInstrumentationRunnerArguments.class=org.askarys.hrttracker.storage.LauncherShortcutColdLaunchTest \
+  :app:connectedStorageQualificationAndroidTest
+```
+
+Gradle installs the `storageQualification` app and test APKs and writes the
+connected test report under `android/app/build/reports/androidTests/connected/`.
 
 ## Running feasibility probes
 

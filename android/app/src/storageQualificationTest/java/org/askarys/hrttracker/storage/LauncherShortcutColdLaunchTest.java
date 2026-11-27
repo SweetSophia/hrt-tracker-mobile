@@ -93,6 +93,11 @@ public final class LauncherShortcutColdLaunchTest {
             publish(activity, GERMAN_LABEL);
             ShortcutInfo updated = awaitShortcut(GERMAN_LABEL);
             assertEquals(GERMAN_LABEL, String.valueOf(updated.getLongLabel()));
+            // Check that the timestamp responds to a real update on this device.
+            assertTrue(
+                "A changed label did not advance the shortcut timestamp",
+                updated.getLastChangedTimestamp() > changed
+            );
         }
     }
 

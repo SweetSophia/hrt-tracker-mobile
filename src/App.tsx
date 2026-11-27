@@ -289,7 +289,11 @@ const AppContent = ({ session }: { session: UiSession }) => {
     };
     useLauncherShortcut(showOnboarding ? null : t('btn.add'), () => {
         if (showOnboarding || (currentView === 'history' && isQuickAddOpen)) return;
+        // These settings editors hold their input locally until Save.
+        const editingSettings =
+            currentView === 'settings-weight' || currentView === 'settings-age' || currentView === 'pk-params';
         if (
+            editingSettings ||
             isPasswordInputOpen ||
             (currentView === 'lab' && isQuickAddLabOpen) ||
             editFromOverview ||
