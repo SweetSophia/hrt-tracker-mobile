@@ -125,7 +125,7 @@ test('patch batch uses the parsed rate, wear duration, and interval', async ({ p
     await form.getByRole('button', { name: /^Route / }).click();
     await form
         .getByRole('listbox', { name: 'Route', exact: true })
-        .getByRole('option', { name: 'Patch apply' })
+        .getByRole('option', { name: 'Patch apply', exact: true })
         .click();
     const rate = form.getByLabel('Rate (µg/day)', { exact: true });
     const wear = form.getByLabel('Wear duration (days)', { exact: true });

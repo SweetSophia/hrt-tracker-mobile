@@ -72,8 +72,9 @@ describe('language packs', () => {
     });
 
     it('keeps the Turkish dose labels when inheriting the English pack', () => {
-        for (const route of [Route.sc, Route.nasal, Route.pellet] as const) {
-            expect(TRANSLATIONS.tr[`route.${route}`]).toBe(TRANSLATIONS.tr[`pk_calc.route.${route}`]);
+        for (const route of Object.values(Route)) {
+            const key = `route.${route}` as const;
+            expect(TRANSLATIONS.tr[key], `tr ${key}`).not.toBe(TRANSLATIONS.en[key]);
         }
     });
 

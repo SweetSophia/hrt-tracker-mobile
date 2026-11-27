@@ -2,12 +2,27 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const read = (file: string): string => readFileSync(file, 'utf8');
+
+// The version shape the installed app reads from the release catalog: three
+// components, each 0 or a non-zero digit with up to nine more digits. A
+// version outside that shape is a release the app never discovers.
+const RELEASE_VERSION = /^(0|[1-9][0-9]{0,9})\.(0|[1-9][0-9]{0,9})\.(0|[1-9][0-9]{0,9})$/;
+// The catalog parses each component as a 32-bit int, so 2147483647 is the
+// largest component it reads.
+const MAX_RELEASE_COMPONENT = 2147483647;
+
 function readVersion(file: string) {
     const { versionName, versionCode }: { versionName?: unknown; versionCode?: unknown } = JSON.parse(read(file)) ?? {};
-    if (typeof versionName !== 'string' || !/^\d+\.\d+\.\d+$/.test(versionName))
-        throw new Error(`${file}: expected versionName in X.Y.Z format`);
+    if (typeof versionName !== 'string' || !RELEASE_VERSION.test(versionName))
+        throw new Error(`${file}: expected versionName as X.Y.Z, got ${versionName}`);
+    for (const component of versionName.split('.')) {
+        if (Number(component) > MAX_RELEASE_COMPONENT)
+            throw new Error(
+                `${file}: expected versionName components at most ${MAX_RELEASE_COMPONENT}, got ${versionName}`,
+            );
+    }
     if (typeof versionCode !== 'number' || !Number.isSafeInteger(versionCode) || versionCode < 1)
-        throw new Error(`${file}: expected a positive integer versionCode`);
+        throw new Error(`${file}: expected a positive integer versionCode, got ${versionCode}`);
     return { versionName, versionCode };
 }
 
@@ -55,12 +70,22 @@ describe('Android release metadata', () => {
         expect(published?.[1], `${notes} and ${verification} disagree on the APK SHA-256`).toBe(row?.[2]);
     });
 
-    it('increases versionCode when the Android version name or code changes', ({ skip }) => {
+    it('keeps the Android version name and version code moving forward', ({ skip }) => {
         const file = process.env.HRT_ANDROID_BASE_VERSION_FILE;
         if (!file) return skip('No predecessor supplied');
         const previous = readVersion(file);
         if (version.versionName === previous.versionName && version.versionCode === previous.versionCode)
             return skip('Android version name and code are unchanged');
-        expect(version.versionCode).toBeGreaterThan(previous.versionCode);
+        // The name decides which release the installed app discovers in its
+        // catalog, the code decides whether Android accepts this APK over the
+        // installed one.
+        expect(
+            version.versionName.localeCompare(previous.versionName, 'en', { numeric: true }),
+            `Android version name must not go backwards (previous ${previous.versionName}, current ${version.versionName})`,
+        ).toBeGreaterThanOrEqual(0);
+        expect(
+            version.versionCode,
+            `Android versionCode must increase for this release (previous ${previous.versionCode}, current ${version.versionCode})`,
+        ).toBeGreaterThan(previous.versionCode);
     });
 });

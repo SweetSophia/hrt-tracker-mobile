@@ -25,18 +25,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Read previous Android version
-        id: android_base
-        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-        run: |
-          file="$RUNNER_TEMP/android-base-version.json"
-          gh api -H 'Accept: application/vnd.github.raw+json' \
-            "repos/$GITHUB_REPOSITORY/contents/mobile/version.json?ref=${BASE_SHA:?missing predecessor SHA}" > "$file"
-          echo "file=$file" >> "$GITHUB_OUTPUT"
-
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
@@ -68,8 +56,6 @@ jobs:
 
       - name: Unit tests
         # Dose and concentration math in logic.ts; see tests/.
-        env:
-          HRT_ANDROID_BASE_VERSION_FILE: ${{ steps.android_base.outputs.file }}
         run: npm test
 
       - name: Renderer attribution replay
@@ -84,6 +70,28 @@ jobs:
 
       - name: Bundle budget and precache coverage
         run: npm run size
+
+      - name: Read previous Android version
+        # Run the API-dependent comparison after the independent build checks.
+        id: android_base
+        if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          file="$RUNNER_TEMP/android-base-version.json"
+          if ! gh api -H 'Accept: application/vnd.github.raw+json' \
+            "repos/$GITHUB_REPOSITORY/contents/mobile/version.json?ref=${BASE_SHA:?missing predecessor SHA}" > "$file"; then
+            echo "::error::Could not read mobile/version.json at ${BASE_SHA}; the Android version check needs the base version."
+            exit 1
+          fi
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - name: Android release version check
+        if: steps.android_base.outputs.file != ''
+        env:
+          HRT_ANDROID_BASE_VERSION_FILE: ${{ steps.android_base.outputs.file }}
+        run: npx vitest run tests/mobile/releaseMetadata.test.ts
 
   browser:
     name: Browser E2E
