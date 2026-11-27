@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { APP_THEMES } from '../src/constants';
+import { PK_SANDBOX_MODELS } from '../src/domain/pkSandbox';
 import { Route } from '../src/domain/types';
 import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
 import { DE } from '../src/i18n/de';
@@ -71,10 +72,14 @@ describe('language packs', () => {
         }
     });
 
-    it('keeps the Turkish dose labels when inheriting the English pack', () => {
-        for (const route of Object.values(Route)) {
-            const key = `route.${route}` as const;
-            expect(TRANSLATIONS.tr[key], `tr ${key}`).not.toBe(TRANSLATIONS.en[key]);
+    it('keeps the Turkish route labels in the dose form and PK calculator when inheriting English', () => {
+        const doseKeys = Object.values(Route).map(route => `route.${route}`);
+        const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
+        const tr: Record<string, string> = TRANSLATIONS.tr;
+        const en: Record<string, string> = TRANSLATIONS.en;
+        for (const key of new Set([...doseKeys, ...calculatorKeys])) {
+            expect(tr[key]?.trim(), `tr ${key}`).toBeTruthy();
+            expect(tr[key], `tr ${key}`).not.toBe(en[key]);
         }
     });
 
