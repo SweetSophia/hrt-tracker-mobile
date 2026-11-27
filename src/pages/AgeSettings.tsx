@@ -1,4 +1,5 @@
 import { useMounted } from '../hooks/useMounted';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import React, { useState, useEffect } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { isPlausibleBirthYear, BIRTH_YEAR_MIN, AGE_REF_YEARS, ageModelInfo, ageNotice } from '../../logic';
@@ -33,14 +34,16 @@ const AgeSettings: React.FC<AgeSettingsProps> = ({ birthYear, onSave, onBack }) 
     const isMounted = useMounted();
     const { t } = useTranslation();
     const thisYear = new Date().getFullYear();
-    const [yearStr, setYearStr] = useState(birthYear === null ? '' : String(birthYear));
+    const savedYear = birthYear === null ? '' : String(birthYear);
+    const [yearStr, setYearStr] = useState(savedYear);
+    useLauncherShortcutBlocker(yearStr !== savedYear);
     // Set by a Save that was turned down; the message then stays only for as
     // long as the value is still out of range.
     const [tried, setTried] = useState(false);
 
     useEffect(() => {
-        setYearStr(birthYear === null ? '' : String(birthYear));
-    }, [birthYear]);
+        setYearStr(savedYear);
+    }, [savedYear]);
 
     const year = Number(yearStr);
     const valid = yearStr.trim() !== '' && isPlausibleBirthYear(year, thisYear);

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import {
     CalibrationHistoryMode,
     CalibrationMethod,
@@ -64,7 +65,6 @@ const LETTERS = ['A', 'B', 'C'];
 const DASHES = ['5 3', '2 3', '8 3 2 3'];
 
 interface Draft {
-    id: string;
     route: Route;
     ester: Ester;
     dose: string;
@@ -74,6 +74,25 @@ interface Draft {
     startH: number;
     replace: boolean;
 }
+
+interface PlanState extends Draft {
+    id: string;
+    originalStartH: number;
+}
+
+// A new editable field must take part in the shortcut's draft check.
+const EDITABLE_PLAN_FIELDS = Object.keys({
+    route: true,
+    ester: true,
+    dose: true,
+    intervalH: true,
+    slTier: true,
+    wearDays: true,
+    startH: true,
+    replace: true,
+} satisfies Record<keyof Draft, true>) as (keyof Draft)[];
+
+const hasPlanEdits = (plan: Draft, initial: Draft) => EDITABLE_PLAN_FIELDS.some(key => plan[key] !== initial[key]);
 
 const num = (v: string) => {
     const n = parseFloat(v);
@@ -134,7 +153,6 @@ const Forecast: React.FC<ForecastProps> = ({
         const rate = main?.extras[ExtraKey.releaseRateUGPerDay];
         const wearH = main?.extras[ExtraKey.patchWearH];
         return {
-            id: uuidv4(),
             route: main?.route ?? Route.injection,
             ester: main?.ester ?? (isTransmasc ? Ester.TC : Ester.EV),
             dose: main
@@ -149,13 +167,30 @@ const Forecast: React.FC<ForecastProps> = ({
             replace: true,
         };
     };
-    const [plans, setPlans] = useState<Draft[]>(() => [fromMain()]);
+    const [initialPlan] = useState(fromMain);
+    const [plans, setPlans] = useState<PlanState[]>(() => [
+        { ...initialPlan, id: uuidv4(), originalStartH: initialPlan.startH },
+    ]);
     const [activeId, setActiveId] = useState(() => plans[0].id);
-    const [horizonWeeks, setHorizonWeeks] = useState<number>(8);
+    const [horizonWeeks, setHorizonWeeks] = useState<number>(HORIZONS[1]);
     const [pickingStart, setPickingStart] = useState(false);
+    useLauncherShortcutBlocker(
+        pickingStart || plans.length > 1 || hasPlanEdits(plans[0], initialPlan) || horizonWeeks !== HORIZONS[1],
+    );
     const active = plans.find(p => p.id === activeId) ?? plans[0];
     const update = (patch: Partial<Draft>) =>
         setPlans(ps => ps.map(p => (p.id === active.id ? { ...p, ...patch } : p)));
+
+    const confirmStart = (date: Date) => {
+        const selectedMs = date.getTime();
+        const selectedMinute = Math.floor(selectedMs / 60_000);
+        // The picker edits minutes. Keep the exact stored time when that minute is confirmed again or restored.
+        const storedStart = [active.startH, active.originalStartH].find(
+            startH => Math.floor((startH * 3_600_000) / 60_000) === selectedMinute,
+        );
+        update({ startH: storedStart ?? Math.max(hourNow, selectedMs / 3_600_000) });
+        setPickingStart(false);
+    };
 
     const drugsFor = (r: Route) => DRUGS[mode][r] ?? [];
     const pickRoute = (r: Route) => {
@@ -235,7 +270,7 @@ const Forecast: React.FC<ForecastProps> = ({
 
     const addPlan = () => {
         if (plans.length >= MAX_PLANS) return;
-        const d = { ...active, id: uuidv4() };
+        const d = { ...active, id: uuidv4(), originalStartH: active.startH };
         setPlans(ps => [...ps, d]);
         setActiveId(d.id);
     };
@@ -556,10 +591,7 @@ const Forecast: React.FC<ForecastProps> = ({
             <DateTimePicker
                 isOpen={pickingStart}
                 onClose={() => setPickingStart(false)}
-                onConfirm={date => {
-                    update({ startH: Math.max(hourNow, date.getTime() / 3600000) });
-                    setPickingStart(false);
-                }}
+                onConfirm={confirmStart}
                 initialDate={new Date(active.startH * 3600000)}
                 mode="datetime"
                 title={t('forecast.start')}

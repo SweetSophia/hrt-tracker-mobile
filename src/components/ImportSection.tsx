@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useDialog } from '../contexts/DialogContext';
 import { useApplicationRuntime } from '../contexts/RecordsContext';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import { decodeDocumentText } from '../utils/decodeDocumentText';
 import { DocumentTooLargeError } from '../platform/contracts/files';
 import { ChevronDown } from './icons';
@@ -27,6 +28,7 @@ const ImportSection: React.FC<ImportSectionProps> = ({ onImportJson, onReplaceJs
     const runtime = useApplicationRuntime();
     const importing = useRef(false);
     const [busy, setBusy] = useState(false);
+    useLauncherShortcutBlocker(busy || (showPaste && text !== ''));
     const runImport = async (run: () => Promise<void>) => {
         if (importing.current) return;
         importing.current = true;

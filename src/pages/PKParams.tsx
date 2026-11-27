@@ -1,4 +1,5 @@
 import { useMounted } from '../hooks/useMounted';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import React, { useState } from 'react';
 import PageHeader, { PAGE_COLUMN } from '../components/PageHeader';
 import { Undo, ChevronDown, Warning, Info, Check } from '../components/icons';
@@ -142,6 +143,7 @@ const PKParamsPage: React.FC<PKParamsPageProps> = ({ pkParams, onSave, onReset, 
 
     const settled = settle();
     const dirty = FIELDS.some(f => settled[f.key] !== savedParams[f.key]);
+    useLauncherShortcutBlocker(dirty || Object.keys(text).length > 0);
 
     const handleSave = async () => {
         if (!(await onSave(settled)) || !isMounted()) return;

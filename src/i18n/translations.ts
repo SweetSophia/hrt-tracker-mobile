@@ -481,6 +481,7 @@ export const TRANSLATIONS_BASE = {
         'import.bundle_calibration_confirm_btn': '换成备份的',
 
         'btn.add': '新增用药',
+        'launcher.finish_current': '请先完成当前操作，再点「{action}」。',
         'btn.save': '保存',
         'btn.cancel': '取消',
         'btn.ok': '确定',
@@ -1919,6 +1920,7 @@ export const TRANSLATIONS_BASE = {
         'import.bundle_calibration_confirm_btn': "Use the backup's",
 
         'btn.add': 'Add dose',
+        'launcher.finish_current': 'Finish the current step, then try {action} again.',
         'btn.save': 'Save',
         'btn.cancel': 'Cancel',
         'btn.ok': 'OK',
@@ -3209,6 +3211,7 @@ const ZH_TW = {
     'export.btn_encrypted': '匯出加密檔案',
 
     'btn.add': '新增用藥',
+    'launcher.finish_current': '請先完成目前的操作，再點選「{action}」。',
     'btn.save': '儲存',
     'btn.cancel': '取消',
     'btn.ok': '確定',
@@ -4576,6 +4579,7 @@ export const TRANSLATIONS = {
         'export.copy_failed': '複製唔到落剪貼簿。',
 
         'btn.add': '新增記錄',
+        'launcher.finish_current': '請先完成而家嘅操作，再撳「{action}」。',
         'btn.save': '儲存',
         'btn.cancel': '取消',
         'btn.ok': '確定',
@@ -5407,6 +5411,7 @@ export const TRANSLATIONS = {
         'export.btn_encrypted': '暗号化ファイルをエクスポート',
 
         'btn.add': '投薬を追加',
+        'launcher.finish_current': '現在の操作を終えてから、もう一度「{action}」をタップしてください。',
         'btn.save': '保存',
         'btn.cancel': 'キャンセル',
         'btn.ok': 'OK',
@@ -6709,6 +6714,7 @@ export const TRANSLATIONS = {
         'export.btn_encrypted': '암호화된 파일 내보내기',
 
         'btn.add': '용량 추가',
+        'launcher.finish_current': '현재 작업을 마친 다음 ‘{action}’를 다시 눌러 주세요.',
         'btn.save': '저장',
         'btn.cancel': '취소',
         'btn.ok': '확인',
@@ -7944,6 +7950,7 @@ export const TRANSLATIONS = {
         'export.btn_encrypted': 'Şifreli dosyayı dışa aktar',
 
         'btn.add': 'Doz ekle',
+        'launcher.finish_current': 'Önce açık işlemi tamamla, sonra “{action}” seçeneğine tekrar dokun.',
         'btn.save': 'Kaydet',
         'btn.cancel': 'İptal',
         'btn.ok': 'Tamam',

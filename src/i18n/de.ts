@@ -495,6 +495,7 @@ export const DE = {
         'Ein Wechsel ändert deine Modellschätzungen. Wenn du abbrichst, wird nichts importiert.',
     'import.bundle_calibration_confirm_btn': 'Aus der Sicherung übernehmen',
     'btn.add': 'Dosis hinzufügen',
+    'launcher.finish_current': 'Schließe den aktuellen Schritt ab und tippe erneut auf „{action}“.',
     'btn.save': 'Speichern',
     'btn.cancel': 'Abbrechen',
     'btn.ok': 'OK',

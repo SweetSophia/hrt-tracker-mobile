@@ -12,6 +12,9 @@ export class BackOwners {
             this.owners = this.owners.filter(item => item !== owner);
         };
     }
+    hasActiveOwner(): boolean {
+        return this.owners.length > 0;
+    }
     handle(): boolean {
         let selected: (typeof this.owners)[number] | undefined;
         for (const owner of this.owners) if (!selected || owner.priority >= selected.priority) selected = owner;

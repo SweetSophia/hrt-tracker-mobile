@@ -11,6 +11,7 @@ import { copyText } from '../utils/clipboard';
 import { MIN_PASSWORD_LENGTH, newPasswordLevel } from '../../passwordStrength';
 import PasswordStrengthHint from './PasswordStrengthHint';
 import { SwapLabel } from './StableLabel';
+import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 
 import { EncryptedExportSession } from '../hooks/uiSession';
 
@@ -59,6 +60,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     const hasData = events.length > 0 || labResults.length > 0;
     const showEncryptedRow = hasData || encryptedExport !== undefined;
     const encryptedPanelOpen = showEncrypted || encryptedExport !== undefined;
+    useLauncherShortcutBlocker(encryptedExport !== undefined || (hasData && showEncrypted && password !== ''));
     const encryptedFormRef = useRef<HTMLDivElement>(null);
     const encryptedRowRef = useRef<HTMLButtonElement>(null);
     const backupRowRef = useRef<HTMLButtonElement>(null);
@@ -87,6 +89,11 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     const level = newPasswordLevel(password);
     const tooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
     const passwordBlocked = tooShort || level === 'weak' || level === 'tooLong';
+
+    const closeEncryptedPanel = () => {
+        setPassword('');
+        setShowEncrypted(false);
+    };
 
     const handleJsonExport = async () => {
         await onExport(false);
@@ -213,7 +220,9 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                         <button
                             ref={encryptedRowRef}
                             onClick={() => {
-                                if (!encryptedExport) setShowEncrypted(v => !v);
+                                if (encryptedExport) return;
+                                if (showEncrypted) closeEncryptedPanel();
+                                else setShowEncrypted(true);
                             }}
                             aria-expanded={encryptedPanelOpen}
                             aria-disabled={encryptedExport ? true : undefined}
@@ -307,7 +316,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                                                 currentExport.replace(encryptedExport);
                                                 setCopied(false);
                                                 setCopyFailed(null);
-                                                setShowEncrypted(false);
+                                                closeEncryptedPanel();
                                             }}
                                             className="tap-target w-full py-1.5 text-xs text-[var(--text-muted)]"
                                         >

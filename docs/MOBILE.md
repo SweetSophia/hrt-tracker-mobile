@@ -105,6 +105,33 @@ The native record store ships in the offline beta preview and the release
 build, and the dedicated `storageQualification` APK exists for storage
 qualification. Ordinary prototype builds have `nativeRecords: false`.
 
+### Testing the launcher shortcut
+
+On Android 7.1 (API 25) and newer, the offline beta preview, release APK,
+and `storageQualification` APK publish **Add dose** after onboarding. Use a
+launcher that supports app shortcuts, then long-press the app icon. The
+label follows the language selected inside the app.
+
+Use the offline beta preview for installed launcher checks.
+
+CI tests the shortcut with a simulated bridge. Run the focused browser tests
+with `npm run test:e2e:mobile -- launcher-shortcut.spec.ts`.
+
+Run `LauncherShortcutColdLaunchTest` to exercise the installed Android shortcut.
+Use a dedicated API 36 emulator with synthetic records. Set `ANDROID_SERIAL`
+to the emulator serial and run these commands from the repository root.
+
+```sh
+npm run android:sync:storage
+./android/gradlew -p android -PstorageQualification \
+  -Pandroid.testInstrumentationRunnerArguments.class=org.askarys.hrttracker.storage.LauncherShortcutColdLaunchTest \
+  :app:connectedStorageQualificationAndroidTest
+```
+
+Gradle installs the `storageQualification` app and test APKs and writes the
+connected test report under `android/app/build/reports/androidTests/connected/`.
+Run `npm run android:sync` afterward to restore the ordinary prototype assets.
+
 ## Running feasibility probes
 
 `npm run test:e2e:mobile` tests ordinary built assets without a backend.

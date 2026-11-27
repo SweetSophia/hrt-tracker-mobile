@@ -482,6 +482,7 @@ export const UK = {
     'import.bundle_calibration_confirm': 'Це змінить ваші оцінки. Якщо скасувати, нічого не імпортується.',
     'import.bundle_calibration_confirm_btn': 'Узяти з копії',
     'btn.add': 'Додати дозу',
+    'launcher.finish_current': 'Завершіть поточну дію та ще раз натисніть «{action}».',
     'btn.save': 'Зберегти',
     'btn.cancel': 'Скасувати',
     'btn.ok': 'OK',

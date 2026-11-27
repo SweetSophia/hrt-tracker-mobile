@@ -483,6 +483,7 @@ export const RU = {
     'import.bundle_calibration_confirm': 'Это изменит ваши оценки. Если отменить, ничего не импортируется.',
     'import.bundle_calibration_confirm_btn': 'Взять из копии',
     'btn.add': 'Добавить дозу',
+    'launcher.finish_current': 'Завершите текущее действие и снова нажмите «{action}».',
     'btn.save': 'Сохранить',
     'btn.cancel': 'Отмена',
     'btn.ok': 'ОК',

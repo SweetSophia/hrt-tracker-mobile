@@ -39,6 +39,9 @@ import {
 import { useAppData } from './hooks/useAppData';
 import { ModelStatus } from './components/ModelStatus';
 import { useAppNavigation, tabForView, ViewKey } from './hooks/useAppNavigation';
+import { isSteppingBack } from './hooks/navHistory';
+import { appBackOwners } from './application/backNavigation';
+import { hasLauncherShortcutBlocker, useLauncherShortcut } from './hooks/useLauncherShortcut';
 import { useLiveShareSync } from './hooks/useLiveShareSync';
 import { describeSyncError, useCloudSync } from './hooks/useCloudSync';
 
@@ -100,6 +103,7 @@ import UpdatePrompt from './components/UpdatePrompt';
 import AndroidUpdateNotice from './components/AndroidUpdateNotice';
 import { useAndroidUpdates } from './hooks/useAndroidUpdates';
 import { copyText } from './utils/clipboard';
+import { fill } from './utils/regimenText';
 
 const AppContent = ({ session }: { session: UiSession }) => {
     const { t, lang, setLang } = useTranslation();
@@ -272,6 +276,33 @@ const AppContent = ({ session }: { session: UiSession }) => {
 
     // --- First run ---
     const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding(runtime));
+    const [shortcutNotice, setShortcutNotice] = useState(0);
+    useEffect(() => {
+        if (shortcutNotice === 0) return;
+        const timeout = window.setTimeout(() => setShortcutNotice(0), 6000);
+        return () => window.clearTimeout(timeout);
+    }, [shortcutNotice]);
+
+    const openDoseEntry = () => {
+        setShortcutNotice(0);
+        setIsQuickAddOpen(true);
+        handleViewChange('history');
+    };
+    useLauncherShortcut(showOnboarding ? null : t('btn.add'), () => {
+        if (showOnboarding || (currentView === 'history' && isQuickAddOpen)) return;
+        if (
+            isSteppingBack() ||
+            hasLauncherShortcutBlocker() ||
+            isPasswordInputOpen ||
+            (currentView === 'lab' && isQuickAddLabOpen) ||
+            editFromOverview ||
+            appBackOwners.hasActiveOwner()
+        ) {
+            setShortcutNotice(attempt => attempt + 1);
+            return;
+        }
+        openDoseEntry();
+    });
 
     // --- Developer mode (unlocks the milk tea easter egg) ---
     const [devMode, setDevMode] = useDevicePreference('app-dev-mode', raw => raw === 'true');
@@ -689,6 +720,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
     };
 
     const handleEditEvent = (e: DoseEvent) => {
+        if (isSteppingBack()) return;
         setEditFromOverview(e.id);
         handleViewChange('history');
     };
@@ -978,6 +1010,22 @@ const AppContent = ({ session }: { session: UiSession }) => {
                 {getCapabilities().remoteBackend && <SiteNoticeBanner />}
                 <UpdatePrompt />
                 {androidUpdates && <AndroidUpdateNotice updates={androidUpdates} />}
+                {getBuildTarget() === 'mobile' && (
+                    <div
+                        role="status"
+                        aria-atomic="true"
+                        className="pointer-events-none absolute inset-x-4 bottom-[calc(var(--nav-clearance)+env(safe-area-inset-bottom,0px))] z-30 md:bottom-4"
+                    >
+                        {shortcutNotice > 0 && (
+                            <p
+                                key={shortcutNotice}
+                                className="mx-auto w-fit max-w-md wrap-break-word rounded-[var(--radius-md)] border-(length:--hairline) border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm text-[var(--text)] shadow-[var(--shadow-sm)]"
+                            >
+                                {fill(t('launcher.finish_current'), { action: t('btn.add') })}
+                            </p>
+                        )}
+                    </div>
+                )}
                 {/* Where a prompt goes when nothing on the page was pressed to
                     put it under (contexts/DialogContext.tsx). */}
                 <div id="prompt-slot" className="relative z-30 shrink-0" />
@@ -1013,10 +1061,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
                                 modelStatus={modelStatus}
                                 modelSnapshot={modelSnapshot}
                                 theme={theme}
-                                onNavigateToHistory={() => {
-                                    setIsQuickAddOpen(true);
-                                    handleViewChange('history');
-                                }}
+                                onNavigateToHistory={openDoseEntry}
                                 onNavigateToLab={() => {
                                     setIsQuickAddLabOpen(true);
                                     handleViewChange('lab');
