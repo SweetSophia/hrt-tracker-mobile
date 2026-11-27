@@ -58,9 +58,26 @@ export const doseOf = (dose: string, drug: string, t: T) => {
     return fill(template, { dose, drug: template.startsWith('{drug}') ? drug : inPhrase(drug) });
 };
 
-/** "雌二醇鼻喷": a supply is a drug and a form, without a dose. */
-export const supplyLabel = (s: { route: Route; ester: Ester }, t: T) =>
-    glue(esterName(s.ester, t), inPhrase(t(`regimen.route.${s.route}`)));
+/** The language chooses where the drug, form and optional dose go in a prescription line. */
+function formatDrugForm(item: { route: Route; ester: Ester }, t: T, dose = ''): string {
+    const name = esterName(item.ester, t);
+    const amount = dose ? ` ${dose}` : '';
+    const pattern = t(`regimen.form.${item.route}`);
+    const [before, after] = pattern.replace('{dose}', amount).split('{drug}');
+    if (after === undefined) {
+        // Older imports can contain a patch-removal event in a plan.
+        const key = `route.${item.route}`;
+        const route = t(key);
+        return route === key ? name + amount : `${name}${amount} (${route})`;
+    }
+
+    const drug = before && isKnownEster(item.ester) ? inPhrase(name) : name;
+    // A Latin drug code alongside Chinese or Japanese text still needs a word boundary.
+    const start = CJK.test(before.slice(-1)) ? glue(before, drug) : before + drug;
+    return CJK.test(after.charAt(0)) ? glue(start, after) : start + after;
+}
+
+export const supplyLabel = (s: { route: Route; ester: Ester }, t: T) => formatDrugForm(s, t);
 
 /** "雌二醇凝胶", "雌二醇贴片"; a pill or an injection is just the drug's name. */
 const drugForm = (i: { route: Route; ester: Ester }, t: T) =>
@@ -123,11 +140,9 @@ export function regimenLabel(
     r: { route: Route; ester: Ester; doseMG: number; extras: Partial<Record<ExtraKey, number>> },
     t: T,
 ): string {
-    const route = inPhrase(t(`regimen.route.${r.route}`));
     const rate = r.extras[ExtraKey.releaseRateUGPerDay];
-    if (r.route === Route.patchApply && rate)
-        return `${glue(esterName(r.ester, t), route)} ${trimNum(rate)} µg${t('regimen.per_day')}`;
-    return `${esterName(r.ester, t)} ${trimNum(r.doseMG)} mg ${route}`;
+    if (r.route === Route.patchApply && rate) return `${supplyLabel(r, t)} ${trimNum(rate)} µg${t('regimen.per_day')}`;
+    return formatDrugForm(r, t, `${trimNum(r.doseMG)} mg`);
 }
 
 /** "每周", "每 3.5 天", "每 12 小时". */

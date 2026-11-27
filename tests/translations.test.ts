@@ -8,6 +8,7 @@ import { Route } from '../src/domain/types';
 import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
 import { DE } from '../src/i18n/de';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
+import { REGIMEN_FORMS } from '../src/i18n/regimenForms';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
 
@@ -64,7 +65,7 @@ describe('language packs', () => {
 
     it.each([
         ['Calibration', 'cal.route'],
-        ['Supplies', 'regimen.route'],
+        ['the regimen route picker', 'regimen.route'],
     ] as const)('labels every route in %s in every supported language', (_screen, namespace) => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
@@ -76,11 +77,13 @@ describe('language packs', () => {
         }
     });
 
-    it('translates Supplies labels except for words shared with English', () => {
+    it('translates standalone regimen routes except for words shared with English', () => {
         const en = TRANSLATIONS.en as Record<string, string>;
         const sharedGermanLabels: Partial<Record<Route, string>> = {
             [Route.oral]: 'Oral',
             [Route.sublingual]: 'Sublingual',
+            [Route.gel]: 'Gel',
+            [Route.pellet]: 'Pellet',
         };
         for (const locale of locales) {
             if (locale === 'en') continue;
@@ -94,7 +97,19 @@ describe('language packs', () => {
         }
     });
 
-    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and Supplies', () => {
+    it('ships a complete drug-and-dose phrase for every administration route in every language', () => {
+        const en: Record<string, string> = TRANSLATIONS.en;
+        for (const lang of locales) {
+            const pack: Record<string, string> = TRANSLATIONS[lang];
+            for (const route of administrationRoutes) {
+                const key = `regimen.form.${route}`;
+                expect(placeholders(pack[key] ?? ''), `${lang} ${key}`).toEqual(['{dose}', '{drug}']);
+                if (lang !== 'en') expect(pack[key], `${lang} ${key}`).not.toBe(en[key]);
+            }
+        }
+    });
+
+    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and regimen pickers', () => {
         const doseKeys = Object.values(Route).map(route => `route.${route}`);
         const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
         const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
@@ -149,7 +164,7 @@ describe('age model copy', () => {
 describe('complete language packs', () => {
     const en = TRANSLATIONS.en as Record<string, string>;
     const authored = {
-        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de },
+        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de, ...REGIMEN_FORMS.de },
         ru: TRANSLATIONS.ru,
         uk: TRANSLATIONS.uk,
     };

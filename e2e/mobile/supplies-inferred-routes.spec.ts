@@ -21,7 +21,11 @@ const languages = [
         plan: {
             injection: 'Estradiol valerate injection',
             sc: 'Estradiol valerate subcutaneous injection',
+            nasal: 'Estradiol valerate nasal spray',
+            pellet: 'Estradiol valerate pellet',
+            patchRemove: 'Estradiol valerate (Patch remove)',
         },
+        done: 'Done',
     },
     {
         lang: 'de',
@@ -40,15 +44,19 @@ const languages = [
         plan: {
             injection: 'Estradiolvalerat zur Injektion',
             sc: 'Estradiolvalerat zur subkutanen Injektion',
+            nasal: 'Estradiolvalerat als Nasenspray',
+            pellet: 'Estradiolvalerat als Pellet',
+            patchRemove: 'Estradiolvalerat (Pflaster entfernen)',
         },
+        done: 'Erledigt',
     },
 ];
 
-const mixedPlan = (['injection', 'sc'] as const).map(route => ({
+const mixedPlan = (['injection', 'sc', 'nasal', 'pellet', 'patchRemove'] as const).map(route => ({
     id: `mixed-${route}`,
     route,
     ester: 'EV',
-    doseMG: 1,
+    doseMG: route === 'patchRemove' ? 0 : 1,
     extras: {},
     everyDays: 7,
     timesPerDay: 1,
@@ -94,7 +102,9 @@ for (const copy of languages) {
         for (const item of mixedPlan) {
             const logAction = page.locator(`button[aria-describedby$="-${item.id}"]`);
             await expect(logAction).toBeVisible();
+            await expect(logAction).toHaveText(copy.done);
             await expect(logAction).toHaveAccessibleDescription(copy.plan[item.route]);
+            await expect(page.getByText(copy.plan[item.route], { exact: true })).toBeVisible();
         }
     });
 }
