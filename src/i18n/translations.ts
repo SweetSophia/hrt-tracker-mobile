@@ -3,6 +3,7 @@ import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { REGIMEN_FORMS } from './regimenForms';
 import { RU } from './ru';
+import { TR_CALIBRATION_ROUTES } from './trCalibrationRoutes';
 import { UK } from './uk';
 import type { Lang } from './languages';
 
@@ -4312,17 +4313,6 @@ const ZH_TW = {
     'vote.prompt.under_a_day': '不到 1 天',
     'vote.prompt.go': '前往',
 };
-
-export const TR_CALIBRATION_ROUTES = {
-    'cal.route.injection': 'enjeksiyon',
-    'cal.route.sc': 'deri altı enjeksiyon',
-    'cal.route.nasal': 'burun spreyi',
-    'cal.route.pellet': 'pelet',
-    'cal.route.oral': 'oral',
-    'cal.route.sublingual': 'dil altı',
-    'cal.route.gel': 'jel',
-    'cal.route.patchApply': 'bant',
-} as const;
 
 export const TRANSLATIONS = {
     zh: {
