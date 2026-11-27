@@ -8,16 +8,18 @@ English · [简体中文](./README.zh-CN.md)
 
 - **On-device records.** Log doses and lab results in feminizing and masculinizing modes. Records are encrypted at rest in a local SQLCipher database with a key protected by Android Keystore.
 - **Charts and planning.** View estimated hormone levels over time, compare estimates with labs, and use medication plans, supplies, and what-if forecasts. When logging a patch change, you can record removing the previous patch in the same step.
+- **Decimal entry.** Enter a dose or lab result as `1,5` or `1.5`. Both save the same value. Ambiguous entries such as `1,234` in English show a format hint.
 - **Color themes.** Choose Terracotta, Plum, or Teal with Light, Dark, or System. Complete backups include your saved palette.
 - **Portable backups.** Use Android's file picker to save or restore a complete backup of both modes. A compatible backup file can carry records from the web tracker or the earlier Android preview. Complete backup exports contain readable health data.
 - **Optional update checks.** Check for new Android releases in **Settings → About**. Automatic checks are off by default and use public release information from GitHub.
-- **Phone controls and ten languages.** The app supports Android Back navigation and adapts its screens to phones. The interface offers Simplified Chinese, Traditional Chinese, Cantonese, English, German, Japanese, Korean, Turkish, Russian, and Ukrainian.
+- **Phone controls and ten languages.** On a narrow phone with text enlarged, History and Labs headings and the bottom tab labels wrap when needed. Logging buttons have 48 dp touch targets on touch screens. The app also supports Android Back. The interface offers Simplified Chinese, Traditional Chinese, Cantonese, English, German, Japanese, Korean, Turkish, Russian, and Ukrainian.
+- **Launcher shortcut.** After initial setup, long-press the app icon and choose **Add dose**. The shortcut uses your app language and opens the dose form. Tap **Save** to record the dose.
 
 ## Download for Android
 
-[Download the signed Android APK (1.3.0)](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.3.0/hrt-tracker-1.3.0.apk) · [Release notes in English and Simplified Chinese](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.3.0)
+[Download the signed Android APK (1.4.0)](https://github.com/SweetSophia/hrt-tracker-mobile/releases/download/android-v1.4.0/hrt-tracker-1.4.0.apk) · [Release notes in English and Simplified Chinese](https://github.com/SweetSophia/hrt-tracker-mobile/releases/tag/android-v1.4.0)
 
-HRT Tracker runs on Android 7.0 or newer. To update an earlier signed release or the private **HRT Tracker** beta, open the APK and choose **Update**. The Android package ID is `org.askarys.hrttracker`. An iPhone version is planned.
+HRT Tracker runs on Android 7.0 or newer. The shortcut requires Android 7.1 or newer and a compatible launcher. To update an earlier signed release or the private **HRT Tracker** beta, open the APK and choose **Update**. The Android package ID is `org.askarys.hrttracker`. An iPhone version is planned.
 
 ## Build and contribute
 
