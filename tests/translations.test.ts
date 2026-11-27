@@ -81,7 +81,6 @@ describe('language packs', () => {
         const sharedGermanLabels: Partial<Record<Route, string>> = {
             [Route.oral]: 'Oral',
             [Route.sublingual]: 'Sublingual',
-            [Route.gel]: 'Gel',
         };
         for (const locale of locales) {
             if (locale === 'en') continue;

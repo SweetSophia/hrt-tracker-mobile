@@ -18,6 +18,10 @@ const languages = [
             nasal: 'Estradiol nasal spray',
             pellet: 'Estradiol pellet',
         },
+        plan: {
+            injection: 'Estradiol valerate injection',
+            sc: 'Estradiol valerate subcutaneous injection',
+        },
     },
     {
         lang: 'de',
@@ -33,8 +37,22 @@ const languages = [
             nasal: 'Estradiol als Nasenspray',
             pellet: 'Estradiol als Pellet',
         },
+        plan: {
+            injection: 'Estradiolvalerat zur Injektion',
+            sc: 'Estradiolvalerat zur subkutanen Injektion',
+        },
     },
 ];
+
+const mixedPlan = (['injection', 'sc'] as const).map(route => ({
+    id: `mixed-${route}`,
+    route,
+    ester: 'EV',
+    doseMG: 1,
+    extras: {},
+    everyDays: 7,
+    timesPerDay: 1,
+}));
 
 for (const copy of languages) {
     test(`Supplies names routes inferred from the dose log in ${copy.lang}`, async ({ page, context }) => {
@@ -69,21 +87,14 @@ for (const copy of languages) {
         await expect(page.getByRole('button', { name: new RegExp(`^${copy.routes.nasal} `) })).toBeVisible();
     });
 
-    test(`Overview distinguishes saved plan entries for the same drug in ${copy.lang}`, async ({ page, context }) => {
-        const plan = Object.keys(copy.routes).map(route => ({
-            id: route,
-            route,
-            ester: 'E2',
-            doseMG: 1,
-            extras: {},
-            everyDays: 7,
-            timesPerDay: 1,
-        }));
-        await seedStorage(context, baseStorage({ 'hrt-lang': copy.lang, 'hrt-plan': JSON.stringify(plan) }));
+    test(`Overview names a drug and its form the way Supplies does in ${copy.lang}`, async ({ page, context }) => {
+        await seedStorage(context, baseStorage({ 'hrt-lang': copy.lang, 'hrt-plan': JSON.stringify(mixedPlan) }));
         await page.goto('/');
 
-        for (const label of Object.values(copy.routes)) {
-            await expect(page.getByText(label, { exact: true })).toBeVisible();
+        for (const item of mixedPlan) {
+            const logAction = page.locator(`button[aria-describedby$="-${item.id}"]`);
+            await expect(logAction).toBeVisible();
+            await expect(logAction).toHaveAccessibleDescription(copy.plan[item.route]);
         }
     });
 }

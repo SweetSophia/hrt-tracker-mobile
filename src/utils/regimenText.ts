@@ -58,13 +58,15 @@ export const doseOf = (dose: string, drug: string, t: T) => {
     return fill(template, { dose, drug: template.startsWith('{drug}') ? drug : inPhrase(drug) });
 };
 
+/** "雌二醇鼻喷": a supply is a drug and a form, without a dose. */
+export const supplyLabel = (s: { route: Route; ester: Ester }, t: T) =>
+    glue(esterName(s.ester, t), inPhrase(t(`regimen.route.${s.route}`)));
+
 /** "雌二醇凝胶", "雌二醇贴片"; a pill or an injection is just the drug's name. */
 const drugForm = (i: { route: Route; ester: Ester }, t: T) =>
-    i.route === Route.gel || i.route === Route.patchApply
-        ? glue(esterName(i.ester, t), inPhrase(t(`regimen.route.${i.route}`)))
-        : esterName(i.ester, t);
+    i.route === Route.gel || i.route === Route.patchApply ? supplyLabel(i, t) : esterName(i.ester, t);
 
-/** A plan item only needs its route when another item would have the same name. */
+/** Use the Supplies label to distinguish plan rows that would otherwise have the same name. */
 export function planItemLabel(
     item: { id: string; route: Route; ester: Ester },
     plan: readonly { id: string; route: Route; ester: Ester }[],
@@ -72,12 +74,7 @@ export function planItemLabel(
 ): string {
     const base = drugForm(item, t);
     const clash = plan.some(o => o.id !== item.id && drugForm(o, t) === base);
-    if (!clash) return base;
-    // Imported plans can contain these forms. Use the same drug-first phrase as the Supplies picker.
-    if (item.route === Route.sc || item.route === Route.nasal || item.route === Route.pellet) {
-        return supplyLabel(item, t);
-    }
-    return glue(t(`regimen.route.${item.route}`), inPhrase(esterName(item.ester, t)));
+    return clash ? supplyLabel(item, t) : base;
 }
 
 /** "手臂": where a gel goes, without the English the settings list carries ("手臂 (Arm)"). */
@@ -132,10 +129,6 @@ export function regimenLabel(
         return `${glue(esterName(r.ester, t), route)} ${trimNum(rate)} µg${t('regimen.per_day')}`;
     return `${esterName(r.ester, t)} ${trimNum(r.doseMG)} mg ${route}`;
 }
-
-/** "戊酸雌二醇 肌注": a supply is a drug and a form, not a dose. */
-export const supplyLabel = (s: { route: Route; ester: Ester }, t: T) =>
-    `${esterName(s.ester, t)} ${inPhrase(t(`regimen.route.${s.route}`))}`;
 
 /** "每周", "每 3.5 天", "每 12 小时". */
 export function intervalLabel(h: number, t: T): string {
