@@ -43,6 +43,8 @@ const labs = (page: Page) =>
 /** The quick-add form itself, not any other open disclosure on the page. */
 const doseForm = (page: Page) =>
     page.locator('.disclosure[data-open="true"] form').filter({ has: page.getByLabel('Dose (mg)', { exact: true }) });
+const shortcutHint = (page: Page) =>
+    page.getByRole('status').filter({ hasText: 'Finish the current step, then try Add dose again.' });
 
 /** The bridge the bundled app sees. startup is delivered to the first appUrlOpen listener. */
 function installBridge(startup: string | null) {
@@ -175,7 +177,7 @@ test('a repeated shortcut keeps the typed draft and still saves nothing', async 
     await expect.poll(() => events(page)).toMatchObject([{ doseMG: 2.5 }]);
 });
 
-test('a shortcut during an open lab edit stays on that edit', async ({ page }) => {
+test('a shortcut during a lab edit explains how to retry without interrupting the draft', async ({ page }) => {
     const lab: LabFixture = { id: 'shortcut-lab', timeH: Date.now() / 3600000 - 1, concValue: 123, unit: 'pmol/l' };
     await launch(page, null, { 'hrt-lab-results': JSON.stringify([lab]) });
     await page.getByRole('button', { name: 'Labs', exact: true }).click();
@@ -187,10 +189,17 @@ test('a shortcut during an open lab edit stays on that edit', async ({ page }) =
     await reading.fill('124.5');
 
     await open(page);
+    await expect(shortcutHint(page)).toBeVisible();
     await expect(reading).toHaveValue('124.5');
+    await expect(reading).toBeFocused();
     await expect(doseForm(page)).toHaveCount(0);
     expect(await labs(page)).toMatchObject([{ concValue: 123 }]);
     expect(await events(page)).toEqual([]);
+
+    await row.locator('..').getByRole('button', { name: 'Cancel', exact: true }).click();
+    await open(page);
+    await expect(doseForm(page)).toBeVisible();
+    await expect(shortcutHint(page)).toHaveCount(0);
 });
 
 test('a shortcut during a delete confirmation leaves the prompt in place', async ({ page }) => {
@@ -210,6 +219,7 @@ test('a shortcut during a delete confirmation leaves the prompt in place', async
     await expect(page.locator('[data-prompt="confirm"]')).toBeVisible();
 
     await open(page);
+    await expect(shortcutHint(page)).toBeVisible();
     await expect(page.locator('[data-prompt="confirm"]')).toBeVisible();
     await expect(editor).toBeVisible();
     expect(await events(page)).toHaveLength(1);

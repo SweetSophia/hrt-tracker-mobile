@@ -1,5 +1,6 @@
 package org.askarys.hrttracker.shortcuts;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ShortcutInfo;
@@ -8,6 +9,8 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
+import androidx.annotation.RequiresApi;
 import androidx.webkit.WebViewFeature;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -20,8 +23,9 @@ import org.askarys.hrttracker.spike.R;
 
 /**
  * Publication-only launcher shortcut for the Add dose action. The web app owns
- * the timing; this plugin verifies the bundled WebView origin and upserts the
- * one stable shortcut. Publication failures stay independent from app startup.
+ * the timing; this plugin verifies the bundled WebView origin and keeps the one
+ * stable shortcut in sync. Publication failures stay independent from app
+ * startup.
  */
 @CapacitorPlugin(name = "HrtLauncherShortcut")
 public final class HrtLauncherShortcutPlugin extends Plugin {
@@ -34,8 +38,8 @@ public final class HrtLauncherShortcutPlugin extends Plugin {
     private boolean supported;
 
     @Override public void load() {
-        // Same bundled-build rule as the storage and update plugins. A failure
-        // here only disables publication; it must not fail app startup.
+        // Capacitor's WebMessageListener restricts calls to the allowed main-frame origin.
+        // Its JavascriptInterface fallback exposes the bridge to every origin and frame.
         try {
             supported = WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)
                 && !bridge.getConfig().isUsingLegacyBridge() && bridge.getServerUrl() == null
@@ -84,17 +88,40 @@ public final class HrtLauncherShortcutPlugin extends Plugin {
             // Explicit to the installed variant's MainActivity so every
             // application ID resolves the same action. No task-clearing flags:
             // a warm launch must reuse the current task and its draft.
+            ComponentName target = new ComponentName(context, MainActivity.class.getName());
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(ADD_DOSE_URI));
-            intent.setClassName(context, MainActivity.class.getName());
+            intent.setComponent(target);
+            // Skip the rate-limited write when Android already has the intended shortcut.
+            if (alreadyPublished(manager, label, intent)) { call.resolve(); return; }
             ShortcutInfo shortcut = new ShortcutInfo.Builder(context, ADD_DOSE_ID)
                 .setShortLabel(label).setLongLabel(label)
                 .setIcon(Icon.createWithResource(context, R.mipmap.ic_launcher))
+                .setActivity(target)
                 .setIntents(new Intent[]{intent})
                 .build();
             // addDynamicShortcuts updates a shortcut with the same ID in place.
             if (manager.addDynamicShortcuts(Collections.singletonList(shortcut))) call.resolve();
-            else reject(call); // Usually the launcher's publication rate limit.
+            else reject(call); // The system throttles repeated publications.
         } catch (RuntimeException unavailable) { reject(call); }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N_MR1)
+    private static boolean alreadyPublished(ShortcutManager manager, String label, Intent intended) {
+        for (ShortcutInfo entry : manager.getDynamicShortcuts()) {
+            if (!ADD_DOSE_ID.equals(entry.getId())) continue;
+            if (!entry.isEnabled() || !TextUtils.equals(label, entry.getShortLabel())
+                || !TextUtils.equals(label, entry.getLongLabel()) || !intended.getComponent().equals(entry.getActivity())) {
+                return false;
+            }
+            Intent[] stored = entry.getIntents();
+            if (stored == null || stored.length != 1) return false;
+            Intent launch = stored[0];
+            // Intent.filterEquals excludes flags and extras.
+            Bundle extras = launch.getExtras();
+            return intended.filterEquals(launch) && intended.getFlags() == launch.getFlags()
+                && (extras == null || extras.isEmpty());
+        }
+        return false;
     }
 
     private static void reject(PluginCall call) {

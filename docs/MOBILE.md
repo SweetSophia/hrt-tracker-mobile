@@ -105,6 +105,17 @@ The native record store ships in the offline beta preview and the release
 build, and the dedicated `storageQualification` APK exists for storage
 qualification. Ordinary prototype builds have `nativeRecords: false`.
 
+### Testing the launcher shortcut
+
+On Android 7.1 (API 25) and newer, the offline beta preview, release APK,
+and `storageQualification` APK publish **Add dose** after onboarding. Use a
+launcher that supports app shortcuts, then long-press the app icon. The
+label follows the language selected inside the app.
+
+Use the offline beta preview for installed launcher checks.
+For automated coverage, run `LauncherShortcutColdLaunchTest` on a dedicated
+emulator with the `storageQualification` app and test APKs.
+
 ## Running feasibility probes
 
 `npm run test:e2e:mobile` tests ordinary built assets without a backend.
