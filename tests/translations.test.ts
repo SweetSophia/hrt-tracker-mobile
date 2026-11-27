@@ -23,7 +23,8 @@ const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
 const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
-// Labels shown on their own in Plan and Forecast.
+// Plan and Forecast show these names on their own. German uses “Injektion” here and “zur Injektion” after a drug.
+// German and English share the standalone spellings “Oral”, “Sublingual”, “Gel” and “Pellet”.
 const standaloneRouteLabels: Record<Lang, Record<Exclude<Route, Route.patchRemove>, string>> = {
     zh: {
         sc: '皮下注射',
@@ -183,7 +184,7 @@ describe('language packs', () => {
         const pack: Record<string, string> = TRANSLATIONS[locale];
         for (const route of administrationRoutes) {
             const key = `regimen.route.${route}`;
-            expect(pack[key], key).toBe(standaloneRouteLabels[locale][route]);
+            expect(pack[key], `${locale} standalone ${key}`).toBe(standaloneRouteLabels[locale][route]);
         }
     });
 
