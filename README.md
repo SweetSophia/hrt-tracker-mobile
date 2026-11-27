@@ -12,7 +12,7 @@ English · [简体中文](./README.zh-CN.md)
 - **Color themes.** Choose Terracotta, Plum, or Teal with Light, Dark, or System. Complete backups include your saved palette.
 - **Portable backups.** Use Android's file picker to save or restore a complete backup of both modes. A compatible backup file can carry records from the web tracker or the earlier Android preview. Complete backup exports contain readable health data.
 - **Optional update checks.** Check for new Android releases in **Settings → About**. Automatic checks are off by default and use public release information from GitHub.
-- **Phone controls and ten languages.** The app supports Android Back navigation, wraps its headings and tab labels for narrow phones and large system text, and gives the logging buttons 48 dp touch targets. The interface offers Simplified Chinese, Traditional Chinese, Cantonese, English, German, Japanese, Korean, Turkish, Russian, and Ukrainian.
+- **Phone controls and ten languages.** History and Labs headings and the bottom tab labels wrap on narrow screens and at larger text sizes. Logging buttons have 48 dp touch targets on touch screens. The app also supports Android Back. The interface offers Simplified Chinese, Traditional Chinese, Cantonese, English, German, Japanese, Korean, Turkish, Russian, and Ukrainian.
 - **Launcher shortcut.** After initial setup, long-press the app icon and choose **Add dose**. The shortcut uses your app language and opens the dose form. Tap **Save** to record the dose.
 
 ## Download for Android

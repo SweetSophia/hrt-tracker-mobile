@@ -92,7 +92,10 @@ for (const [source, label, input, storedAmount] of [
 
         if (source === 'equivalent') {
             await form.getByRole('button', { name: /^Route / }).click();
-            await form.getByRole('listbox', { name: 'Route' }).getByRole('option', { name: 'Injection' }).click();
+            await form
+                .getByRole('listbox', { name: 'Route' })
+                .getByRole('option', { name: 'Injection', exact: true })
+                .click();
             await form.getByRole('button', { name: /^Compound / }).click();
             await form
                 .getByRole('listbox', { name: 'Compound' })

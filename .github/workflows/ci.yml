@@ -23,6 +23,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
+          # Depth 2 carries both parents of the pull request merge commit, so
+          # the base commit's mobile/version.json is readable in the tests.
+          fetch-depth: 2
           persist-credentials: false
 
       - name: Set up Node
@@ -56,6 +59,10 @@ jobs:
 
       - name: Unit tests
         # Dose and concentration math in logic.ts; see tests/.
+        env:
+          # The base commit of a pull request; the release metadata test
+          # compares the Android version code against it.
+          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: npm test
 
       - name: Renderer attribution replay

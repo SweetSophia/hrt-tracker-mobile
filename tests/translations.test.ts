@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { APP_THEMES } from '../src/constants';
+import { Route } from '../src/domain/types';
 import { APPEARANCE_COPY } from '../src/i18n/appearanceCopy';
 import { DE } from '../src/i18n/de';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
@@ -44,6 +45,17 @@ describe('language packs', () => {
             for (const mode of APP_THEMES) {
                 const key = `theme.${mode}` as const;
                 expect(TRANSLATIONS[locale][key]?.trim(), `${locale} ${key}`).toBeTruthy();
+            }
+        }
+    });
+
+    it('names every dose route in every supported language', () => {
+        for (const locale of locales) {
+            const pack: Record<string, string> = TRANSLATIONS[locale];
+            for (const route of Object.values(Route)) {
+                const key = `route.${route}`;
+                expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
+                expect(pack[key]).not.toBe(key);
             }
         }
     });

@@ -631,6 +631,9 @@ export const TRANSLATIONS_BASE = {
         'sl.theta_approx': '估算 Θ',
 
         'route.injection': '肌肉注射 (Injection)',
+        'route.sc': '皮下注射',
+        'route.nasal': '鼻喷',
+        'route.pellet': '皮下埋植',
         'route.oral': '口服 (Oral)',
         'route.sublingual': '舌下 (Sublingual)',
         'route.gel': '凝胶',
@@ -2077,6 +2080,9 @@ export const TRANSLATIONS_BASE = {
         'sl.theta_approx': 'Approx. Θ',
 
         'route.injection': 'Injection',
+        'route.sc': 'Subcutaneous injection',
+        'route.nasal': 'Nasal spray',
+        'route.pellet': 'Pellet',
         'route.oral': 'Oral',
         'route.sublingual': 'Sublingual',
         'route.gel': 'Gel',
@@ -3346,6 +3352,9 @@ const ZH_TW = {
     'inj.guide.source': '來源：MtF.wiki',
 
     'route.injection': '肌肉注射（Injection）',
+    'route.sc': '皮下注射',
+    'route.nasal': '鼻噴',
+    'route.pellet': '皮下植入',
     'route.oral': '口服（Oral）',
     'route.sublingual': '舌下（Sublingual）',
     'route.gel': '凝膠',
@@ -5553,6 +5562,9 @@ export const TRANSLATIONS = {
         'sl.theta_approx': '推定 Θ',
 
         'route.injection': '筋注 (Injection)',
+        'route.sc': '皮下注射',
+        'route.nasal': '点鼻',
+        'route.pellet': 'ペレット',
         'route.oral': '経口 (Oral)',
         'route.sublingual': '舌下 (Sublingual)',
         'route.gel': 'ジェル',
@@ -6854,6 +6866,9 @@ export const TRANSLATIONS = {
         'sl.theta_approx': '대략적인 Θ',
 
         'route.injection': '주사',
+        'route.sc': '피하 주사',
+        'route.nasal': '비강 스프레이',
+        'route.pellet': '펠릿',
         'route.oral': '경구',
         'route.sublingual': '설하',
         'route.gel': '젤',
@@ -8093,6 +8108,9 @@ export const TRANSLATIONS = {
         'sl.theta_approx': 'Yaklaşık Θ',
 
         'route.injection': 'Enjeksiyon',
+        'route.sc': 'Deri altı enjeksiyon',
+        'route.nasal': 'Burun spreyi',
+        'route.pellet': 'Pelet',
         'route.oral': 'Ağızdan',
         'route.sublingual': 'Dil altı',
         'route.gel': 'Jel',
