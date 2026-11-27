@@ -215,6 +215,11 @@ it.each([
     '{drug} zur Injektion',
     '{dose} zur Injektion',
     '{drug}{dose} {unknown}',
+    '{drug}{dose} {dose-mg}',
+    '{drug}{dose} {dose mg}',
+    '{drug}{dose} {',
+    '{drug}{dose}}',
+    '{{drug}}{dose}',
 ])('keeps the drug, route and dose when a translation is malformed: %s', pattern => {
     const pack: Record<string, string> = TRANSLATIONS.de;
     const t = (key: string) => (key === 'regimen.form.injection' ? pattern : (pack[key] ?? key));

@@ -58,13 +58,14 @@ export const doseOf = (dose: string, drug: string, t: T) => {
     return fill(template, { dose, drug: template.startsWith('{drug}') ? drug : inPhrase(drug) });
 };
 
+const DRUG_FORM_PATTERN = /^[^{}]*\{drug\}[^{}]*\{dose\}[^{}]*$/;
+
 /** The language chooses where the drug, form and optional dose go in a prescription line. */
 function formatDrugForm(item: { route: Route; ester: Ester }, t: T, dose = ''): string {
     const name = esterName(item.ester, t);
     const amount = dose ? ` ${dose}` : '';
     const pattern = t(`regimen.form.${item.route}`);
-    const slots = pattern.match(/\{\w+\}/g);
-    if (slots?.length !== 2 || slots[0] !== '{drug}' || slots[1] !== '{dose}') {
+    if (!DRUG_FORM_PATTERN.test(pattern)) {
         // Keep the event name and amount for legacy patch removals or an incomplete translation.
         const key = `route.${item.route}`;
         const route = t(key);

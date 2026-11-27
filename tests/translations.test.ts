@@ -196,7 +196,8 @@ describe('language packs', () => {
             const pack: Record<string, string> = TRANSLATIONS[lang];
             for (const route of administrationRoutes) {
                 const key = `regimen.form.${route}`;
-                expect(pack[key]?.match(/\{\w+\}/g), `${lang} ${key}`).toEqual(['{drug}', '{dose}']);
+                const slots = pack[key]?.match(/\{(?:drug|dose)\}|[{}]/g);
+                expect(slots, `${lang} ${key}`).toEqual(['{drug}', '{dose}']);
                 if (lang !== 'en') expect(pack[key], `${lang} ${key}`).not.toBe(en[key]);
             }
         }

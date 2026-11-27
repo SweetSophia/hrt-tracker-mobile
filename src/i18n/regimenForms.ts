@@ -20,7 +20,7 @@ const ZH_TW_FORMS: RegimenForms = {
 };
 
 /**
- * Use {drug} before {dose}, once each. The optional dose supplies its own leading space.
+ * Reserve braces for {drug} followed by {dose}, once each. The optional dose supplies its own leading space.
  * Place the route before, between or after those slots to suit the language.
  * Plan and Forecast pickers use the standalone names under regimen.route.* in the language packs.
  */
