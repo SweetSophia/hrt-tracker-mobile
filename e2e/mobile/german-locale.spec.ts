@@ -373,7 +373,7 @@ test('the German plan and forecast read 2,5 mg alle 3,5 Tage', async ({ page, co
     // 2,5 mg every 3,5 days, never the point decimals of the stored numbers.
     await page.getByRole('button', { name: de.planTitle, exact: true }).tap();
     await expect(page.getByRole('button', { name: /^Medikationsplan\s*,\s*Zurück$/ })).toBeVisible();
-    const regimenLabel = 'Estradiolvalerat 2,5 mg injektion';
+    const regimenLabel = 'Estradiolvalerat 2,5 mg zur Injektion';
     await expect(page.getByText(regimenLabel, { exact: true })).toBeVisible();
     await expect(page.getByText('Alle 3,5 Tage', { exact: true })).toBeVisible();
 
