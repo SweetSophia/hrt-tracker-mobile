@@ -12,7 +12,6 @@ import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { REGIMEN_FORMS } from '../src/i18n/regimenForms';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
-import { PLAN_DRUGS } from '../src/utils/plan';
 
 // A language pack may start from another one with a spread, but a spread
 // further down overwrites every key written above it. That is how the Turkish
@@ -24,22 +23,108 @@ const locales = Object.keys(TRANSLATIONS) as (keyof typeof TRANSLATIONS)[];
 const administrationRoutes = Object.values(Route).filter(route => route !== Route.patchRemove);
 const placeholders = (value: string) => (value.match(/\{\w+\}/g) ?? []).sort();
 
-// The five routes the plan wizard offers; the other enum routes are not in it.
-const planWizardRoutes = [Route.injection, Route.oral, Route.sublingual, Route.gel, Route.patchApply] as const;
-type PlanWizardRoute = (typeof planWizardRoutes)[number];
-
-// Standalone route names per language; a composed form here (German "Zur Injektion") is a bug.
-const expectedPlanRouteLabels: Record<Lang, Record<PlanWizardRoute, string>> = {
-    zh: { injection: '肌肉注射', oral: '口服', sublingual: '舌下', gel: '凝胶', patchApply: '贴片' },
-    'zh-TW': { injection: '肌肉注射', oral: '口服', sublingual: '舌下', gel: '凝膠', patchApply: '貼片' },
-    yue: { injection: '肌肉注射', oral: '口服', sublingual: '舌下', gel: '凝膠', patchApply: '貼片' },
-    en: { injection: 'Injection', oral: 'Oral', sublingual: 'Sublingual', gel: 'Gel', patchApply: 'Patch' },
-    de: { injection: 'Injektion', oral: 'Oral', sublingual: 'Sublingual', gel: 'Gel', patchApply: 'Pflaster' },
-    ja: { injection: '筋注', oral: '経口', sublingual: '舌下', gel: 'ジェル', patchApply: 'パッチ' },
-    ko: { injection: '주사', oral: '경구', sublingual: '설하', gel: '젤', patchApply: '패치' },
-    tr: { injection: 'Enjeksiyon', oral: 'Ağızdan', sublingual: 'Dil altı', gel: 'Jel', patchApply: 'Yama' },
-    ru: { injection: 'Инъекция', oral: 'Перорально', sublingual: 'Сублингвально', gel: 'Гель', patchApply: 'Пластырь' },
-    uk: { injection: 'Ін’єкція', oral: 'Перорально', sublingual: 'Сублінгвально', gel: 'Гель', patchApply: 'Пластир' },
+// Labels shown on their own in Plan and Forecast.
+const standaloneRouteLabels: Record<Lang, Record<Exclude<Route, Route.patchRemove>, string>> = {
+    zh: {
+        sc: '皮下注射',
+        nasal: '鼻喷',
+        pellet: '皮下埋植',
+        injection: '肌肉注射',
+        oral: '口服',
+        sublingual: '舌下',
+        gel: '凝胶',
+        patchApply: '贴片',
+    },
+    'zh-TW': {
+        sc: '皮下注射',
+        nasal: '鼻噴',
+        pellet: '皮下植入',
+        injection: '肌肉注射',
+        oral: '口服',
+        sublingual: '舌下',
+        gel: '凝膠',
+        patchApply: '貼片',
+    },
+    yue: {
+        sc: '皮下注射',
+        nasal: '噴鼻劑',
+        pellet: '皮下植入劑',
+        injection: '肌肉注射',
+        oral: '口服',
+        sublingual: '舌下',
+        gel: '凝膠',
+        patchApply: '貼片',
+    },
+    en: {
+        sc: 'Subcutaneous injection',
+        nasal: 'Nasal spray',
+        pellet: 'Pellet',
+        injection: 'Injection',
+        oral: 'Oral',
+        sublingual: 'Sublingual',
+        gel: 'Gel',
+        patchApply: 'Patch',
+    },
+    de: {
+        sc: 'Subkutane Injektion',
+        nasal: 'Nasenspray',
+        pellet: 'Pellet',
+        injection: 'Injektion',
+        oral: 'Oral',
+        sublingual: 'Sublingual',
+        gel: 'Gel',
+        patchApply: 'Pflaster',
+    },
+    ja: {
+        sc: '皮下注射',
+        nasal: '点鼻',
+        pellet: 'ペレット',
+        injection: '筋注',
+        oral: '経口',
+        sublingual: '舌下',
+        gel: 'ジェル',
+        patchApply: 'パッチ',
+    },
+    ko: {
+        sc: '피하 주사',
+        nasal: '비강 스프레이',
+        pellet: '펠릿',
+        injection: '주사',
+        oral: '경구',
+        sublingual: '설하',
+        gel: '젤',
+        patchApply: '패치',
+    },
+    tr: {
+        sc: 'Deri altı enjeksiyon',
+        nasal: 'Burun spreyi',
+        pellet: 'Pelet',
+        injection: 'Enjeksiyon',
+        oral: 'Ağızdan',
+        sublingual: 'Dil altı',
+        gel: 'Jel',
+        patchApply: 'Yama',
+    },
+    ru: {
+        sc: 'Подкожная инъекция',
+        nasal: 'Назальный спрей',
+        pellet: 'Имплант',
+        injection: 'Инъекция',
+        oral: 'Перорально',
+        sublingual: 'Сублингвально',
+        gel: 'Гель',
+        patchApply: 'Пластырь',
+    },
+    uk: {
+        sc: 'Підшкірна ін’єкція',
+        nasal: 'Назальний спрей',
+        pellet: 'Імплант',
+        injection: 'Ін’єкція',
+        oral: 'Перорально',
+        sublingual: 'Сублінгвально',
+        gel: 'Гель',
+        patchApply: 'Пластир',
+    },
 };
 
 describe('language packs', () => {
@@ -83,52 +168,22 @@ describe('language packs', () => {
         }
     });
 
-    it.each([
-        ['Calibration', 'cal.route'],
-        ['the regimen route picker', 'regimen.route'],
-    ] as const)('labels every route in %s in every supported language', (_screen, namespace) => {
+    it('labels every route that can have a per-route calibration factor', () => {
         for (const locale of locales) {
             const pack: Record<string, string> = TRANSLATIONS[locale];
             for (const route of administrationRoutes) {
-                const key = `${namespace}.${route}`;
+                const key = `cal.route.${route}`;
                 expect(pack[key]?.trim(), `${locale} ${key}`).toBeTruthy();
                 expect(pack[key]).not.toBe(key);
             }
         }
     });
 
-    it('translates standalone regimen routes except for words shared with English', () => {
-        const en = TRANSLATIONS.en as Record<string, string>;
-        const sharedGermanLabels: Partial<Record<Route, string>> = {
-            [Route.oral]: 'Oral',
-            [Route.sublingual]: 'Sublingual',
-            [Route.gel]: 'Gel',
-            [Route.pellet]: 'Pellet',
-        };
-        for (const locale of locales) {
-            if (locale === 'en') continue;
-            const pack: Record<string, string> = TRANSLATIONS[locale];
-            for (const route of administrationRoutes) {
-                const key = `regimen.route.${route}`;
-                const label = pack[key]?.trim();
-                if (locale === 'de' && label === sharedGermanLabels[route]) continue;
-                expect(label, `${locale} ${key}`).not.toBe(en[key]);
-            }
-        }
-    });
-
-    it('offers the same five routes in the plan wizard as the route labels cover', () => {
-        const offered = [...new Set(Object.values(PLAN_DRUGS).flatMap(mode => Object.keys(mode)))] as Route[];
-        expect(offered.sort()).toEqual([...planWizardRoutes].sort());
-    });
-
-    it('names the plan wizard routes on their own in every language', () => {
-        for (const locale of locales) {
-            const pack = TRANSLATIONS[locale] as Record<string, string>;
-            const expected = expectedPlanRouteLabels[locale];
-            for (const route of planWizardRoutes) {
-                expect(pack[`regimen.route.${route}`], `${locale} regimen.route.${route}`).toBe(expected[route]);
-            }
+    it.each(locales)('names every administration route on its own in %s', locale => {
+        const pack: Record<string, string> = TRANSLATIONS[locale];
+        for (const route of administrationRoutes) {
+            const key = `regimen.route.${route}`;
+            expect(pack[key], key).toBe(standaloneRouteLabels[locale][route]);
         }
     });
 
@@ -144,14 +199,13 @@ describe('language packs', () => {
         }
     });
 
-    it('keeps Turkish route labels in dose entry, the PK calculator, Calibration, and regimen pickers', () => {
+    it('keeps Turkish route labels in dose entry, the PK calculator, and Calibration', () => {
         const doseKeys = Object.values(Route).map(route => `route.${route}`);
         const calculatorKeys = PK_SANDBOX_MODELS.map(model => `pk_calc.route.${model.route}`);
         const calibrationKeys = administrationRoutes.map(route => `cal.route.${route}`);
-        const regimenKeys = administrationRoutes.map(route => `regimen.route.${route}`);
         const tr: Record<string, string> = TRANSLATIONS.tr;
         const en: Record<string, string> = TRANSLATIONS.en;
-        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys, ...regimenKeys])) {
+        for (const key of new Set([...doseKeys, ...calculatorKeys, ...calibrationKeys])) {
             const label = tr[key]?.trim();
             expect(label, `tr ${key}`).toBeTruthy();
             expect(label, `tr ${key}`).not.toBe(key);

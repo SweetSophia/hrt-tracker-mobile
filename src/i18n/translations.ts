@@ -5075,10 +5075,10 @@ export const TRANSLATIONS = {
         'onboarding.weight_subtitle': '用嚟估算血藥濃度。',
         'onboarding.plan_title': '你而家用緊邊啲藥？',
         'onboarding.plan_subtitle': '填好之後，喺總覽撳一下就記低用藥。未確定可以先跳過。',
-        // Names come from the Traditional Chinese pack above; only the routes below differ.
         'regimen.daily': '每日',
         'regimen.every_days': '每 {n} 日',
         'regimen.weekly': '每星期',
+        // The other standalone route names use the Traditional Chinese wording.
         'regimen.route.nasal': '噴鼻劑',
         'regimen.route.pellet': '皮下植入劑',
         'plan.empty': '未有用藥方案',
