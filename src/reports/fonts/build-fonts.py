@@ -18,6 +18,10 @@ Run it after a translation changes:
 
 It needs `fonttools` and Node 22 on PATH. It downloads the upstream fonts
 once into `node_modules/.cache/report-fonts` and reuses them afterwards.
+
+Nothing is published until every font, the licence, the notices and the
+manifest are ready, so a failure while preparing them leaves the shipped
+files as they were.
 """
 
 from __future__ import annotations
@@ -166,6 +170,31 @@ def subset_font(source: Path, characters: str, axes: dict[str, float], out: Path
     return [chr(code) for code in missing]
 
 
+def format_manifest(manifest_path: Path) -> None:
+    """Format the manifest the way the repository formats JSON."""
+    command = ["npx", "prettier"]
+    config = REPO / ".prettierrc.json"
+    if config.exists():
+        # The manifest is formatted where it is staged, which can sit outside
+        # the repository, so the configuration is named rather than looked up.
+        command += ["--config", str(config)]
+    command.append(str(manifest_path))
+    try:
+        result = subprocess.run(
+            command,
+            check=True,
+            cwd=REPO,
+            capture_output=True,
+            encoding="utf-8",
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("  (prettier was not available; the manifest may need formatting)")
+        return
+    # The formatted text is only written over the manifest once the formatter
+    # has succeeded, so a failure leaves the plain JSON in place.
+    manifest_path.write_text(result.stdout, encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache", default=str(REPO / "node_modules" / ".cache" / "report-fonts"))
@@ -188,9 +217,20 @@ def main() -> int:
     }
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Publish the subsets only after every language's glyphs have been checked.
-    with tempfile.TemporaryDirectory(prefix=".report-fonts-", dir=out_dir) as tmp:
+    public_licenses = REPO / "public" / "licenses"
+    public_licenses.mkdir(parents=True, exist_ok=True)
+    # Everything is prepared in staging first. The shipped files are replaced
+    # only once every font, the licence, the notices and the manifest are
+    # ready, so a failure while preparing them leaves them as they were.
+    # Each output is staged on the filesystem it is published on, so it is
+    # replaced rather than copied.
+    prepared: list[tuple[Path, Path]] = []
+    with tempfile.TemporaryDirectory(prefix=".report-fonts-", dir=out_dir) as tmp, tempfile.TemporaryDirectory(
+        prefix=".report-fonts-", dir=public_licenses
+    ) as public_tmp:
         staged = Path(tmp)
+        staged_public = Path(public_tmp)
+        incomplete = False
         for group, spec in FONTS.items():
             languages = spec["langs"]
             characters = "".join(sorted(set("".join(per_language[lang] for lang in languages))))
@@ -198,9 +238,11 @@ def main() -> int:
             target = staged / spec["file"]
             missing = subset_font(source, characters, spec["axes"], target)
             if missing:
+                # One run reports every locale that is short, not just the first.
+                incomplete = True
                 codes = " ".join(f"U+{ord(char):04X}" for char in missing[:20])
                 print(f"{spec['file']}: missing {len(missing)} glyphs ({codes})", file=sys.stderr)
-                return 1
+                continue
             size = target.stat().st_size
             print(f"{spec['file']}: {len(characters)} characters, {size // 1024} KiB")
             manifest["fonts"][group] = {
@@ -212,39 +254,42 @@ def main() -> int:
                 "bytes": size,
                 "characters": len(characters),
             }
-        for target in staged.iterdir():
-            target.replace(out_dir / target.name)
+            prepared.append((target, out_dir / spec["file"]))
 
-    # The licence travels with the font, and with the distribution: the file in
-    # public/ is copied into the built site and into the Android package, so a
-    # copy of the app carries the terms the font is under.
-    license_text = cache / "OFL.txt"
-    download(f"{UPSTREAM_BASE}/notosans/OFL.txt", license_text)
-    ofl = "\n".join(line.rstrip() for line in license_text.read_text(encoding="utf-8").splitlines()) + "\n"
-    (out_dir / "LICENSE.txt").write_text(ofl, encoding="utf-8")
+        if incomplete:
+            return 1
 
-    public_licenses = REPO / "public" / "licenses"
-    public_licenses.mkdir(parents=True, exist_ok=True)
-    (public_licenses / "noto-sans-OFL-1.1.txt").write_text(ofl, encoding="utf-8")
-    notice = (out_dir / "THIRD-PARTY-NOTICES.txt").read_text(encoding="utf-8")
-    notice = notice.replace("{{COMMIT}}", UPSTREAM_COMMIT)
-    (public_licenses / "THIRD-PARTY-NOTICES.txt").write_text(notice, encoding="utf-8")
+        # The licence travels with the font, and with the distribution: the file in
+        # public/ is copied into the built site and into the Android package, so a
+        # copy of the app carries the terms the font is under.
+        license_text = cache / "OFL.txt"
+        download(f"{UPSTREAM_BASE}/notosans/OFL.txt", license_text)
+        ofl = "\n".join(line.rstrip() for line in license_text.read_text(encoding="utf-8").splitlines()) + "\n"
+        (staged / "LICENSE.txt").write_text(ofl, encoding="utf-8")
+        prepared.append((staged / "LICENSE.txt", out_dir / "LICENSE.txt"))
 
-    manifest_path = out_dir / "manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    # The repository checks its own formatting, and the manifest is part of it.
-    try:
-        subprocess.run(
-            ["npx", "prettier", "--write", str(manifest_path)],
-            check=True,
-            cwd=REPO,
-            capture_output=True,
-            text=True,
+        # The notices are staged next to where they are published, so each one
+        # is replaced in place.
+        (staged_public / "noto-sans-OFL-1.1.txt").write_text(ofl, encoding="utf-8")
+        notice = (FONT_DIR / "THIRD-PARTY-NOTICES.txt").read_text(encoding="utf-8")
+        notice = notice.replace("{{COMMIT}}", UPSTREAM_COMMIT)
+        (staged_public / "THIRD-PARTY-NOTICES.txt").write_text(notice, encoding="utf-8")
+        prepared.append((staged_public / "noto-sans-OFL-1.1.txt", public_licenses / "noto-sans-OFL-1.1.txt"))
+        prepared.append((staged_public / "THIRD-PARTY-NOTICES.txt", public_licenses / "THIRD-PARTY-NOTICES.txt"))
+
+        manifest_path = staged / "manifest.json"
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("  (prettier was not available; the manifest may need formatting)")
+        # The repository checks its own formatting, and the manifest is part of it.
+        format_manifest(manifest_path)
+        prepared.append((manifest_path, out_dir / "manifest.json"))
+
+        # Nothing above touched a shipped file. Publish the prepared ones.
+        for staged_file, final in prepared:
+            final.parent.mkdir(parents=True, exist_ok=True)
+            staged_file.replace(final)
+
     return 0
 
 

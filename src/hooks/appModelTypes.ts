@@ -21,6 +21,8 @@ export interface AppModelInput {
 }
 export interface AppModelState extends AppModelView {
     modelStatus: AppModelStatus;
+    /** Completed worker view for reports when only the screen projection is updating. */
+    reportModel?: AppModelView;
     retryModel(): void;
     runForecast?: ForecastCompute;
     runDemo?: DemoCompute;

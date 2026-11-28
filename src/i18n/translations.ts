@@ -4331,7 +4331,7 @@ export const TRANSLATIONS = {
         ...APPEARANCE_COPY.yue,
         ...REGIMEN_FORMS.yue,
         ...REPORT_COPY.yue,
-        'export.pdf.title': 'HRT 追蹤報告',
+        'export.pdf.title': 'HRT 記錄報告',
         'export.pdf.generated_on': '報告日期：',
         'export.pdf.history': '用藥紀錄',
         'export.pdf.labs': '驗血紀錄',

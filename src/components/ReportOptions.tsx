@@ -3,6 +3,7 @@ import { hormoneLabel, labHormone, medicationLabel } from '../reports/labels';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useDialog } from '../contexts/DialogContext';
 import { useApplicationRuntime } from '../contexts/RecordsContext';
+import type { AppModelStatus } from '../hooks/appModelTypes';
 import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 import { prepareReport, reportMedicationKey } from '../reports/prepareReport';
 import type { ReportEstimateSource, ReportHormone, ReportRecords, ReportSelection } from '../reports/types';
@@ -14,12 +15,18 @@ export interface ReportOptionsProps extends ReportRecords {
     readOtherMode: () => ReportRecords;
     reportNow: Date;
     estimate?: ReportEstimateSource;
+    estimateStatus: AppModelStatus;
     selection: ReportSelection;
     onSelectionChange: (fields: Partial<ReportSelection>) => void;
 }
 
 const hormones: readonly ReportHormone[] = ['E2', 'T'];
 const rangeKeys = { '30': 'report.last30', '90': 'report.last90', all: 'report.all_time', custom: 'report.custom' };
+const estimateHints = {
+    pending: 'model.loading',
+    error: 'model.error',
+    ready: 'report.estimate_unavailable',
+} as const;
 
 function Choice({
     label,
@@ -57,6 +64,7 @@ export default function ReportOptions({
     readOtherMode,
     reportNow,
     estimate,
+    estimateStatus,
     selection,
     onSelectionChange,
     saving,
@@ -283,7 +291,9 @@ export default function ReportOptions({
                 ) : (
                     <>
                         {missingMeasured && <p className="field-hint">{t('report.measured_unavailable')}</p>}
-                        {missingEstimate && <p className="field-hint">{t('report.estimate_unavailable')}</p>}
+                        {missingEstimate && (
+                            <p className="field-hint">{t(estimateHints[estimate ? 'ready' : estimateStatus])}</p>
+                        )}
                         {!hasContent && <p className="field-hint">{t('report.empty')}</p>}
                     </>
                 )}

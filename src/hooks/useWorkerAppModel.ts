@@ -26,17 +26,18 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
         () => ({ events, weightKG, birthYear, pkParams }),
         [events, weightKG, birthYear, pkParams],
     );
+    const historyInputs = useMemo(
+        () => ({ ...baseline, labs, calibrationMethod, historyMode }),
+        [baseline, labs, calibrationMethod, historyMode],
+    );
     const gridClock = useRef<{ baseline: typeof baseline; scope: AppModelInput['scope']; nowMs: number } | null>(null);
     const input = useMemo<Omit<EngineInput, 'nowMs'>>(
         () => ({
-            ...baseline,
-            labs,
-            calibrationMethod,
-            historyMode,
+            ...historyInputs,
             sampleTimesH: [],
             screen: { nowMs, regimens: withPrediction ? regimens : null },
         }),
-        [baseline, labs, calibrationMethod, historyMode, nowMs, regimens, withPrediction],
+        [historyInputs, nowMs, regimens, withPrediction],
     );
     const runnerRef = useRef<EngineRunner | null>(null);
     const runnerScope = useRef<AppModelInput['scope'] | null>(null);
@@ -62,6 +63,7 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
     const retryModel = useCallback(() => setAttempt(value => value + 1), []);
     const [result, setResult] = useState<{
         input: typeof input;
+        historyInputs: typeof historyInputs;
         scope: AppModelInput['scope'];
         attempt: number;
         view?: AppModelView;
@@ -91,18 +93,22 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
         void runner
             .calculate({ ...input, nowMs: gridClock.current.nowMs }, { signal: abort.signal })
             .then(output => {
-                if (active) setResult({ input, scope, attempt, view: screenModelView(output) });
+                if (active) setResult({ input, historyInputs, scope, attempt, view: screenModelView(output) });
             })
             .catch(() => {
-                if (active) setResult({ input, scope, attempt, failed: true });
+                if (active) setResult({ input, historyInputs, scope, attempt, failed: true });
             });
         return () => {
             active = false;
             abort.abort();
         };
-    }, [input, baseline, scope, attempt]);
-    const matching = result?.input === input && result.scope === scope && result.attempt === attempt;
-    if (matching && result.view) return { ...result.view, modelStatus: 'ready', retryModel, runForecast, runDemo };
+    }, [input, baseline, historyInputs, scope, attempt]);
+    const matchingHistory =
+        result?.historyInputs === historyInputs && result.scope === scope && result.attempt === attempt;
+    const matching = matchingHistory && result.input === input;
+    const reportModel = matchingHistory ? result.view : undefined;
+    if (matching && result.view)
+        return { ...result.view, modelStatus: 'ready', reportModel, retryModel, runForecast, runDemo };
     return {
         simulation: null,
         simulationAhead: null,
@@ -119,6 +125,7 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
             },
         },
         modelStatus: matching && result.failed ? 'error' : 'pending',
+        reportModel,
         retryModel,
         runForecast,
         runDemo,

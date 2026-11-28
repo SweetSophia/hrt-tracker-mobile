@@ -182,6 +182,20 @@ describe('report PDF', () => {
         expect(text).toContain("the active mode's complete dose history");
     });
 
+    it('keeps the graphs heading with the first chart and its note', async () => {
+        const report = prepared({ estimatedGraph: true }, true);
+        const en = translator('en');
+        // Leave room for a heading at the bottom of page one, but no room for a chart.
+        const text = await render(report, 'en', key =>
+            key === 'report.medications' ? 'Medication details\n'.repeat(45) + en(key) : en(key),
+        );
+        const [firstPage, secondPage] = text.split(/^Page \d+ \/ \d+$/m);
+        expect(firstPage).not.toMatch(/^Graphs$/m);
+        expect(secondPage).toMatch(/^Graphs$/m);
+        expect(secondPage).toMatch(/^Estimated hormone level$/m);
+        expect(secondPage).toContain("the active mode's complete dose history");
+    });
+
     it('says when a curve was asked for and cannot be drawn', async () => {
         const text = await render(prepared({ estimatedGraph: true }), 'en');
         expect(text).toContain('No hormone estimate is available');
@@ -375,6 +389,7 @@ describe('report PDF', () => {
         // out, and the tick loop never stops.
         const text = await render(report, 'en');
         expect(text).toContain('Lab results');
+        expect(text).not.toMatch(/^Graphs$/m);
     });
 });
 

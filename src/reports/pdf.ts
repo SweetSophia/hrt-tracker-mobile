@@ -179,12 +179,12 @@ export const buildReportDocument = async (
     });
     y = 26;
 
-    const heading = (text: string, minimumHeight = 18): void => {
+    const headingHeight = 11.5;
+    const heading = (text: string, minimumHeight: number): void => {
         space(minimumHeight);
         drawText(doc, text, left, y + 4, { size: TYPE.section, color: COLORS.purple, bold: true });
-        y += 7.5;
-        drawLine(doc, left, y, left + width, y, COLORS.purpleLine, 0.4);
-        y += 4;
+        drawLine(doc, left, y + 7.5, left + width, y + 7.5, COLORS.purpleLine, 0.4);
+        y += headingHeight;
     };
 
     const paragraph = (text: string, size: number = TYPE.body, color: Rgb = COLORS.ink): void => {
@@ -252,16 +252,21 @@ export const buildReportDocument = async (
 
         // The curves, before the tables: they are what the report is for.
         if (report.charts.length) {
-            heading(t('report.graphs'));
             const bounds = chartBounds(report.charts);
             const domains = chartDomains(report.charts);
+            let needsHeading = true;
             for (const chart of report.charts) {
                 const domain = domains.get(chart.hormone + '|' + chart.unit);
                 // A chart whose values no finite range can describe is left out.
                 if (domain === null) continue;
                 const note = chart.kind === 'estimated' ? t('report.estimate_hint') : undefined;
                 const height = chartHeight(doc, { note, width });
-                space(height);
+                if (needsHeading) {
+                    heading(t('report.graphs'), headingHeight + height);
+                    needsHeading = false;
+                } else {
+                    space(height);
+                }
                 drawChart(doc, chart, {
                     lang,
                     t,

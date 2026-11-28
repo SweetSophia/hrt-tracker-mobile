@@ -128,20 +128,29 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         const nowH = currentTime.getTime() / 3600000;
         return plan.length ? regimensFromPlan(plan, events, nowH) : detectRegimens(events, nowH);
     }, [plan, events, currentTime]);
-    const { simulation, simulationAhead, calibration, modelStatus, retryModel, modelNowMs, runForecast, runDemo } =
-        useAppModel({
-            scope: identity,
-            events,
-            weightKG: weight,
-            birthYear: modelBirthYear,
-            labs: labResults,
-            pkParams,
-            calibrationMethod,
-            historyMode: calibrationHistoryMode,
-            regimens,
-            withPrediction,
-            nowMs: currentTime.getTime(),
-        });
+    const {
+        simulation,
+        simulationAhead,
+        calibration,
+        modelStatus,
+        retryModel,
+        modelNowMs,
+        reportModel,
+        runForecast,
+        runDemo,
+    } = useAppModel({
+        scope: identity,
+        events,
+        weightKG: weight,
+        birthYear: modelBirthYear,
+        labs: labResults,
+        pkParams,
+        calibrationMethod,
+        historyMode: calibrationHistoryMode,
+        regimens,
+        withPrediction,
+        nowMs: currentTime.getTime(),
+    });
 
     const calibrationFn = calibration.factorFn;
 
@@ -471,6 +480,7 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         runForecast,
         runDemo,
         modelNowMs,
+        reportModel,
         modelSnapshot: active,
         currentTime,
         calibrationFn,

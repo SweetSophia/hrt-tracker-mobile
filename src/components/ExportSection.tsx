@@ -17,7 +17,10 @@ import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 
 import { EncryptedExportSession } from '../hooks/uiSession';
 
-export interface ExportSectionProps extends Pick<ReportOptionsProps, 'reportNow' | 'readOtherMode' | 'estimate'> {
+export interface ExportSectionProps extends Pick<
+    ReportOptionsProps,
+    'reportNow' | 'readOtherMode' | 'estimate' | 'estimateStatus'
+> {
     events: DoseEvent[];
     labResults: LabResult[];
     weight: number;
@@ -51,6 +54,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     reportNow,
     readOtherMode,
     estimate,
+    estimateStatus,
 }) => {
     const { t, lang } = useTranslation();
     const { showDialog } = useDialog();
@@ -367,6 +371,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                             labResults={labResults}
                             reportNow={reportNow}
                             estimate={estimate}
+                            estimateStatus={estimateStatus}
                             readOtherMode={readOtherMode}
                             selection={reportSelection}
                             onSelectionChange={fields => setReportSelection(previous => ({ ...previous, ...fields }))}
