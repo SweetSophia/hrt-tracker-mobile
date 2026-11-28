@@ -832,7 +832,7 @@ test('the measured and the estimated graph are separate opt-ins', async ({ page,
 
     await measuredChoice(page).check();
     await expect(estimatedChoice(page)).not.toBeChecked();
-    await expect(page.getByText('No lab results match the selected hormones and dates.')).toHaveCount(0);
+    await expect(page.getByText('No matching lab results can be graphed.')).toHaveCount(0);
     await expect(saveReportButton(page)).toBeEnabled();
 
     await estimatedChoice(page).check();
@@ -849,11 +849,11 @@ test('a graph with nothing to show stops the save', async ({ page, context }) =>
     await openReport(page);
 
     await measuredChoice(page).check();
-    await expect(page.getByText('No lab results match the selected hormones and dates.')).toBeVisible();
+    await expect(page.getByText('No matching lab results can be graphed.')).toBeVisible();
     await expect(saveReportButton(page)).toBeDisabled();
 
     await measuredChoice(page).uncheck();
-    await expect(page.getByText('No lab results match the selected hormones and dates.')).toHaveCount(0);
+    await expect(page.getByText('No matching lab results can be graphed.')).toHaveCount(0);
     await expect(saveReportButton(page)).toBeEnabled();
 });
 

@@ -1306,6 +1306,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
                                 reportNow={currentTime}
                                 estimate={reportEstimate}
                                 estimateStatus={modelStatus}
+                                onRetryEstimate={retryModel}
                                 events={events}
                                 labResults={labResults}
                                 weight={weight}

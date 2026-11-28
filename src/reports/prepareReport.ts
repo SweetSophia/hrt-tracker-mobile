@@ -1,6 +1,7 @@
 import { Route, convertToNgDl, convertToPgMl, isEstradiolEster, isTestosteroneEster } from '../../logic';
 import type { DoseEvent, LabResult } from '../../logic';
 import { toDayKey } from '../utils/helpers';
+import { scaleReportCharts } from './chartScale';
 import { labHormone } from './labels';
 import type {
     PreparedReport,
@@ -276,7 +277,7 @@ export function prepareReport(
         from: range.from,
         to: range.to,
         invalidRange: range.invalid,
-        charts,
+        charts: scaleReportCharts(charts),
     };
 }
 

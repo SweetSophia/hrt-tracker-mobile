@@ -37,5 +37,5 @@ export interface PreparedReport {
     from: string | null;
     to: string | null;
     invalidRange: boolean;
-    charts: ReportChart[];
+    charts: (ReportChart & { domain: [number, number] })[];
 }

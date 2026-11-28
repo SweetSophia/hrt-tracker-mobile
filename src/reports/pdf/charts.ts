@@ -1,5 +1,6 @@
 import type { jsPDF } from 'jspdf';
 import type { Lang } from '../../i18n/languages';
+import { niceStep } from '../chartScale';
 import type { ReportChart } from '../types';
 import {
     formatDay,
@@ -38,7 +39,7 @@ export interface ChartOptions {
      * The value range every chart of the same hormone and unit shares, so
      * that two plots can be read against each other.
      */
-    domain?: [number, number];
+    domain: [number, number];
 }
 
 const TITLE_HEIGHT = 9;
@@ -60,60 +61,6 @@ export const chartHeight = (doc: jsPDF, options: { note?: string; width: number 
 
 /** How many dates the axis names. A long range gets a handful, a short one more. */
 const tickCount = (spanDays: number): number => Math.min(5, Math.max(2, Math.ceil(spanDays / 30)));
-
-/**
- * A round step for an axis.
- *
- * The same choice the app's own charts make (src/components/ResultChart.tsx),
- * so a report's axis reads like the screen it came from: the numbers on it
- * are 20, 40, 60 rather than 27, 53, 80.
- */
-const niceStep = (raw: number): number => {
-    if (!(raw > 0)) return 1;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(raw)));
-    const normalized = raw / magnitude;
-    const nice = normalized < 1.5 ? 1 : normalized < 3 ? 2 : normalized < 7 ? 5 : 10;
-    return nice * magnitude;
-};
-
-/**
- * A padded, tick-friendly [min, max] range around a few gridlines. The
- * bounds need not land on a measured value: an axis is a ruler, not a record.
- *
- * Null when no finite range can describe the values: a level imported as
- * 1e308, or two concentrations a floating-point increment apart, would make
- * every step overflow. Such a chart is left out rather than drawn wrong.
- */
-export const buildDomain = (min: number, max: number, steps = 4): [number, number] | null => {
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-    if (max < min) return null;
-    if (max === min) {
-        // A single value still needs an axis around it. The room grows away
-        // from zero, so a value below zero grows downwards and a value above
-        // zero grows upwards.
-        const grown = Math.abs(max) * 0.15;
-        if (Number.isFinite(grown) && grown > 0) {
-            if (max < 0) min = max - grown;
-            else max = max + grown;
-        } else {
-            max = max * 2;
-        }
-        if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-    }
-    const pad = (max - min) * 0.12;
-    const step = niceStep((max - min + 2 * pad) / steps);
-    if (!Number.isFinite(step) || step <= 0) return null;
-    const floorValue = Math.floor((min - pad) / step) * step;
-    let high = Math.ceil((max + pad) / step) * step;
-    if (!Number.isFinite(floorValue) || !Number.isFinite(high)) return null;
-    // A quantity that never went below zero does not get a negative axis. One
-    // that did keeps its negative values inside its own range, or they would
-    // be drawn below the axis and off the page.
-    const low = min < 0 ? floorValue : Math.max(0, floorValue);
-    if (high <= low) high = low + step;
-    if (!Number.isFinite(high)) return null;
-    return [low, high];
-};
 
 /** The most gridlines an axis may carry. */
 const MAX_TICKS = 12;
@@ -168,11 +115,7 @@ export const drawChart = (doc: jsPDF, chart: ReportChart, options: ChartOptions)
     const spanDays = spanHours / 24;
     const single = spanHours === 0;
 
-    const values = points.map(point => point.value);
-    const domain = options.domain ?? buildDomain(Math.min(...values), Math.max(...values));
-    // A chart whose values no finite range can describe is left out.
-    if (!domain) return 0;
-    const [lowValue, highValue] = domain;
+    const [lowValue, highValue] = options.domain;
     const valueSpan = Math.max(1e-9, highValue - lowValue);
 
     const toX = (timeH: number): number =>
@@ -189,7 +132,7 @@ export const drawChart = (doc: jsPDF, chart: ReportChart, options: ChartOptions)
     drawText(doc, chart.unit, plotLeft, plotTop - 1.5, { size: TYPE.tiny, color: COLORS.muted });
 
     // The grid and its labels.
-    const valueTicks = ticksFor(domain);
+    const valueTicks = ticksFor(options.domain);
     for (const value of valueTicks) {
         const lineY = toY(value);
         drawLine(doc, plotLeft, lineY, plotRight, lineY, COLORS.grid, value === lowValue ? 0.3 : 0.15);

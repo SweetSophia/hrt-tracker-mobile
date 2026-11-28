@@ -19,7 +19,7 @@ import { EncryptedExportSession } from '../hooks/uiSession';
 
 export interface ExportSectionProps extends Pick<
     ReportOptionsProps,
-    'reportNow' | 'readOtherMode' | 'estimate' | 'estimateStatus'
+    'reportNow' | 'readOtherMode' | 'estimate' | 'estimateStatus' | 'onRetryEstimate'
 > {
     events: DoseEvent[];
     labResults: LabResult[];
@@ -55,6 +55,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     readOtherMode,
     estimate,
     estimateStatus,
+    onRetryEstimate,
 }) => {
     const { t, lang } = useTranslation();
     const { showDialog } = useDialog();
@@ -372,6 +373,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                             reportNow={reportNow}
                             estimate={estimate}
                             estimateStatus={estimateStatus}
+                            onRetryEstimate={onRetryEstimate}
                             readOtherMode={readOtherMode}
                             selection={reportSelection}
                             onSelectionChange={fields => setReportSelection(previous => ({ ...previous, ...fields }))}

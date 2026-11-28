@@ -60,7 +60,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': '所有药物',
         'report.graphs': '图表',
         'report.measured': '实测检查值',
-        'report.measured_unavailable': '没有符合所选检查项目和日期的检查结果。',
+        'report.measured_unavailable': '没有符合条件且可用于绘图的检查结果。',
         'report.estimated': '估算激素浓度',
         'report.estimate_hint':
             '使用当前模式的完整用药记录。如果概览使用了化验校准，所选日期之外的化验结果也会影响估算值。',
@@ -100,7 +100,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': '所有藥物',
         'report.graphs': '圖表',
         'report.measured': '實測檢驗值',
-        'report.measured_unavailable': '沒有符合所選檢驗項目和日期的檢驗結果。',
+        'report.measured_unavailable': '沒有符合條件且可繪製成圖表的檢驗結果。',
         'report.estimated': '估算激素濃度',
         'report.estimate_hint':
             '使用目前模式的完整用藥紀錄。如果總覽使用了檢驗校準，所選日期之外的檢驗結果也會影響估算值。',
@@ -131,8 +131,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.custom': '自訂日期',
         'report.from': '由',
         'report.to': '至',
-        'report.both_modes': '連兩種 HRT 模式嘅紀錄都包括',
-        'report.other_mode_unavailable': '讀唔到另一種模式嘅紀錄。取消剔選，就可以淨係儲存而家呢個模式嘅報告。',
+        'report.both_modes': '連兩種 HRT 模式嘅記錄都包括',
+        'report.other_mode_unavailable': '讀唔到另一種模式嘅記錄。取消剔選，就可以淨係儲存而家呢個模式嘅報告。',
         'report.hormones': '檢驗項目',
         'report.estradiol': '雌二醇',
         'report.testosterone': '睪固酮',
@@ -140,14 +140,14 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': '所有藥物',
         'report.graphs': '圖表',
         'report.measured': '實測檢驗值',
-        'report.measured_unavailable': '冇符合你揀嘅檢驗項目同日期嘅檢驗結果。',
+        'report.measured_unavailable': '冇符合條件又可以用嚟畫圖表嘅檢驗結果。',
         'report.estimated': '估算激素濃度',
         'report.estimate_hint':
-            '用緊目前模式嘅完整用藥紀錄。如果總覽用咗驗血校準，所選日期以外嘅驗血結果亦會影響估算值。',
+            '用緊目前模式嘅完整用藥記錄。如果總覽用咗驗血校準，所選日期以外嘅驗血結果亦會影響估算值。',
         'report.estimate_unavailable': '呢啲日期同選項冇得用嘅激素估算。',
         'report.preview': '報告預覽',
-        'report.counts': '用藥紀錄：{doses} 條 · 檢驗結果：{labs} 條',
-        'report.empty': '冇符合你揀嘅紀錄或者圖表。',
+        'report.counts': '用藥記錄：{doses} 條 · 檢驗結果：{labs} 條',
+        'report.empty': '冇符合你揀嘅記錄或者圖表。',
         'report.invalid_range': '請揀有效嘅開始同結束日期。',
         'report.save': '儲存 PDF',
         'report.saving': '儲存緊 PDF…',
@@ -160,7 +160,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.page': '第 {page} 頁 / 共 {total} 頁',
         'report.configure': '揀要包含嘅內容',
         'report.none': '冇',
-        'report.scope': '兩種 HRT 模式嘅紀錄',
+        'report.scope': '兩種 HRT 模式嘅記錄',
     },
 
     en: {
@@ -181,7 +181,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': 'All medications',
         'report.graphs': 'Graphs',
         'report.measured': 'Measured lab results',
-        'report.measured_unavailable': 'No lab results match the selected hormones and dates.',
+        'report.measured_unavailable': 'No matching lab results can be graphed.',
         'report.estimated': 'Estimated hormone level',
         'report.estimate_hint':
             "Uses the active mode's complete dose history. If Overview applies lab calibration, results outside the selected dates can affect the estimate.",
@@ -222,7 +222,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': 'Alle Medikamente',
         'report.graphs': 'Diagramme',
         'report.measured': 'Gemessene Laborwerte',
-        'report.measured_unavailable': 'Keine Laborwerte passen zu den gewählten Hormonen und Daten.',
+        'report.measured_unavailable': 'Es lassen sich keine passenden Laborwerte im Diagramm darstellen.',
         'report.estimated': 'Geschätzter Hormonspiegel',
         'report.estimate_hint':
             'Nutzt die vollständige Dosierungshistorie des aktiven Modus. Wendet die Übersicht eine Laborkalibrierung an, können Ergebnisse außerhalb der gewählten Tage die Schätzung beeinflussen.',
@@ -263,7 +263,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': 'すべての薬剤',
         'report.graphs': 'グラフ',
         'report.measured': '実測値',
-        'report.measured_unavailable': '選択したホルモンと日付に一致する検査結果はありません。',
+        'report.measured_unavailable': '条件に合う検査結果のうち、グラフに表示できるものはありません。',
         'report.estimated': '推定ホルモン濃度',
         'report.estimate_hint':
             '現在のモードの完全な投薬履歴を使います。概要で検査値の補正をしている場合、選んだ期間外の検査結果も推定値に影響します。',
@@ -304,7 +304,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': '모든 약',
         'report.graphs': '그래프',
         'report.measured': '측정된 검사 결과',
-        'report.measured_unavailable': '선택한 호르몬과 날짜에 맞는 검사 결과가 없습니다.',
+        'report.measured_unavailable': '조건에 맞고 그래프로 표시할 수 있는 검사 결과가 없습니다.',
         'report.estimated': '추정 호르몬 농도',
         'report.estimate_hint':
             '현재 모드의 전체 복용 기록을 사용합니다. 개요에서 검사값 보정을 적용하면 선택한 기간 밖의 검사 결과도 추정치에 영향을 줍니다.',
@@ -345,7 +345,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': 'Tüm ilaçlar',
         'report.graphs': 'Grafikler',
         'report.measured': 'Ölçülen laboratuvar sonuçları',
-        'report.measured_unavailable': 'Seçilen hormonlarla ve tarihlerle eşleşen laboratuvar sonucu yok.',
+        'report.measured_unavailable': 'Seçime uyan ve grafikte gösterilebilecek laboratuvar sonucu yok.',
         'report.estimated': 'Tahmini hormon düzeyi',
         'report.estimate_hint':
             'Etkin modunun tüm doz geçmişini kullanır. Genel bakışta laboratuvar kalibrasyonu uygulanıyorsa, seçilen günlerin dışındaki sonuçlar tahmini etkileyebilir.',
@@ -386,7 +386,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': 'Все препараты',
         'report.graphs': 'Графики',
         'report.measured': 'Измеренные результаты анализов',
-        'report.measured_unavailable': 'Нет результатов анализов, соответствующих выбранным гормонам и датам.',
+        'report.measured_unavailable': 'Нет подходящих результатов анализов, которые можно отобразить на графике.',
         'report.estimated': 'Расчётный уровень гормона',
         'report.estimate_hint':
             'Использует всю историю доз активного режима. Если в обзоре применена калибровка по результатам анализов, на оценку влияют и результаты за пределами выбранных дат.',
@@ -427,7 +427,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.all_medications': 'Усі препарати',
         'report.graphs': 'Графіки',
         'report.measured': 'Виміряні результати аналізів',
-        'report.measured_unavailable': 'Немає результатів аналізів, що відповідають вибраним гормонам і датам.',
+        'report.measured_unavailable': 'Немає відповідних результатів аналізів, які можна відобразити на графіку.',
         'report.estimated': 'Розрахунковий рівень гормону',
         'report.estimate_hint':
             'Використовує всю історію доз активного режиму. Якщо в огляді застосовано калібрування за результатами аналізів, на оцінку впливають і результати за межами вибраних дат.',

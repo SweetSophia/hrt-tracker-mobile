@@ -28,7 +28,7 @@ import type { PreparedReport, ReportChart } from './types';
 import { fill } from '../utils/regimenText';
 import { toDayKey } from '../utils/helpers';
 import { loadReportFont, REPORT_FONT_NAME } from './pdf/fonts';
-import { buildDomain, chartHeight, drawChart } from './pdf/charts';
+import { chartHeight, drawChart } from './pdf/charts';
 import { ACCENT_RULE, COLORS, PAGE, TYPE, type Rgb } from './pdf/theme';
 import { drawLine, drawParagraph, drawRect, drawText, paragraphHeight } from './pdf/draw';
 
@@ -61,32 +61,6 @@ const chartBounds = (charts: readonly ReportChart[]): { fromH: number; toH: numb
         }
     }
     return Number.isFinite(fromH) && Number.isFinite(toH) ? { fromH, toH } : undefined;
-};
-
-/**
- * The value range each hormone and unit shares.
- *
- * Two plots of the same hormone are read against each other, and they can
- * only be read against each other if they stand on the same scale. The
- * measured curve and the estimate of one hormone therefore share an axis.
- */
-const chartDomains = (charts: readonly ReportChart[]): Map<string, [number, number] | null> => {
-    const groups = new Map<string, { min: number; max: number }>();
-    for (const chart of charts) {
-        const key = chart.hormone + '|' + chart.unit;
-        const group = groups.get(key) ?? { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY };
-        for (const point of chart.points) {
-            if (!Number.isFinite(point.value)) continue;
-            group.min = Math.min(group.min, point.value);
-            group.max = Math.max(group.max, point.value);
-        }
-        groups.set(key, group);
-    }
-    const domains = new Map<string, [number, number] | null>();
-    for (const [key, group] of groups) {
-        domains.set(key, buildDomain(group.min, group.max));
-    }
-    return domains;
 };
 
 /** The date range as the reader sees it: the local days the report covers. */
@@ -253,17 +227,11 @@ export const buildReportDocument = async (
         // The curves, before the tables: they are what the report is for.
         if (report.charts.length) {
             const bounds = chartBounds(report.charts);
-            const domains = chartDomains(report.charts);
-            let needsHeading = true;
-            for (const chart of report.charts) {
-                const domain = domains.get(chart.hormone + '|' + chart.unit);
-                // A chart whose values no finite range can describe is left out.
-                if (domain === null) continue;
+            for (const [index, chart] of report.charts.entries()) {
                 const note = chart.kind === 'estimated' ? t('report.estimate_hint') : undefined;
                 const height = chartHeight(doc, { note, width });
-                if (needsHeading) {
+                if (index === 0) {
                     heading(t('report.graphs'), headingHeight + height);
-                    needsHeading = false;
                 } else {
                     space(height);
                 }
@@ -276,7 +244,7 @@ export const buildReportDocument = async (
                     series: chart.kind === 'measured' ? t('report.measured') : t('report.estimated'),
                     note,
                     bounds,
-                    domain,
+                    domain: chart.domain,
                 });
                 y += height + 4;
             }

@@ -190,9 +190,10 @@ def format_manifest(manifest_path: Path) -> None:
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("  (prettier was not available; the manifest may need formatting)")
         return
-    # The formatted text is only written over the manifest once the formatter
-    # has succeeded, so a failure leaves the plain JSON in place.
-    manifest_path.write_text(result.stdout, encoding="utf-8")
+    if not result.stdout.strip():
+        print("  (prettier returned no output; the manifest may need formatting)")
+        return
+    manifest_path.write_bytes(result.stdout.encode("utf-8"))
 
 
 def main() -> int:
@@ -278,9 +279,8 @@ def main() -> int:
         prepared.append((staged_public / "THIRD-PARTY-NOTICES.txt", public_licenses / "THIRD-PARTY-NOTICES.txt"))
 
         manifest_path = staged / "manifest.json"
-        manifest_path.write_text(
-            json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        manifest_json = json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        manifest_path.write_bytes(manifest_json.encode("utf-8"))
         # The repository checks its own formatting, and the manifest is part of it.
         format_manifest(manifest_path)
         prepared.append((manifest_path, out_dir / "manifest.json"))

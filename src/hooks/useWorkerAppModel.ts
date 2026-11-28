@@ -7,6 +7,14 @@ import type { EngineInput } from '../application/engineProtocol';
 import { screenModelView, type AppModelView } from '../application/appModelView';
 import type { AppModelInput, AppModelState } from './appModelTypes';
 
+const REPORT_MAX_AGE_MS = 2 * 60_000;
+
+function recentReportView(view: AppModelView | undefined, nowMs: number): AppModelView | undefined {
+    if (view?.modelNowMs === undefined) return undefined;
+    const ageMs = nowMs - view.modelNowMs;
+    return ageMs >= 0 && ageMs < REPORT_MAX_AGE_MS ? view : undefined;
+}
+
 /** Snapshot identity fences the render before effects run, as well as late promises. */
 export function useWorkerAppModel(props: AppModelInput): AppModelState {
     const {
@@ -30,6 +38,8 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
         () => ({ ...baseline, labs, calibrationMethod, historyMode }),
         [baseline, labs, calibrationMethod, historyMode],
     );
+    // A storage commit can reparse unchanged events and labs into new arrays.
+    const historyKey = useMemo(() => JSON.stringify(historyInputs), [historyInputs]);
     const gridClock = useRef<{ baseline: typeof baseline; scope: AppModelInput['scope']; nowMs: number } | null>(null);
     const input = useMemo<Omit<EngineInput, 'nowMs'>>(
         () => ({
@@ -61,13 +71,12 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
     );
     const [attempt, setAttempt] = useState(0);
     const retryModel = useCallback(() => setAttempt(value => value + 1), []);
+    const reportHistory = useMemo(() => ({ historyKey, scope, attempt }), [historyKey, scope, attempt]);
     const [result, setResult] = useState<{
         input: typeof input;
-        historyInputs: typeof historyInputs;
-        scope: AppModelInput['scope'];
-        attempt: number;
-        view?: AppModelView;
-        failed?: boolean;
+        reportHistory: typeof reportHistory;
+        lastSuccess?: AppModelView;
+        failed: boolean;
     } | null>(null);
     useEffect(() => {
         const runner = createBundledEngineRunner();
@@ -93,22 +102,30 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
         void runner
             .calculate({ ...input, nowMs: gridClock.current.nowMs }, { signal: abort.signal })
             .then(output => {
-                if (active) setResult({ input, historyInputs, scope, attempt, view: screenModelView(output) });
+                if (active) setResult({ input, reportHistory, lastSuccess: screenModelView(output), failed: false });
             })
             .catch(() => {
-                if (active) setResult({ input, historyInputs, scope, attempt, failed: true });
+                if (active)
+                    setResult(previous => ({
+                        input,
+                        reportHistory,
+                        lastSuccess:
+                            previous?.reportHistory === reportHistory
+                                ? recentReportView(previous.lastSuccess, nowMs)
+                                : undefined,
+                        failed: true,
+                    }));
             });
         return () => {
             active = false;
             abort.abort();
         };
-    }, [input, baseline, historyInputs, scope, attempt]);
-    const matchingHistory =
-        result?.historyInputs === historyInputs && result.scope === scope && result.attempt === attempt;
+    }, [input, baseline, scope, reportHistory, nowMs]);
+    const matchingHistory = result?.reportHistory === reportHistory;
     const matching = matchingHistory && result.input === input;
-    const reportModel = matchingHistory ? result.view : undefined;
-    if (matching && result.view)
-        return { ...result.view, modelStatus: 'ready', reportModel, retryModel, runForecast, runDemo };
+    const reportModel = matchingHistory ? recentReportView(result.lastSuccess, nowMs) : undefined;
+    if (matching && !result.failed && result.lastSuccess)
+        return { ...result.lastSuccess, modelStatus: 'ready', reportModel, retryModel, runForecast, runDemo };
     return {
         simulation: null,
         simulationAhead: null,

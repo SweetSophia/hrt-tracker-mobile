@@ -113,17 +113,34 @@ test('a held minute refresh preserves the Overview scroll position', async ({ pa
         .toBeLessThan(2);
 });
 
-test('PDF estimates stay available during a clock refresh and wait for a model input change', async ({
+test('PDF estimates retain recent results across readout refreshes and fence model input changes', async ({
     page,
     context,
 }) => {
     await page.setViewportSize({ width: 390, height: 740 });
-    await seedStorage(context, seed());
+    await seedStorage(context, {
+        ...seed(),
+        'hrt-plan': JSON.stringify([
+            {
+                id: 'synthetic-plan',
+                route: 'oral',
+                ester: 'E2',
+                doseMG: 2,
+                extras: {},
+                everyDays: 1,
+                timesPerDay: 1,
+            },
+        ]),
+    });
     await observeWorkers(page);
     await page.clock.install();
     await page.goto('/');
     await expect.poll(() => resultCount(page)).toBeGreaterThan(0);
-    await expect(page.getByText('Updating estimates…', { exact: true })).toHaveCount(0);
+    const updating = page.getByText('Updating estimates…', { exact: true });
+    const calculationError = page.getByText('Estimates could not be calculated. Your records are still available.', {
+        exact: true,
+    });
+    await expect(updating).toHaveCount(0);
 
     const estimate = page.getByRole('checkbox', { name: 'Estimated hormone level', exact: true });
     const save = page.getByRole('button', { name: 'Save PDF', exact: true });
@@ -143,6 +160,21 @@ test('PDF estimates stay available during a clock refresh and wait for a model i
     const [download] = await Promise.all([page.waitForEvent('download'), save.click()]);
     expect(reportText(await readFile(await download.path()))).toMatch(/^Estimated hormone level$/m);
 
+    const overview = page.getByRole('button', { name: 'Overview', exact: true });
+    await overview.click();
+    await page.getByRole('button', { name: 'Medication plan', exact: true }).click();
+    await page.getByRole('button').filter({ hasText: /2 mg/ }).click();
+    await page.getByRole('spinbutton', { name: /Dose/ }).fill('3');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect
+        .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('hrt-plan') ?? '[]')[0]?.doseMG))
+        .toBe(3);
+
+    await openMobileReport(page);
+    await estimate.check();
+    await expect(preview).toBeVisible({ timeout: 3_000 });
+    await expect(save).toBeEnabled();
+
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: /^General/ }).click();
     await page.getByRole('button', { name: /^Weight/ }).click();
@@ -153,11 +185,36 @@ test('PDF estimates stay available during a clock refresh and wait for a model i
     await openMobileReport(page);
     await estimate.check();
     await expect(preview).toHaveCount(0);
-    await expect(page.getByText('Updating estimates…', { exact: true })).toBeVisible();
+    await expect(updating).toBeVisible();
     await expect(save).toBeDisabled();
     await page.evaluate(() => window.screenWorkerTest.release());
     await expect(preview).toBeVisible();
+    await expect(updating).toHaveCount(0);
     await expect(save).toBeEnabled();
+
+    await overview.click();
+    await page.evaluate(() => {
+        window.screenWorkerTest.failMethod = 'ou_kalman';
+    });
+    await page.clock.fastForward(60_000);
+    await expect(calculationError).toBeVisible();
+    await openMobileReport(page);
+    await estimate.check();
+    await expect(preview).toBeVisible();
+    await expect(save).toBeEnabled();
+
+    await page.clock.fastForward(61_000);
+    await expect(preview).toHaveCount(0);
+    await expect(save).toBeDisabled();
+    await expect(calculationError).toBeVisible();
+    await page.evaluate(() => {
+        window.screenWorkerTest.failMethod = undefined;
+    });
+    await page.getByRole('button', { name: 'Retry estimates', exact: true }).click();
+    await expect(preview).toBeVisible();
+    await expect(save).toBeEnabled();
+    await expect(calculationError).toHaveCount(0);
+    await expect(updating).toHaveCount(0);
 });
 
 test('Forecast keeps drafts but stops announcing calculation after worker failure', async ({ page, context }) => {

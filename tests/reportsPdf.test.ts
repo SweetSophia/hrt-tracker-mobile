@@ -10,7 +10,8 @@ import { defaultReportSelection, prepareReport } from '../src/reports/prepareRep
 import type { PreparedReport, ReportChart, ReportEstimateSource, ReportSelection } from '../src/reports/types';
 import { buildReportDocument, saveReport } from '../src/reports/pdf';
 import { formatTickNumber, medicationLabel, reportLocale } from '../src/reports/labels';
-import { buildDomain, drawChart } from '../src/reports/pdf/charts';
+import { buildDomain } from '../src/reports/chartScale';
+import { drawChart } from '../src/reports/pdf/charts';
 import { drawParagraph, paragraphHeight } from '../src/reports/pdf/draw';
 import { reportFontCharacters } from '../src/reports/pdf/charset';
 import { MAX_DOCUMENT_BYTES, type FileSaveRequest } from '../src/platform/contracts/files';
@@ -190,6 +191,7 @@ describe('report PDF', () => {
             key === 'report.medications' ? 'Medication details\n'.repeat(45) + en(key) : en(key),
         );
         const [firstPage, secondPage] = text.split(/^Page \d+ \/ \d+$/m);
+        expect(firstPage).toContain('Graphs · Estradiol (Estimated hormone level)');
         expect(firstPage).not.toMatch(/^Graphs$/m);
         expect(secondPage).toMatch(/^Graphs$/m);
         expect(secondPage).toMatch(/^Estimated hormone level$/m);
@@ -378,18 +380,28 @@ describe('report PDF', () => {
         expect(lines.filter(line => line === '300').length).toBe(2);
     });
 
-    it('survives values no finite scale can describe', async () => {
+    it('omits unscalable graphs from the contents and keeps valid estimates and lab rows', async () => {
         const huge: LabResult[] = [
             { id: 'huge', timeH: at('2026-01-08T09:00:00Z'), concValue: Number.MAX_VALUE, unit: 'pg/ml' },
             { id: 'close', timeH: at('2026-01-09T09:00:00Z'), concValue: 1e16, unit: 'pg/ml' },
             { id: 'closer', timeH: at('2026-01-10T09:00:00Z'), concValue: 1e16 + 2, unit: 'pg/ml' },
         ];
-        const report = prepareReport({ events: [], labResults: huge }, selection({ measuredGraph: true }), NOW);
-        // The chart that cannot be scaled is left out; the report still comes
-        // out, and the tick loop never stops.
+        const records = { events, labResults: huge };
+        const report = prepareReport(records, selection({ measuredGraph: true }), NOW);
+        expect(report.charts).toEqual([]);
         const text = await render(report, 'en');
-        expect(text).toContain('Lab results');
+        expect(text).toMatch(/^Lab results$/m);
+        expect(text).toContain('Graphs · None');
+        expect(text).toContain(translator('en')('report.measured_unavailable'));
         expect(text).not.toMatch(/^Graphs$/m);
+
+        const mixed = prepareReport(records, selection({ measuredGraph: true, estimatedGraph: true }), NOW, estimate());
+        expect(mixed.charts.map(chart => chart.kind)).toEqual(['estimated']);
+        const mixedText = await render(mixed, 'en');
+        expect(mixedText).toContain('Graphs · Estradiol (Estimated hormone level)');
+        expect(mixedText).toMatch(/^Estimated hormone level$/m);
+        expect(mixedText).toContain(translator('en')('report.measured_unavailable'));
+        expect(mixedText).toMatch(/^Lab results$/m);
     });
 });
 
@@ -461,6 +473,7 @@ describe('report PDF layout', () => {
             y: 20,
             width: 178,
             series: 'Measured lab results',
+            domain: domain!,
         });
         // The points run in time order, so the first circle is the negative
         // measurement, and a value below zero is drawn lower on the page.

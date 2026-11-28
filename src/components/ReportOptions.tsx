@@ -16,6 +16,7 @@ export interface ReportOptionsProps extends ReportRecords {
     reportNow: Date;
     estimate?: ReportEstimateSource;
     estimateStatus: AppModelStatus;
+    onRetryEstimate(): void;
     selection: ReportSelection;
     onSelectionChange: (fields: Partial<ReportSelection>) => void;
 }
@@ -65,6 +66,7 @@ export default function ReportOptions({
     reportNow,
     estimate,
     estimateStatus,
+    onRetryEstimate,
     selection,
     onSelectionChange,
     saving,
@@ -125,6 +127,7 @@ export default function ReportOptions({
     const allMeds = included === null || (medications.length > 0 && checkedMeds.length === medications.length);
     const missingMeasured = selection.measuredGraph && !report.charts.some(chart => chart.kind === 'measured');
     const missingEstimate = selection.estimatedGraph && !report.charts.some(chart => chart.kind === 'estimated');
+    const missingEstimateStatus = estimate ? 'ready' : estimateStatus;
     const hasContent = !!(report.events.length || report.labResults.length || report.charts.length);
     const canSave = hasContent && !report.invalidRange && !otherModeUnavailable && !missingMeasured && !missingEstimate;
 
@@ -292,7 +295,14 @@ export default function ReportOptions({
                     <>
                         {missingMeasured && <p className="field-hint">{t('report.measured_unavailable')}</p>}
                         {missingEstimate && (
-                            <p className="field-hint">{t(estimateHints[estimate ? 'ready' : estimateStatus])}</p>
+                            <>
+                                <p className="field-hint">{t(estimateHints[missingEstimateStatus])}</p>
+                                {missingEstimateStatus === 'error' && (
+                                    <button type="button" className="btn-secondary min-h-12" onClick={onRetryEstimate}>
+                                        {t('model.retry')}
+                                    </button>
+                                )}
+                            </>
                         )}
                         {!hasContent && <p className="field-hint">{t('report.empty')}</p>}
                     </>
