@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -113,6 +114,16 @@ def source_font(name: str, cache: Path) -> Path:
     return target
 
 
+def source_licence(font: str, cache: Path) -> bytes:
+    name = font.rsplit("/", 1)[0] + "/OFL.txt"
+    target = cache / name
+    download(f"{UPSTREAM_BASE}/{name}", target)
+    text = target.read_text(encoding="utf-8")
+    if not text.startswith("Copyright ") or "SIL OPEN FONT LICENSE Version 1.1" not in text:
+        raise ValueError(f"Invalid font licence: {name}")
+    return ("\n".join(line.rstrip() for line in text.splitlines()) + "\n").encode("utf-8")
+
+
 def charsets() -> dict[str, str]:
     """The characters each language's report can draw."""
     entry = FONT_DIR / "charsetEntry.ts"
@@ -187,13 +198,36 @@ def format_manifest(manifest_path: Path) -> None:
             capture_output=True,
             encoding="utf-8",
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("  (prettier was not available; the manifest may need formatting)")
-        return
-    if not result.stdout.strip():
-        print("  (prettier returned no output; the manifest may need formatting)")
-        return
+        original = json.loads(manifest_path.read_bytes())
+        if json.loads(result.stdout) != original:
+            raise ValueError("Prettier changed the manifest's contents")
+    except (subprocess.CalledProcessError, OSError, ValueError) as error:
+        raise RuntimeError("Could not format the font manifest") from error
     manifest_path.write_bytes(result.stdout.encode("utf-8"))
+
+
+def publish_files(prepared: list[tuple[Path, Path]]) -> None:
+    """Replace individual files and restore earlier outputs if a replacement fails."""
+    backed_up = []
+    for staged, final in prepared:
+        backup = None
+        if final.exists() or final.is_symlink():
+            backup = staged.with_name(staged.name + ".previous")
+            shutil.copy2(final, backup, follow_symlinks=False)
+        backed_up.append((staged, final, backup))
+
+    replaced = []
+    try:
+        for staged, final, backup in backed_up:
+            staged.replace(final)
+            replaced.append((final, backup))
+    except OSError:
+        for final, backup in reversed(replaced):
+            if backup is None:
+                final.unlink(missing_ok=True)
+            else:
+                backup.replace(final)
+        raise
 
 
 def main() -> int:
@@ -203,7 +237,7 @@ def main() -> int:
     args = parser.parse_args()
 
     cache = Path(args.cache)
-    out_dir = Path(args.out)
+    out_dir = Path(args.out).resolve()
     per_language = charsets()
 
     manifest = {
@@ -260,22 +294,25 @@ def main() -> int:
         if incomplete:
             return 1
 
-        # The licence travels with the font, and with the distribution: the file in
-        # public/ is copied into the built site and into the Android package, so a
-        # copy of the app carries the terms the font is under.
-        license_text = cache / "OFL.txt"
-        download(f"{UPSTREAM_BASE}/notosans/OFL.txt", license_text)
-        ofl = "\n".join(line.rstrip() for line in license_text.read_text(encoding="utf-8").splitlines()) + "\n"
-        (staged / "LICENSE.txt").write_text(ofl, encoding="utf-8")
-        prepared.append((staged / "LICENSE.txt", out_dir / "LICENSE.txt"))
+        # Check the pinned licence of every family before sharing a copy among the CJK subsets.
+        licences = {group: source_licence(spec["source"], cache) for group, spec in FONTS.items()}
+        latin = licences.pop("latin")
+        cjk = set(licences.values())
+        if len(cjk) != 1:
+            raise ValueError("The pinned CJK families no longer share the same licence text")
+        for filename, public_name, contents in (
+            ("LICENSE.txt", "noto-sans-OFL-1.1.txt", latin),
+            ("LICENSE-CJK.txt", "noto-sans-cjk-OFL-1.1.txt", cjk.pop()),
+        ):
+            (staged / filename).write_bytes(contents)
+            (staged_public / public_name).write_bytes(contents)
+            prepared.extend(
+                ((staged / filename, out_dir / filename), (staged_public / public_name, public_licenses / public_name))
+            )
 
-        # The notices are staged next to where they are published, so each one
-        # is replaced in place.
-        (staged_public / "noto-sans-OFL-1.1.txt").write_text(ofl, encoding="utf-8")
         notice = (FONT_DIR / "THIRD-PARTY-NOTICES.txt").read_text(encoding="utf-8")
         notice = notice.replace("{{COMMIT}}", UPSTREAM_COMMIT)
-        (staged_public / "THIRD-PARTY-NOTICES.txt").write_text(notice, encoding="utf-8")
-        prepared.append((staged_public / "noto-sans-OFL-1.1.txt", public_licenses / "noto-sans-OFL-1.1.txt"))
+        (staged_public / "THIRD-PARTY-NOTICES.txt").write_bytes(notice.encode("utf-8"))
         prepared.append((staged_public / "THIRD-PARTY-NOTICES.txt", public_licenses / "THIRD-PARTY-NOTICES.txt"))
 
         manifest_path = staged / "manifest.json"
@@ -285,10 +322,7 @@ def main() -> int:
         format_manifest(manifest_path)
         prepared.append((manifest_path, out_dir / "manifest.json"))
 
-        # Nothing above touched a shipped file. Publish the prepared ones.
-        for staged_file, final in prepared:
-            final.parent.mkdir(parents=True, exist_ok=True)
-            staged_file.replace(final)
+        publish_files(prepared)
 
     return 0
 

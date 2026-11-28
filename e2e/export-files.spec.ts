@@ -857,6 +857,28 @@ test('a graph with nothing to show stops the save', async ({ page, context }) =>
     await expect(saveReportButton(page)).toBeEnabled();
 });
 
+test('a graph that cannot be drawn still leaves a report worth saving', async ({ page, context }, testInfo) => {
+    await page.clock.setFixedTime(NOW);
+    // A measured value no axis can hold. The record is still a record.
+    const impossible = { ...reportLab, id: 'synthetic-report-lab-impossible', concValue: Number.MAX_VALUE };
+    await seedStorage(context, reportStorage({ 'hrt-lab-results': JSON.stringify([impossible]) }));
+    await gotoApp(page);
+    await openReport(page);
+
+    await measuredChoice(page).check();
+    // The panel says the graph cannot be drawn.
+    await expect(page.getByText('No matching lab results can be graphed.')).toBeVisible();
+    // The report is still worth writing: the records behind the graph are in
+    // it, and one impossible number is not a reason to refuse the export.
+    await expect(saveReportButton(page)).toBeEnabled();
+    await expectCounts(page, { doses: 1, labs: 1 });
+
+    const pdf = await download(page, () => saveReportButton(page).click(), `hrt-report-${DATE}.pdf`, testInfo);
+    const text = reportText(pdf);
+    expect(text).toContain('No matching lab results can be graphed.');
+    expect(text).toMatch(/^Lab results$/m);
+});
+
 test('a cancelled save leaves the options ready for another try', async ({ page, context }) => {
     await page.clock.setFixedTime(NOW);
     await seedStorage(context, reportStorage());

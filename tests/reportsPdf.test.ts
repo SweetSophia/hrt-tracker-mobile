@@ -389,10 +389,17 @@ describe('report PDF', () => {
         const records = { events, labResults: huge };
         const report = prepareReport(records, selection({ measuredGraph: true }), NOW);
         expect(report.charts).toEqual([]);
+        // The graph was asked for and there is one to draw. Its values are
+        // what no axis can hold, which is not the same as there being nothing
+        // to draw.
+        expect(report.unplottableCharts.map(chart => chart.kind)).toEqual(['measured']);
+        // The records behind it are kept: one impossible number is not a
+        // reason to leave them out of the report.
+        expect(report.labResults).toHaveLength(3);
         const text = await render(report, 'en');
         expect(text).toMatch(/^Lab results$/m);
         expect(text).toContain('Graphs · None');
-        expect(text).toContain(translator('en')('report.measured_unavailable'));
+        expect(text).toContain('No matching lab results can be graphed.');
         expect(text).not.toMatch(/^Graphs$/m);
 
         const mixed = prepareReport(records, selection({ measuredGraph: true, estimatedGraph: true }), NOW, estimate());
@@ -400,8 +407,41 @@ describe('report PDF', () => {
         const mixedText = await render(mixed, 'en');
         expect(mixedText).toContain('Graphs · Estradiol (Estimated hormone level)');
         expect(mixedText).toMatch(/^Estimated hormone level$/m);
-        expect(mixedText).toContain(translator('en')('report.measured_unavailable'));
+        expect(mixedText).toContain('No matching lab results can be graphed.');
         expect(mixedText).toMatch(/^Lab results$/m);
+    });
+
+    it('tells a graph with nothing to show from one that cannot be drawn', async () => {
+        // Nothing matched the graph: there is nothing to draw and nothing
+        // that failed to draw.
+        const absent = prepareReport({ events, labResults: [] }, selection({ measuredGraph: true }), NOW);
+        expect(absent.charts).toEqual([]);
+        expect(absent.unplottableCharts).toEqual([]);
+
+        // One measured value no axis can hold. The record is still a record,
+        // and the report says in the same words that it cannot be graphed.
+        const unplottable = prepareReport(
+            {
+                events,
+                labResults: [
+                    { id: 'huge', timeH: at('2026-01-08T09:00:00Z'), concValue: Number.MAX_VALUE, unit: 'pg/ml' },
+                ],
+            },
+            selection({ measuredGraph: true }),
+            NOW,
+        );
+        expect(unplottable.charts).toEqual([]);
+        expect(unplottable.unplottableCharts.map(chart => chart.kind)).toEqual(['measured']);
+        expect(unplottable.labResults).toHaveLength(1);
+
+        const absentText = await render(absent, 'en');
+        const unplottableText = await render(unplottable, 'en');
+        expect(absentText).toContain('No matching lab results can be graphed.');
+        expect(unplottableText).toContain('No matching lab results can be graphed.');
+        // The record is in the document, value and all. The value is written
+        // in a narrow column, so it is read back with the line break taken out.
+        expect(unplottableText.replace(/\n/g, '')).toContain('1.7976931348623157e+308');
+        expect(unplottableText).toMatch(/^Lab results$/m);
     });
 });
 

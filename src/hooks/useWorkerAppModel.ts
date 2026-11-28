@@ -5,6 +5,7 @@ import type { ForecastCompute } from '../application/forecastProjection';
 import type { EngineRunner } from '../application/engineRunner';
 import type { EngineInput } from '../application/engineProtocol';
 import { screenModelView, type AppModelView } from '../application/appModelView';
+import { reportHistoryKey } from '../application/reportHistoryKey';
 import type { AppModelInput, AppModelState } from './appModelTypes';
 
 const REPORT_MAX_AGE_MS = 2 * 60_000;
@@ -39,7 +40,8 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
         [baseline, labs, calibrationMethod, historyMode],
     );
     // A storage commit can reparse unchanged events and labs into new arrays.
-    const historyKey = useMemo(() => JSON.stringify(historyInputs), [historyInputs]);
+    const historyKey = useMemo(() => reportHistoryKey(historyInputs), [historyInputs]);
+    const scopeKey = JSON.stringify([scope.backend, scope.owner, scope.mode]);
     const gridClock = useRef<{ baseline: typeof baseline; scope: AppModelInput['scope']; nowMs: number } | null>(null);
     const input = useMemo<Omit<EngineInput, 'nowMs'>>(
         () => ({
@@ -71,16 +73,18 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
     );
     const [attempt, setAttempt] = useState(0);
     const retryModel = useCallback(() => setAttempt(value => value + 1), []);
-    const reportHistory = useMemo(() => ({ historyKey, scope, attempt }), [historyKey, scope, attempt]);
+    const reportHistory = useMemo(() => ({ historyKey, scopeKey }), [historyKey, scopeKey]);
     const [result, setResult] = useState<{
         input: typeof input;
+        scope: AppModelInput['scope'];
+        attempt: number;
         reportHistory: typeof reportHistory;
         lastSuccess?: AppModelView;
         failed: boolean;
     } | null>(null);
     useEffect(() => {
         const runner = createBundledEngineRunner();
-        runner.activate(JSON.stringify([scope.backend, scope.owner, scope.mode]));
+        runner.activate(scopeKey);
         runnerRef.current = runner;
         runnerScope.current = scope;
         return () => {
@@ -90,7 +94,7 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
             }
             runner.dispose();
         };
-    }, [scope]);
+    }, [scope, scopeKey]);
     useEffect(() => {
         const runner = runnerRef.current;
         if (!runner) return;
@@ -102,12 +106,22 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
         void runner
             .calculate({ ...input, nowMs: gridClock.current.nowMs }, { signal: abort.signal })
             .then(output => {
-                if (active) setResult({ input, reportHistory, lastSuccess: screenModelView(output), failed: false });
+                if (active)
+                    setResult({
+                        input,
+                        scope,
+                        attempt,
+                        reportHistory,
+                        lastSuccess: screenModelView(output),
+                        failed: false,
+                    });
             })
             .catch(() => {
                 if (active)
                     setResult(previous => ({
                         input,
+                        scope,
+                        attempt,
                         reportHistory,
                         lastSuccess:
                             previous?.reportHistory === reportHistory
@@ -120,10 +134,11 @@ export function useWorkerAppModel(props: AppModelInput): AppModelState {
             active = false;
             abort.abort();
         };
-    }, [input, baseline, scope, reportHistory, nowMs]);
-    const matchingHistory = result?.reportHistory === reportHistory;
-    const matching = matchingHistory && result.input === input;
-    const reportModel = matchingHistory ? recentReportView(result.lastSuccess, nowMs) : undefined;
+    }, [input, baseline, scope, attempt, reportHistory, nowMs]);
+    const matching = result?.input === input && result.scope === scope && result.attempt === attempt;
+    // Retry starts a new request but does not change what the accepted report estimated.
+    const reportModel =
+        result?.reportHistory === reportHistory ? recentReportView(result.lastSuccess, nowMs) : undefined;
     if (matching && !result.failed && result.lastSuccess)
         return { ...result.lastSuccess, modelStatus: 'ready', reportModel, retryModel, runForecast, runDemo };
     return {

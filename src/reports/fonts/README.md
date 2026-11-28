@@ -23,9 +23,11 @@ digest of each file.
 
 ## Licence
 
-The Noto fonts are under the SIL Open Font License 1.1 (`LICENSE.txt`). The same licence text and
-a third-party notice are copied into `public/licenses/` by the build, so the built site and the
-Android package carry them.
+The Noto fonts are under the SIL Open Font License 1.1. The Latin subset uses
+`LICENSE.txt`. The five CJK subsets share the copyright and Reserved Font Name
+declaration in `LICENSE-CJK.txt`. The builder checks each pinned upstream licence
+and copies both texts with the third-party notice into `public/licenses/` for the
+web and Android builds.
 
 ## Rebuilding
 
@@ -34,6 +36,6 @@ new wording is:
 
     python3 src/reports/fonts/build-fonts.py
 
-It needs `fonttools` and Node 22. It downloads the upstream fonts once into
+It needs `fonttools`, Node 22, and the dependencies installed with `npm ci`. It downloads the upstream fonts once into
 `node_modules/.cache/report-fonts` and reuses them afterwards. The test `tests/reportsPdf.test.ts`
 fails when the shipped subsets no longer cover the report's wording.

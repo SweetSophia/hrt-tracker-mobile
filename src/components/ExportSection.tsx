@@ -363,6 +363,12 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                     <span className={rowLabel}>PDF</span>
                     <span className={action}>{t('report.configure')}</span>
                 </button>
+                {/* The report panel. The wrapper stays in the page so the row's
+                    aria-controls always names an element, and the panel inside
+                    it is unmounted when the row is folded: an open date list
+                    and a last notice should not wait behind a closed panel.
+                    The choices themselves are kept, because they live here,
+                    in the row's parent, and not in the panel. */}
                 <div id={reportId} hidden={!reportOpen}>
                     {reportOpen && (
                         <ReportOptions

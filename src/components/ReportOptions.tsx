@@ -76,8 +76,11 @@ export default function ReportOptions({
     const { showDialog } = useDialog();
     const { files } = useApplicationRuntime();
     const [saveNotice, setSaveNotice] = useState('');
+    const [retryFocused, setRetryFocused] = useState(false);
     const savingRef = useRef(false);
     const mounted = useRef(false);
+    const previewHeadingRef = useRef<HTMLHeadingElement>(null);
+    const retryButtonRef = useRef<HTMLButtonElement>(null);
     const hintId = useId();
     const scopeHintId = useId();
     const customSelection =
@@ -125,11 +128,30 @@ export default function ReportOptions({
     const included = selection.medications;
     const checkedMeds = medications.filter(([key]) => included === null || included.includes(key));
     const allMeds = included === null || (medications.length > 0 && checkedMeds.length === medications.length);
-    const missingMeasured = selection.measuredGraph && !report.charts.some(chart => chart.kind === 'measured');
-    const missingEstimate = selection.estimatedGraph && !report.charts.some(chart => chart.kind === 'estimated');
-    const missingEstimateStatus = estimate ? 'ready' : estimateStatus;
+    const measuredDrawn = report.charts.some(chart => chart.kind === 'measured');
+    const estimatedDrawn = report.charts.some(chart => chart.kind === 'estimated');
+    const measuredUnplottable = report.unplottableCharts.some(chart => chart.kind === 'measured');
+    const estimatedUnplottable = report.unplottableCharts.some(chart => chart.kind === 'estimated');
+    const measuredMissing = selection.measuredGraph && !measuredDrawn;
+    const estimatedMissing = selection.estimatedGraph && !estimatedDrawn;
+    // Reports with unplottable values can still export the underlying records.
+    const missingMeasured = measuredMissing && !measuredUnplottable;
+    const missingEstimate = estimatedMissing && !estimatedUnplottable;
+    const modelFailed = estimateStatus === 'error';
+    const retryBusy = estimateStatus === 'pending';
+    const pendingRetry = retryBusy && retryFocused;
+    const estimateHint = estimateHints[modelFailed || pendingRetry || !estimate ? estimateStatus : 'ready'];
+    const showEstimateHint = selection.estimatedGraph && (modelFailed || pendingRetry || estimatedMissing);
+    // Keep the focused control mounted until the user moves or the report recovers.
+    const retryVisible = selection.estimatedGraph && (modelFailed || retryFocused);
     const hasContent = !!(report.events.length || report.labResults.length || report.charts.length);
     const canSave = hasContent && !report.invalidRange && !otherModeUnavailable && !missingMeasured && !missingEstimate;
+
+    useLayoutEffect(() => {
+        if (retryFocused && estimateStatus === 'ready' && retryButtonRef.current === document.activeElement) {
+            previewHeadingRef.current?.focus();
+        }
+    }, [estimateStatus, retryFocused]);
 
     function change(fields: Partial<ReportSelection>) {
         onSelectionChange(fields);
@@ -139,6 +161,11 @@ export default function ReportOptions({
         const selected = new Set(checkedMeds.map(([id]) => id));
         if (!selected.delete(key)) selected.add(key);
         change({ medications: selected.size === medications.length ? null : [...selected] });
+    }
+    function retryEstimate(event: React.MouseEvent<HTMLButtonElement>) {
+        if (!modelFailed) return;
+        event.currentTarget.focus();
+        onRetryEstimate();
     }
     async function save() {
         if (!canSave || savingRef.current) return;
@@ -265,7 +292,9 @@ export default function ReportOptions({
                 </p>
             </fieldset>
             <section className="space-y-2 border-t border-[var(--border)] pt-4" aria-live="polite">
-                <h2 className="font-medium">{t('report.preview')}</h2>
+                <h2 ref={previewHeadingRef} tabIndex={-1} className="font-medium">
+                    {t('report.preview')}
+                </h2>
                 {!invalidRange && (
                     <>
                         <p className="text-sm">{rangeLabel}</p>
@@ -293,16 +322,21 @@ export default function ReportOptions({
                     <p>{t('report.invalid_range')}</p>
                 ) : (
                     <>
-                        {missingMeasured && <p className="field-hint">{t('report.measured_unavailable')}</p>}
-                        {missingEstimate && (
-                            <>
-                                <p className="field-hint">{t(estimateHints[missingEstimateStatus])}</p>
-                                {missingEstimateStatus === 'error' && (
-                                    <button type="button" className="btn-secondary min-h-12" onClick={onRetryEstimate}>
-                                        {t('model.retry')}
-                                    </button>
-                                )}
-                            </>
+                        {measuredMissing && <p className="field-hint">{t('report.measured_unavailable')}</p>}
+                        {showEstimateHint && <p className="field-hint">{t(estimateHint)}</p>}
+                        {retryVisible && (
+                            <button
+                                ref={retryButtonRef}
+                                type="button"
+                                className="btn-secondary min-h-12 aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+                                aria-disabled={!modelFailed || undefined}
+                                aria-busy={retryBusy || undefined}
+                                onFocus={() => setRetryFocused(true)}
+                                onBlur={() => setRetryFocused(false)}
+                                onClick={retryEstimate}
+                            >
+                                {t('model.retry')}
+                            </button>
                         )}
                         {!hasContent && <p className="field-hint">{t('report.empty')}</p>}
                     </>

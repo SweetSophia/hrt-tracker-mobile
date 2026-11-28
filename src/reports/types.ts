@@ -38,4 +38,10 @@ export interface PreparedReport {
     to: string | null;
     invalidRange: boolean;
     charts: (ReportChart & { domain: [number, number] })[];
+    /**
+     * Series the selection asked for whose values no axis can hold. They are
+     * not drawn, but they are not missing either: the records behind them are
+     * in the report, so the report is still worth writing.
+     */
+    unplottableCharts: ReportChart[];
 }

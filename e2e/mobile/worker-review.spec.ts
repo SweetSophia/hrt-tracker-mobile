@@ -11,6 +11,12 @@ async function openMobileReport(page: Page) {
     await page.getByRole('button', { name: /Choose what to include/ }).click();
 }
 
+async function leaveMobileReport(page: Page) {
+    // The bottom tabs can hide while the report scrolls. Its sticky Back button stays available.
+    await page.getByRole('button', { name: /^Export data.*Back/ }).click();
+    await page.getByRole('button', { name: /^Data management.*Back/ }).click();
+}
+
 test('an unavailable worker leaves plan editing, logging and undo usable', async ({ page, context }) => {
     test.setTimeout(30_000);
     await page.setViewportSize({ width: 390, height: 740 });
@@ -145,6 +151,7 @@ test('PDF estimates retain recent results across readout refreshes and fence mod
     const estimate = page.getByRole('checkbox', { name: 'Estimated hormone level', exact: true });
     const save = page.getByRole('button', { name: 'Save PDF', exact: true });
     const preview = page.getByText('Graphs · Estimated hormone level (Estradiol)', { exact: true });
+    const retry = page.getByRole('button', { name: 'Retry estimates', exact: true });
 
     await openMobileReport(page);
     await estimate.check();
@@ -161,6 +168,7 @@ test('PDF estimates retain recent results across readout refreshes and fence mod
     expect(reportText(await readFile(await download.path()))).toMatch(/^Estimated hormone level$/m);
 
     const overview = page.getByRole('button', { name: 'Overview', exact: true });
+    await leaveMobileReport(page);
     await overview.click();
     await page.getByRole('button', { name: 'Medication plan', exact: true }).click();
     await page.getByRole('button').filter({ hasText: /2 mg/ }).click();
@@ -175,13 +183,14 @@ test('PDF estimates retain recent results across readout refreshes and fence mod
     await expect(preview).toBeVisible({ timeout: 3_000 });
     await expect(save).toBeEnabled();
 
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await leaveMobileReport(page);
     await page.getByRole('button', { name: /^General/ }).click();
     await page.getByRole('button', { name: /^Weight/ }).click();
     await page.getByRole('spinbutton').fill('72');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect.poll(() => page.evaluate(() => window.screenWorkerTest.requests.at(-1)?.input.weightKG)).toBe(72);
 
+    await page.getByRole('button', { name: /^General.*Back/ }).click();
     await openMobileReport(page);
     await estimate.check();
     await expect(preview).toHaveCount(0);
@@ -192,29 +201,35 @@ test('PDF estimates retain recent results across readout refreshes and fence mod
     await expect(updating).toHaveCount(0);
     await expect(save).toBeEnabled();
 
-    await overview.click();
     await page.evaluate(() => {
         window.screenWorkerTest.failMethod = 'ou_kalman';
     });
     await page.clock.fastForward(60_000);
     await expect(calculationError).toBeVisible();
-    await openMobileReport(page);
-    await estimate.check();
     await expect(preview).toBeVisible();
     await expect(save).toBeEnabled();
 
-    await page.clock.fastForward(61_000);
-    await expect(preview).toHaveCount(0);
-    await expect(save).toBeDisabled();
-    await expect(calculationError).toBeVisible();
+    const requestCount = await page.evaluate(() => window.screenWorkerTest.requests.length);
     await page.evaluate(() => {
         window.screenWorkerTest.failMethod = undefined;
+        window.screenWorkerTest.hold = true;
     });
-    await page.getByRole('button', { name: 'Retry estimates', exact: true }).click();
+    await retry.press('Enter');
+    await expect.poll(() => page.evaluate(() => window.screenWorkerTest.requests.length)).toBeGreaterThan(requestCount);
+    await expect(retry).toBeFocused();
+    await expect(retry).toBeDisabled();
+    await expect(preview).toBeVisible();
+    await expect(save).toBeEnabled();
+
+    await page.clock.fastForward(3 * 60_000);
+    await expect(preview).toHaveCount(0);
+    await expect(save).toBeDisabled();
+    await page.evaluate(() => window.screenWorkerTest.release());
     await expect(preview).toBeVisible();
     await expect(save).toBeEnabled();
     await expect(calculationError).toHaveCount(0);
     await expect(updating).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Report preview' })).toBeFocused();
 });
 
 test('Forecast keeps drafts but stops announcing calculation after worker failure', async ({ page, context }) => {

@@ -266,6 +266,7 @@ export function prepareReport(
         }
     }
 
+    const scaled = scaleReportCharts(charts);
     return {
         events,
         labResults,
@@ -277,7 +278,8 @@ export function prepareReport(
         from: range.from,
         to: range.to,
         invalidRange: range.invalid,
-        charts: scaleReportCharts(charts),
+        charts: scaled.charts,
+        unplottableCharts: scaled.unplottable,
     };
 }
 
