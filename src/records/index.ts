@@ -1,4 +1,10 @@
-import { normalizeCalibrationMethod, sanitizePKParams } from '../domain/engine';
+import {
+    normalizeCalibrationMethod,
+    sanitizePKParams,
+    type DoseEvent,
+    type HRTMode,
+    type LabResult,
+} from '../domain/engine';
 import {
     applySyncedStateToStorage,
     modeKeyFor,
@@ -17,23 +23,31 @@ import { planRecordOperation, type RecordContext } from './snapshot';
 export { planRecordOperation } from './snapshot';
 export type { RecordContext, RecordOperation, RecordPlan } from './snapshot';
 
+function readModeList<T>(storage: StorageLike, owner: string, mode: HRTMode, suffix: string): T[] {
+    const raw = storage.getItem(modeKeyFor(owner, mode, suffix));
+    if (raw === null) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error('Invalid stored record array');
+    return parsed as T[];
+}
+
+/** A report needs only the confirmed dose and lab entries for the requested mode. */
+export function readReportRecords(storage: StorageLike, owner: string, mode: HRTMode) {
+    return {
+        events: readModeList<DoseEvent>(storage, owner, mode, 'events'),
+        labResults: readModeList<LabResult>(storage, owner, mode, 'lab-results'),
+    };
+}
+
 export function activeFromSnapshot(storage: StorageLike, context: RecordContext): CompleteBackupActive {
     const { owner, mode } = context.scope;
-    const readArray = <T>(suffix: string): T[] => {
-        const raw = storage.getItem(modeKeyFor(owner, mode, suffix));
-        if (raw === null) return [];
-        const parsed: unknown = JSON.parse(raw);
-        if (!Array.isArray(parsed)) throw new Error('Invalid stored record array');
-        return parsed as T[];
-    };
     const weight = storage.getItem(nsFor(owner, 'weight'));
     const pk = storage.getItem(nsFor(owner, 'pk-params'));
     return {
-        events: readArray('events'),
-        labResults: readArray('lab-results'),
-        doseTemplates: readArray('dose-templates'),
-        quickDoses: readArray('quick-doses'),
-        supplies: readArray('supplies'),
+        ...readReportRecords(storage, owner, mode),
+        doseTemplates: readModeList(storage, owner, mode, 'dose-templates'),
+        quickDoses: readModeList(storage, owner, mode, 'quick-doses'),
+        supplies: readModeList(storage, owner, mode, 'supplies'),
         plan: readPlanFromStorage(storage, owner, mode) ?? [],
         weight: weight === null ? 70 : Number(weight),
         pkParams: pk === null ? null : sanitizePKParams(JSON.parse(pk)),

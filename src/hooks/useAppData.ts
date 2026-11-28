@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { ShowDialog } from '../contexts/DialogContext';
 import {
@@ -28,6 +28,7 @@ import { useHRTMode } from '../contexts/HRTModeContext';
 import { useRecordController } from '../contexts/RecordsContext';
 import { SyncState, fingerprintState, normalizeSyncState } from '../utils/syncMerge';
 import {
+    readReportRecords,
     planCompleteBackup,
     planSyncedState,
     planRecordOperation,
@@ -127,20 +128,29 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         const nowH = currentTime.getTime() / 3600000;
         return plan.length ? regimensFromPlan(plan, events, nowH) : detectRegimens(events, nowH);
     }, [plan, events, currentTime]);
-    const { simulation, simulationAhead, calibration, modelStatus, retryModel, modelNowMs, runForecast, runDemo } =
-        useAppModel({
-            scope: identity,
-            events,
-            weightKG: weight,
-            birthYear: modelBirthYear,
-            labs: labResults,
-            pkParams,
-            calibrationMethod,
-            historyMode: calibrationHistoryMode,
-            regimens,
-            withPrediction,
-            nowMs: currentTime.getTime(),
-        });
+    const {
+        simulation,
+        simulationAhead,
+        calibration,
+        modelStatus,
+        retryModel,
+        modelNowMs,
+        reportModel,
+        runForecast,
+        runDemo,
+    } = useAppModel({
+        scope: identity,
+        events,
+        weightKG: weight,
+        birthYear: modelBirthYear,
+        labs: labResults,
+        pkParams,
+        calibrationMethod,
+        historyMode: calibrationHistoryMode,
+        regimens,
+        withPrediction,
+        nowMs: currentTime.getTime(),
+    });
 
     const calibrationFn = calibration.factorFn;
 
@@ -386,6 +396,13 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         }
     };
     const mergeImportedData = (raw: unknown) => importLegacy(raw, 'merge');
+    const snapshots = state.snapshots;
+    const readOtherReportMode = useCallback(() => {
+        const other = identity.mode === 'transfem' ? 'transmasc' : 'transfem';
+        return planRecordOperation({ scope: identity, snapshots }, storage =>
+            readReportRecords(storage, identity.owner, other),
+        ).result;
+    }, [identity, snapshots]);
     const buildExportPayload = () => exportRecordState(liveContext());
     const buildCompleteBackupBundle = (createdAt?: string) => {
         const context = liveContext();
@@ -463,6 +480,7 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         runForecast,
         runDemo,
         modelNowMs,
+        reportModel,
         modelSnapshot: active,
         currentTime,
         calibrationFn,
@@ -504,6 +522,7 @@ export const useAppData = (showDialog: ShowDialog, { withPrediction = false }: {
         prepareImportedData,
         mergeImportedData,
         buildExportPayload,
+        readOtherReportMode,
         buildCompleteBackupBundle,
         previewCompleteBackupBundle,
         applyCompleteBackupBundle,

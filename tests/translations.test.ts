@@ -10,6 +10,7 @@ import { DE } from '../src/i18n/de';
 import type { Lang } from '../src/i18n/languages';
 import { MOBILE_CREDIT_KEYS, MOBILE_CREDITS } from '../src/i18n/mobileCredits';
 import { REGIMEN_FORMS } from '../src/i18n/regimenForms';
+import { REPORT_COPY, REPORT_COPY_KEYS } from '../src/i18n/reportCopy';
 import { getShareCopy, type ShareCopy } from '../src/i18n/share';
 import { TRANSLATIONS } from '../src/i18n/translations';
 
@@ -257,7 +258,7 @@ describe('age model copy', () => {
 describe('complete language packs', () => {
     const en = TRANSLATIONS.en as Record<string, string>;
     const authored = {
-        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de, ...REGIMEN_FORMS.de },
+        de: { ...DE, ...MOBILE_CREDITS.de, ...APPEARANCE_COPY.de, ...REGIMEN_FORMS.de, ...REPORT_COPY.de },
         ru: TRANSLATIONS.ru,
         uk: TRANSLATIONS.uk,
     };
@@ -278,6 +279,59 @@ describe('complete language packs', () => {
 
     it('ships the German pack exactly as authored', () => {
         expect(TRANSLATIONS.de).toEqual(authored.de);
+    });
+});
+
+describe('report copy', () => {
+    const reportLocales = Object.keys(REPORT_COPY) as (keyof typeof REPORT_COPY)[];
+
+    it('ships every report string in every supported locale', () => {
+        expect(reportLocales.sort()).toEqual([...locales].sort());
+        for (const locale of reportLocales) {
+            for (const key of REPORT_COPY_KEYS) {
+                expect(REPORT_COPY[locale][key]?.trim(), `${locale} ${key}`).toBeTruthy();
+            }
+        }
+    });
+
+    it('keeps each report string’s placeholders', () => {
+        const en = REPORT_COPY.en;
+        for (const locale of reportLocales) {
+            const off = REPORT_COPY_KEYS.filter(
+                key => placeholders(en[key]).join() !== placeholders(REPORT_COPY[locale][key]).join(),
+            );
+            expect(off, `${locale} placeholders`).toEqual([]);
+        }
+    });
+
+    it('merges into the language packs the interface reads', () => {
+        for (const locale of reportLocales) {
+            for (const key of REPORT_COPY_KEYS) {
+                expect(TRANSLATIONS[locale][key], `${locale} ${key}`).toBe(REPORT_COPY[locale][key]);
+            }
+        }
+    });
+
+    it.each(['zh-TW', 'yue'] as const)('uses the Overview tab name in the %s estimate hint', locale => {
+        const pack = TRANSLATIONS[locale];
+        expect(pack['report.estimate_hint']).toContain(pack['nav.home']);
+    });
+
+    it('does not leave a locale reading as English', () => {
+        for (const locale of reportLocales) {
+            if (locale === 'en') continue;
+            const identical = REPORT_COPY_KEYS.filter(key => REPORT_COPY[locale][key] === REPORT_COPY.en[key]);
+            expect(identical.length, `${locale} reuses ${identical.join(', ')}`).toBeLessThan(
+                REPORT_COPY_KEYS.length / 2,
+            );
+        }
+    });
+
+    it('counts without a plural noun after the number', () => {
+        for (const locale of reportLocales) {
+            expect(REPORT_COPY[locale]['report.counts'], locale).toContain('{doses}');
+            expect(REPORT_COPY[locale]['report.counts'], locale).toContain('{labs}');
+        }
     });
 });
 

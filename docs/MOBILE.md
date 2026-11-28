@@ -31,6 +31,16 @@ open it with a version that supports patch replacement.
 
 ![The Replace previous patch switch below Wear duration on Android](images/patch-replacement-android.webp)
 
+## Exporting a PDF report
+
+Open **Settings → Data management → Export data → PDF**. Choose a date range, then the lab measurements and medications you want to include. Turn off **All medications** for a labs-only report. The default is the past 90 days in the current HRT mode. Select **Include records from both HRT modes** to draw on both sets of records for your account.
+
+The measured graph plots each blood draw as a point. Its axis uses one unit per hormone. The lab table keeps the recorded value, unit, and test method when supplied. The optional estimated graph follows the active mode's historical Overview curve. It uses the full dose history and any calibration from lab results, including records outside your selection.
+
+Check the dates, included records, and graphs under **Report preview**, then tap **Save PDF** and choose a location. The report uses your app language and works offline.
+
+![First page of a sample PDF with synthetic estradiol measurements and the optional historical estimate](images/custom-pdf-report.png)
+
 ## Repository baseline
 
 The public history starts directly from upstream commit

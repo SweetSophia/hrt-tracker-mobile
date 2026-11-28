@@ -1,0 +1,76 @@
+{
+  "charsets": {
+    "de": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×Üßäö÷üμ–—…‰€",
+    "en": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μ–—…‰€",
+    "ja": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μ–—…‰€、。あいうきくけこごさしすせただちてでとなにのはぶべまみめもやりるをんウェエオカキクグゲシジスタダチッテデトドナノパビピフプペホポミメモュラリルレロンー一下不与両中了付件位使保値光免全内利剤効化単去口合吉含嚢囲在場外大女始存学安完定実容射履年度影性息成投択指推方日明時最月有期条果査検概正歴毎求法注測濃点現生用男疫発皮目示筋範終経結腕腿致舌草薬表補要記読貼路込近週選酢酸量録開間除陰響項香鼻：",
+    "ko": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μ–—…‰€가간값강개거건검게결경고과광구그근기나난날남낭네년노농는니다단데도된두드든디라락랄래량레렐로록론료루류르른를름리린립릿마만맞매메면모목몬미및밖발방벅범법벤보복부비사생서선설성세수스습시실아약어없에여역영오올와요용운월위유을음의이일읽있작장재저적전접정제젤조종주줍중지직짜착청체최추측치카칼타택테토톤투트팔패페펜펠포표프피하학한할함합항해했향허현호화효",
+    "ru": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μАБВГДЕЖЗИЛМНОПРСТУФХЦЭабвгдежзийклмнопрстуфхцчшщъыьэюяё–—…‰€",
+    "tr": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·Ö×çö÷üğİıŞşμ–—’…‰€",
+    "uk": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μІАБВГДЕЗЛМНОПРСТУФХЦЯабвгдежзийклмнопрстуфхцчшщьюяєії–—’…‰€",
+    "yue": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μ–—…‰€、。一上下丙二亦亮以件估位你係個值儲光免入內全兩共冇凝到前剔劑包化十卡又及取口另可合同含告呢咗唔啲單嘅噴嚟囊固圍圖報外大女如始孕存學完定家容實射小就已年庚度式影得性戊或所手括揀效整方日昔星時普曲最會月有服期束林果校條植模檢每比求法注洛消淨測準激濃片物瑞環用由甲男畫疫發皮目睪確移種符第算範素結經緊總羥者而肉肌胺腿膠臂自至舌芬苯藥螺血表要覽訂記請譜讀貼質載近連選部都酮酯酸醇醋量錄開間除陰雌雷響頁項預驗魯鼻，／：",
+    "zh": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μ–—…‰€、。一上下不且丙两义之也了二于些亮仅件会估位使保值光免全共内准凝剂前勾包化十单卡即发取口另可合后含告周和响喷囊围图在埋外大天女如始孕存学完定实容射小已年庚度开式当录影径性戊成或所手报择效整方无日时昔普曲最月有服期束条林果查校检植概模正每比求没法注洛测浓消激片物环瑞生用甲男疫的皮目睾确种移符第算素结绘羟肉肌胶胺腿臂自舌芬苯范药螺表要览记请读谱质贴载近这选途部酮酯酸醇醋量间阴除雌雷页项预验鲁鼻，：",
+    "zh-TW": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~£¥°±µ·×÷μ–—…‰€、。一上下不且丙之也了二些亮以件估位使值儲光免入內全兩共凝前劑勾包化十卡取口另只可合含告和單噴囊固圍圖在報外大天女如始孕存學完定容實射小就已年庚度式影後徑性戊成或所手擇效整方日昔時普曲最會月有服期束林果校條植模檢正每比求沒法注洛消測準激濃無片物瑞環生產用甲男疫發的皮目睪確移種符第筆算範紀素結總繪羥肉肌胺腿膠臂自舌芬苯藥螺表製要覽訂請譜讀貼質載近途這週選部酮酯酸醇醋量錄開間除陰雌雷響頁項預驗魯鼻（），／："
+  },
+  "fonts": {
+    "ja": {
+      "bytes": 58128,
+      "characters": 305,
+      "family": "Noto Sans JP",
+      "file": "NotoSansJP-ja.ttf",
+      "langs": ["ja"],
+      "sha256": "d36edcbfb577d5f9d7a697573aa499fc2ebe798753741267d1e14ee25c12f624",
+      "source": "notosansjp/NotoSansJP[wght].ttf"
+    },
+    "ko": {
+      "bytes": 38312,
+      "characters": 284,
+      "family": "Noto Sans KR",
+      "file": "NotoSansKR-ko.ttf",
+      "langs": ["ko"],
+      "sha256": "48b10a93e5daaa7c381d22391c946df1deb42a42c3c70b62ec5ec8f5f7ed8d5f",
+      "source": "notosanskr/NotoSansKR[wght].ttf"
+    },
+    "latin": {
+      "bytes": 17748,
+      "characters": 182,
+      "family": "Noto Sans",
+      "file": "NotoSans-Latin.ttf",
+      "langs": ["en", "de", "tr", "ru", "uk"],
+      "sha256": "a18fb916f3d7e8d1610a04a444ea43ea989c6100cbbf154ab637e58f43490729",
+      "source": "notosans/NotoSans[wdth,wght].ttf"
+    },
+    "yue": {
+      "bytes": 68232,
+      "characters": 314,
+      "family": "Noto Sans HK",
+      "file": "NotoSansHK-yue.ttf",
+      "langs": ["yue"],
+      "sha256": "1a27b9ac5bdf9a4b886811803ae9ff41db7bf2a7ee21c58dcb6748f6eb4b6c08",
+      "source": "notosanshk/NotoSansHK[wght].ttf"
+    },
+    "zh": {
+      "bytes": 61176,
+      "characters": 307,
+      "family": "Noto Sans SC",
+      "file": "NotoSansSC-zh.ttf",
+      "langs": ["zh"],
+      "sha256": "2897bc071b058e9bc5958b1734a2c875bb6e8d4945c8bc489b2aed124efce748",
+      "source": "notosanssc/NotoSansSC[wght].ttf"
+    },
+    "zh-TW": {
+      "bytes": 67528,
+      "characters": 312,
+      "family": "Noto Sans TC",
+      "file": "NotoSansTC-zh-TW.ttf",
+      "langs": ["zh-TW"],
+      "sha256": "cdff31f418ed7b40f7e5edfe93c71d58a88dd22b0803248f7c7f04c1eef69dc0",
+      "source": "notosanstc/NotoSansTC[wght].ttf"
+    }
+  },
+  "upstream": {
+    "commit": "5026800714d07231937d92eb4cceabf06e05d74e",
+    "license": "SIL Open Font License 1.1",
+    "repository": "google/fonts"
+  },
+  "weight": 400
+}

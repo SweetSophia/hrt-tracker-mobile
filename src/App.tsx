@@ -37,6 +37,7 @@ import {
     isPartialReplaceFailure,
 } from './utils/backupWarnings';
 import { useAppData } from './hooks/useAppData';
+import type { ReportEstimateSource } from './reports/types';
 import { ModelStatus } from './components/ModelStatus';
 import { useAppNavigation, tabForView, ViewKey } from './hooks/useAppNavigation';
 import { isSteppingBack } from './hooks/navHistory';
@@ -134,6 +135,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
         runForecast,
         runDemo,
         modelNowMs,
+        reportModel,
         modelSnapshot,
         calibrationFn,
         calibrationMethod,
@@ -172,6 +174,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
         prepareImportedData,
         mergeImportedData,
         buildExportPayload,
+        readOtherReportMode,
         buildCompleteBackupBundle,
         previewCompleteBackupBundle,
         applyCompleteBackupBundle,
@@ -186,6 +189,22 @@ const AppContent = ({ session }: { session: UiSession }) => {
         deleteSupply,
     } = useAppData(showDialog, { withPrediction: showPrediction });
     const nowH = currentTime.getTime() / 3600000;
+    const reportSimulation = reportModel?.simulation ?? (modelStatus === 'ready' ? simulation : null);
+    const reportCalibrationFn = reportModel?.calibration.factorFn ?? calibrationFn;
+    const reportModelNowH = (reportModel?.modelNowMs ?? modelNowMs ?? currentTime.getTime()) / 3_600_000;
+    const reportEstimate = useMemo<ReportEstimateSource | undefined>(
+        () =>
+            reportSimulation
+                ? {
+                      mode,
+                      events,
+                      simulation: reportSimulation,
+                      calibrationFn: reportCalibrationFn,
+                      nowH: reportModelNowH,
+                  }
+                : undefined,
+        [mode, events, reportSimulation, reportCalibrationFn, reportModelNowH],
+    );
     // How far ahead a supply counts as running low. A preference, so it stays on the device.
     const [supplyLeadDays, setSupplyLeadDays] = usePortablePreference('hrt-supply-lead-days', raw => Number(raw) || 14);
 
@@ -1282,6 +1301,12 @@ const AppContent = ({ session }: { session: UiSession }) => {
 
                         {currentView === 'settings-export' && (
                             <ExportSettings
+                                key={scope}
+                                readOtherMode={readOtherReportMode}
+                                reportNow={currentTime}
+                                estimate={reportEstimate}
+                                estimateStatus={modelStatus}
+                                onRetryEstimate={retryModel}
                                 events={events}
                                 labResults={labResults}
                                 weight={weight}

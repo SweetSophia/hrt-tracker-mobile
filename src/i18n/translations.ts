@@ -2,6 +2,7 @@ import { APPEARANCE_COPY } from './appearanceCopy';
 import { DE } from './de';
 import { MOBILE_CREDITS } from './mobileCredits';
 import { REGIMEN_FORMS } from './regimenForms';
+import { REPORT_COPY } from './reportCopy';
 import { RU } from './ru';
 import { UK } from './uk';
 import type { Lang } from './languages';
@@ -435,10 +436,8 @@ export const TRANSLATIONS_BASE = {
         'export.btn_json': '导出 JSON 文件',
         'export.btn_encrypted': '导出加密文件',
         'export.btn_csv': '导出 CSV 文件',
-        'export.btn_pdf': '导出 PDF 文件',
         'export.btn_copy_json': '复制 JSON',
         'export.csv_desc': '电子表格格式，可用 Excel 打开',
-        'export.pdf_desc': '格式化的 PDF 报告',
         'export.copy_desc': '将 JSON 复制到剪贴板',
         'export.copied': 'JSON 已复制',
         'export.copy_failed': '没能复制到剪贴板。',
@@ -1891,10 +1890,8 @@ export const TRANSLATIONS_BASE = {
         'export.btn_json': 'Export JSON file',
         'export.btn_encrypted': 'Export encrypted file',
         'export.btn_csv': 'Export CSV file',
-        'export.btn_pdf': 'Export PDF file',
         'export.btn_copy_json': 'Copy JSON',
         'export.csv_desc': 'Spreadsheet format, opens in Excel',
-        'export.pdf_desc': 'Formatted PDF report',
         'export.copy_desc': 'Copy JSON to clipboard',
         'export.copied': 'JSON copied',
         'export.copy_failed': "Couldn't copy to the clipboard.",
@@ -4092,10 +4089,8 @@ const ZH_TW = {
     'status.level.t_upper': '接近上限',
     'status.level.t_high': '高於參考範圍',
     'export.btn_csv': '匯出 CSV 檔案',
-    'export.btn_pdf': '匯出 PDF 檔案',
     'export.btn_copy_json': '複製 JSON',
     'export.csv_desc': '試算表格式，可用 Excel 開啟',
-    'export.pdf_desc': '格式化的 PDF 報告',
     'export.copy_desc': '將 JSON 複製到剪貼簿',
     'export.copied': 'JSON 已複製',
     'export.copy_failed': '無法複製到剪貼簿。',
@@ -4319,6 +4314,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.zh,
         ...APPEARANCE_COPY.zh,
         ...REGIMEN_FORMS.zh,
+        ...REPORT_COPY.zh,
     },
 
     'zh-TW': {
@@ -4326,6 +4322,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS['zh-TW'],
         ...APPEARANCE_COPY['zh-TW'],
         ...REGIMEN_FORMS['zh-TW'],
+        ...REPORT_COPY['zh-TW'],
     },
 
     yue: {
@@ -4333,6 +4330,14 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.yue,
         ...APPEARANCE_COPY.yue,
         ...REGIMEN_FORMS.yue,
+        ...REPORT_COPY.yue,
+        'export.pdf.title': 'HRT 記錄報告',
+        'export.pdf.generated_on': '報告日期：',
+        'export.pdf.history': '用藥記錄',
+        'export.pdf.labs': '驗血記錄',
+        'export.col.date': '日期',
+        'export.col.item': '項目',
+        'export.col.unit': '單位',
         'storage.startup_title': '開唔到本機記錄',
         'storage.startup_retry': '重新載入',
         'storage.startup_detail':
@@ -5177,6 +5182,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.en,
         ...APPEARANCE_COPY.en,
         ...REGIMEN_FORMS.en,
+        ...REPORT_COPY.en,
         'app.title': 'HRT Tracker',
     },
     de: {
@@ -5184,11 +5190,13 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.de,
         ...APPEARANCE_COPY.de,
         ...REGIMEN_FORMS.de,
+        ...REPORT_COPY.de,
     },
     ja: {
         ...MOBILE_CREDITS.ja,
         ...APPEARANCE_COPY.ja,
         ...REGIMEN_FORMS.ja,
+        ...REPORT_COPY.ja,
         'storage.startup_title': '端末内の記録を開けませんでした',
         'storage.startup_retry': '再読み込み',
         'storage.startup_detail':
@@ -6364,10 +6372,8 @@ export const TRANSLATIONS = {
         'supplies.days': '{n}日',
         'settings.show_intro': 'はじめの案内をもう一度見る',
         'export.btn_csv': 'CSV ファイルをエクスポート',
-        'export.btn_pdf': 'PDF ファイルをエクスポート',
         'export.btn_copy_json': 'JSON をコピー',
         'export.csv_desc': '表計算形式で、Excel で開けます',
-        'export.pdf_desc': '整形済みの PDF レポート',
         'export.copy_desc': 'JSON をクリップボードにコピーします',
         'export.copied': 'JSON をコピーしました',
         'export.copy_failed': 'クリップボードにコピーできませんでした。',
@@ -6433,6 +6439,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.ko,
         ...APPEARANCE_COPY.ko,
         ...REGIMEN_FORMS.ko,
+        ...REPORT_COPY.ko,
         'storage.startup_title': '기기에 저장된 기록을 열 수 없습니다',
         'storage.startup_retry': '새로고침',
         'storage.startup_detail':
@@ -7565,10 +7572,8 @@ export const TRANSLATIONS = {
         'status.level.t_upper': '기준 범위 상단',
         'status.level.t_high': '기준 범위 초과',
         'export.btn_csv': 'CSV 파일 내보내기',
-        'export.btn_pdf': 'PDF 파일 내보내기',
         'export.btn_copy_json': 'JSON 복사',
         'export.csv_desc': 'Excel에서 열 수 있는 스프레드시트 형식입니다',
-        'export.pdf_desc': '서식이 적용된 PDF 보고서입니다',
         'export.copy_desc': 'JSON을 클립보드에 복사합니다',
         'export.copied': 'JSON이 복사되었습니다',
         'export.copy_failed': '클립보드에 복사하지 못했습니다.',
@@ -7661,6 +7666,7 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.tr,
         ...APPEARANCE_COPY.tr,
         ...REGIMEN_FORMS.tr,
+        ...REPORT_COPY.tr,
         'storage.startup_title': 'Yerel kayıtlar açılamadı',
         'storage.startup_retry': 'Yeniden yükle',
         'storage.startup_detail':
@@ -8854,10 +8860,8 @@ export const TRANSLATIONS = {
         'sync.last_synced': 'Son eşitleme {time}',
         'btn.delete': 'Sil',
         'export.btn_csv': 'CSV dosyasını dışa aktar',
-        'export.btn_pdf': 'PDF dosyasını dışa aktar',
         'export.btn_copy_json': 'JSON Kopyala',
         'export.csv_desc': "Elektronik tablo biçimi, Excel'de açılır",
-        'export.pdf_desc': 'Biçimlendirilmiş PDF raporu',
         'export.copy_desc': "JSON'u panoya kopyalar",
         'export.copied': 'JSON kopyalandı',
         'export.copy_failed': 'Panoya kopyalanamadı.',
@@ -8911,11 +8915,13 @@ export const TRANSLATIONS = {
         ...MOBILE_CREDITS.ru,
         ...APPEARANCE_COPY.ru,
         ...REGIMEN_FORMS.ru,
+        ...REPORT_COPY.ru,
     },
     uk: {
         ...UK,
         ...MOBILE_CREDITS.uk,
         ...APPEARANCE_COPY.uk,
         ...REGIMEN_FORMS.uk,
+        ...REPORT_COPY.uk,
     },
 } as const satisfies Record<Lang, Record<string, string>>;

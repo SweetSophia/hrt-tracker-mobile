@@ -1,8 +1,10 @@
-import { inflateSync } from 'node:zlib';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Ester, Route, type DoseEvent, type LabResult } from '../../logic';
 import type { FileSavePort, FileSaveRequest, FileSaveResult } from '../../src/platform/contracts/files';
-import { exportToPDF } from '../../src/services/export';
+import { saveReport } from '../../src/reports/pdf';
+import { defaultReportSelection, prepareReport } from '../../src/reports/prepareReport';
+import { TRANSLATIONS } from '../../src/i18n/translations';
+import { reportText } from '../helpers/reportText';
 
 const GENERATED_AT = new Date('2026-01-02T12:00:00.000Z');
 
@@ -26,13 +28,9 @@ const labResults: LabResult[] = [
     },
 ];
 
-const data = {
-    events,
-    labResults,
-    weight: 72,
-    lang: 'en' as const,
-    t: (key: string) => key,
-};
+const report = prepareReport({ events, labResults }, defaultReportSelection(), GENERATED_AT);
+const t = (key: string) => (TRANSLATIONS.en as Record<string, string>)[key] ?? key;
+const exportPDF = (files: FileSavePort) => saveReport(report, 'en', t, files, GENERATED_AT);
 
 function deferred<T>() {
     let resolve: (value: T) => void = () => undefined;
@@ -42,28 +40,6 @@ function deferred<T>() {
         reject = rej;
     });
     return { promise, resolve, reject };
-}
-
-/** Readable PDF text, including Flate streams. Ignores document IDs and timestamps. */
-function pdfText(bytes: Uint8Array): string {
-    const raw = Buffer.from(bytes);
-    const latin1 = raw.toString('latin1');
-    const parts = [latin1];
-    const marker = /stream\r?\n/g;
-    for (let match = marker.exec(latin1); match; match = marker.exec(latin1)) {
-        const start = match.index + match[0].length;
-        const end = latin1.indexOf('endstream', start);
-        if (end < 0) break;
-        let body = raw.subarray(start, end);
-        if (body[body.length - 1] === 0x0a) body = body.subarray(0, -1);
-        if (body[body.length - 1] === 0x0d) body = body.subarray(0, -1);
-        try {
-            parts.push(inflateSync(body).toString('latin1'));
-        } catch {
-            // Not a Flate stream.
-        }
-    }
-    return parts.join('\n');
 }
 
 function portControlled(result: Promise<FileSaveResult>) {
@@ -80,18 +56,12 @@ function portControlled(result: Promise<FileSaveResult>) {
     };
 }
 
-afterEach(() => {
-    vi.useRealTimers();
-});
-
-describe('exportToPDF save port', () => {
+describe('PDF report save port', () => {
     it('writes real PDF bytes and stays pending until the port settles', async () => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-        vi.setSystemTime(GENERATED_AT);
         const gate = deferred<FileSaveResult>();
         const delivered = portControlled(gate.promise);
         let settled = false;
-        const pending = exportToPDF(data, delivered.files);
+        const pending = exportPDF(delivered.files);
         void pending.then(
             () => {
                 settled = true;
@@ -100,7 +70,7 @@ describe('exportToPDF save port', () => {
                 settled = true;
             },
         );
-        await Promise.resolve();
+        await vi.waitFor(() => expect(delivered.request()).toBeDefined());
         expect(settled).toBe(false);
 
         const request = delivered.request();
@@ -108,11 +78,12 @@ describe('exportToPDF save port', () => {
         expect(request?.name).toBe('hrt-report-2026-01-02.pdf');
         expect(request?.mimeType).toBe('application/pdf');
         expect(Buffer.from(request!.bytes.subarray(0, 5)).toString('latin1')).toBe('%PDF-');
-        const text = pdfText(request!.bytes);
+        const text = reportText(request!.bytes);
         expect(text).toContain('Dose history');
         expect(text).toContain('1.25 mg');
         expect(text).toContain('Lab results');
-        expect(text).toContain('95 pg/ml');
+        expect(text).toContain('95');
+        expect(text).toMatch(/pg\/ml/i);
         expect(text).not.toContain('synthetic-dose');
 
         gate.resolve('saved');
@@ -122,13 +93,29 @@ describe('exportToPDF save port', () => {
 
     it('returns cancellation from the save port', async () => {
         const delivered = portControlled(Promise.resolve('cancelled'));
-        await expect(exportToPDF(data, delivered.files)).resolves.toBe('cancelled');
+        await expect(exportPDF(delivered.files)).resolves.toBe('cancelled');
         expect(delivered.request()?.mimeType).toBe('application/pdf');
+    });
+
+    it('uses the current local date in the PDF and its filename after a timezone change', async () => {
+        vi.stubEnv('TZ', 'UTC');
+        try {
+            const when = new Date('2026-01-02T23:30:00Z');
+            const delivered = portControlled(Promise.resolve('saved'));
+            const save = () => saveReport(report, 'en', key => TRANSLATIONS.en[key] ?? key, delivered.files, when);
+            await save();
+            expect(delivered.request()?.name).toBe('hrt-report-2026-01-02.pdf');
+            vi.stubEnv('TZ', 'Europe/Berlin');
+            await save();
+            expect(delivered.request()?.name).toBe('hrt-report-2026-01-03.pdf');
+            expect(reportText(delivered.request()!.bytes)).toContain('Generated on: Jan 3, 2026');
+        } finally {
+            vi.unstubAllEnvs();
+        }
     });
 
     it('propagates save rejection', async () => {
         const failure = new Error('synthetic-save-failure');
-        const delivered = portControlled(Promise.reject(failure));
-        await expect(exportToPDF(data, delivered.files)).rejects.toBe(failure);
+        await expect(exportPDF({ save: vi.fn().mockRejectedValue(failure) })).rejects.toBe(failure);
     });
 });

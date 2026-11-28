@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import React, { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useDialog } from '../contexts/DialogContext';
 import { useApplicationRuntime } from '../contexts/RecordsContext';
 import { DoseEvent, LabResult } from '../../logic';
 import { Lock } from './icons';
 import { CopyTick } from './Tick';
-import { exportToCSV, exportToPDF } from '../services/export';
+import { exportToCSV } from '../services/export';
+import ReportOptions, { type ReportOptionsProps } from './ReportOptions';
+import { defaultReportSelection } from '../reports/prepareReport';
 import { settingsSection, rowBleed } from './SettingsListItem';
 import { copyText } from '../utils/clipboard';
 import { MIN_PASSWORD_LENGTH, newPasswordLevel } from '../../passwordStrength';
@@ -15,7 +17,10 @@ import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
 
 import { EncryptedExportSession } from '../hooks/uiSession';
 
-export interface ExportSectionProps {
+export interface ExportSectionProps extends Pick<
+    ReportOptionsProps,
+    'reportNow' | 'readOtherMode' | 'estimate' | 'estimateStatus' | 'onRetryEstimate'
+> {
     events: DoseEvent[];
     labResults: LabResult[];
     weight: number;
@@ -32,10 +37,11 @@ export interface ExportSectionProps {
 // Each row is one button, so the whole row takes the tap, not only the
 // 22px-tall accent words on the right, which stay as the row's label for
 // what it does. Rows are divided the way Settings rows are.
-const rowBase = 'w-full flex items-start justify-between py-[18px] text-start';
+const rowBase =
+    'w-full flex items-start justify-between gap-3 py-[18px] text-start [overflow-wrap:anywhere] [&>span]:min-w-0';
 const rowLabel = 'block text-sm text-[var(--text)]';
 const rowDesc = 'block text-xs text-[var(--text-muted)] mt-0.5';
-const action = 'text-sm font-medium text-[var(--accent-ink)] shrink-0 ml-6 mt-0.5';
+const action = 'max-w-[50%] shrink-0 text-end text-sm font-medium text-[var(--accent-ink)] mt-0.5';
 
 const ExportSection: React.FC<ExportSectionProps> = ({
     events,
@@ -45,6 +51,11 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     exportSession,
     onQuickExport,
     onExportCompleteBackup,
+    reportNow,
+    readOtherMode,
+    estimate,
+    estimateStatus,
+    onRetryEstimate,
 }) => {
     const { t, lang } = useTranslation();
     const { showDialog } = useDialog();
@@ -57,6 +68,10 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     const passwordReady = generatedPassword !== null;
     const [showEncrypted, setShowEncrypted] = useState(saving);
     const [password, setPassword] = useState('');
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportSelection, setReportSelection] = useState(defaultReportSelection);
+    const reportId = useId();
+    const [reportSaving, setReportSaving] = useState(false);
     const hasData = events.length > 0 || labResults.length > 0;
     const showEncryptedRow = hasData || encryptedExport !== undefined;
     const encryptedPanelOpen = showEncrypted || encryptedExport !== undefined;
@@ -159,10 +174,6 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                 showDialog('alert', t('export.file_failed'));
             });
     };
-
-    if (!hasData && !onExportCompleteBackup && !encryptedExport) {
-        return <p className="py-8 text-sm text-center text-[var(--text-muted)]">{t('drawer.empty_export')}</p>;
-    }
 
     return (
         <>
@@ -339,24 +350,42 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                             </span>
                             <span className={action}>{t('export.btn_csv')}</span>
                         </button>
-
-                        {/* PDF */}
-                        <button
-                            onClick={() => {
-                                void exportToPDF({ events, labResults, weight, lang, t }, runtime.files).catch(() => {
-                                    showDialog('alert', t('export.file_failed'));
-                                });
-                            }}
-                            className={`${rowBase} ${rowBleed}`}
-                        >
-                            <span>
-                                <span className={rowLabel}>PDF</span>
-                                <span className={rowDesc}>{t('export.pdf_desc')}</span>
-                            </span>
-                            <span className={action}>{t('export.btn_pdf')}</span>
-                        </button>
                     </>
                 )}
+                <button
+                    type="button"
+                    className={`${rowBase} ${rowBleed}`}
+                    disabled={reportSaving}
+                    aria-expanded={reportOpen}
+                    aria-controls={reportId}
+                    onClick={() => setReportOpen(open => !open)}
+                >
+                    <span className={rowLabel}>PDF</span>
+                    <span className={action}>{t('report.configure')}</span>
+                </button>
+                {/* The report panel. The wrapper stays in the page so the row's
+                    aria-controls always names an element, and the panel inside
+                    it is unmounted when the row is folded: an open date list
+                    and a last notice should not wait behind a closed panel.
+                    The choices themselves are kept, because they live here,
+                    in the row's parent, and not in the panel. */}
+                <div id={reportId} hidden={!reportOpen}>
+                    {reportOpen && (
+                        <ReportOptions
+                            saving={reportSaving}
+                            onSavingChange={setReportSaving}
+                            events={events}
+                            labResults={labResults}
+                            reportNow={reportNow}
+                            estimate={estimate}
+                            estimateStatus={estimateStatus}
+                            onRetryEstimate={onRetryEstimate}
+                            readOtherMode={readOtherMode}
+                            selection={reportSelection}
+                            onSelectionChange={fields => setReportSelection(previous => ({ ...previous, ...fields }))}
+                        />
+                    )}
+                </div>
             </div>
 
             {/* Where a copy's result is announced, failed or done. It stays

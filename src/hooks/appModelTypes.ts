@@ -21,6 +21,8 @@ export interface AppModelInput {
 }
 export interface AppModelState extends AppModelView {
     modelStatus: AppModelStatus;
+    /** Recent worker view for the same recorded inputs, even during a screen refresh or failure. */
+    reportModel?: AppModelView;
     retryModel(): void;
     runForecast?: ForecastCompute;
     runDemo?: DemoCompute;

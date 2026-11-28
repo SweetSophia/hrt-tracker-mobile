@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { saveQualificationPdf } from '../../mobile/storageQualification/documentUi';
+import { reportText } from '../helpers/reportText';
 import type { FileSaveResult } from '../../src/platform/contracts/files';
 
 describe('system document UI qualification PDF', () => {
@@ -10,10 +11,18 @@ describe('system document UI qualification PDF', () => {
                 calls++;
                 expect(file.name).toMatch(/^hrt-report-\d{4}-\d{2}-\d{2}\.pdf$/);
                 expect(file.mimeType).toBe('application/pdf');
-                const pdf = new TextDecoder().decode(file.bytes);
-                expect(pdf.startsWith('%PDF-')).toBe(true);
-                for (const text of ['12.5 mg', 'injection', 'EV', '95 pg/ml', '425 ng/dl', '(E2)', '(T)'])
-                    expect(pdf).toContain(text);
+                expect(new TextDecoder().decode(file.bytes.subarray(0, 5))).toBe('%PDF-');
+                const text = reportText(file.bytes).replace(/\s+/g, ' ');
+                for (const value of [
+                    '12.5 mg',
+                    'valerate',
+                    'injection',
+                    'Estradiol',
+                    'Testosterone',
+                    '95 pg/mL',
+                    '425 ng/dL',
+                ])
+                    expect(text).toContain(value);
                 return 'saved';
             },
         });
@@ -30,7 +39,7 @@ describe('system document UI qualification PDF', () => {
             settled = true;
             return value;
         });
-        await Promise.resolve();
+        await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
         expect(settled).toBe(false);
         finish('cancelled');
         expect(await pending).toBe('cancelled');
