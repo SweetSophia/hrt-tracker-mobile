@@ -123,72 +123,55 @@ function firstIndexAtOrAfter(sorted: readonly number[], value: number): number {
     return low;
 }
 
-function interpolateSeries(times: readonly number[], values: readonly number[], at: number): number {
-    const last = times.length - 1;
-    if (at <= times[0]) return values[0];
-    if (at >= times[last]) return values[last];
-    const high = firstIndexAtOrAfter(times, at);
-    if (times[high] === at) return values[high];
-    const low = high - 1;
-    const span = times[high] - times[low];
-    if (span <= 0) return values[low];
-    const ratio = (at - times[low]) / span;
-    return values[low] + (values[high] - values[low]) * ratio;
+/** The worker supplies factors at model samples. Interpolate after calibration. */
+function levelAtBoundary(
+    times: readonly number[],
+    level: (index: number) => number,
+    hour: number,
+    right: number,
+): number {
+    const rightLevel = level(right);
+    if (hour === times[right]) return rightLevel;
+    const left = right - 1;
+    const leftLevel = level(left);
+    const fraction = (hour - times[left]) / (times[right] - times[left]);
+    return leftLevel + (rightLevel - leftLevel) * fraction;
 }
 
-/** The mobile worker supplies calibration factors at model samples. Interpolate between calibrated values for custom boundaries. */
-function calibratedSeries(
-    estimate: ReportEstimateSource,
-    hormone: ReportHormone,
-    first: number,
-    last: number,
-): { times: number[]; values: number[] } | null {
-    const sim = estimate.simulation;
-    const raw = hormone === 'E2' ? sim.concPGmL_E2 : sim.concNGdL_T;
-    if (!raw || raw.length < sim.timeH.length) return null;
-    const times: number[] = [];
-    const values: number[] = [];
-    for (let i = first; i <= last; i++) {
-        const time = sim.timeH[i];
-        let factor = 1;
-        if (hormone === 'E2') {
-            try {
-                factor = estimate.calibrationFn(time);
-            } catch {
-                return null;
+/** Read calibrated values in order and retain only each bucket's extremes. */
+function interiorPoints(
+    times: readonly number[],
+    level: (index: number) => number,
+    from: number,
+    to: number,
+): ReportChart['points'] {
+    const count = to - from;
+    const capacity = MAX_CHART_POINTS - 2;
+    const buckets = count <= capacity ? count : Math.floor(capacity / 2);
+    const kept: ReportChart['points'] = [];
+    for (let bucket = 0; bucket < buckets; bucket++) {
+        const start = from + Math.floor((bucket * count) / buckets);
+        const end = from + Math.floor(((bucket + 1) * count) / buckets);
+        let lowIndex = start;
+        let highIndex = start;
+        let low = level(start);
+        let high = low;
+        for (let i = start + 1; i < end; i++) {
+            const value = level(i);
+            if (value < low) {
+                low = value;
+                lowIndex = i;
+            }
+            if (value > high) {
+                high = value;
+                highIndex = i;
             }
         }
-        const level = raw[i] * factor;
-        if (!Number.isFinite(level)) return null;
-        times.push(time);
-        values.push(level);
+        kept.push({ timeH: times[lowIndex], value: low });
+        if (highIndex !== lowIndex) kept.push({ timeH: times[highIndex], value: high });
     }
-    return { times, values };
-}
-
-/** Preserve endpoints and each bucket’s extremes when reducing the number of plotted samples. */
-function boundPoints(points: ReportChart['points'], max: number): ReportChart['points'] {
-    if (points.length <= max) return points;
-    const buckets = Math.max(1, Math.floor((max - 2) / 2));
-    const kept: ReportChart['points'] = [];
-    const size = points.length / buckets;
-    for (let bucket = 0; bucket < buckets; bucket++) {
-        const start = Math.floor(bucket * size);
-        const end = Math.min(points.length, Math.floor((bucket + 1) * size));
-        if (end <= start) continue;
-        let highest = start;
-        let lowest = start;
-        for (let i = start; i < end; i++) {
-            if (points[i].value > points[highest].value) highest = i;
-            if (points[i].value < points[lowest].value) lowest = i;
-        }
-        kept.push(points[highest]);
-        if (lowest !== highest) kept.push(points[lowest]);
-    }
-    kept.push(points[0]);
-    kept.push(points[points.length - 1]);
     kept.sort((a, b) => a.timeH - b.timeH);
-    return kept.filter((point, i) => i === 0 || point.timeH !== kept[i - 1].timeH);
+    return kept;
 }
 
 function measuredPoints(labs: readonly LabResult[], hormone: ReportHormone): ReportChart['points'] {
@@ -211,33 +194,37 @@ function estimatedPoints(
     nowH: number,
 ): ReportChart['points'] {
     if (!modelCovers(estimate, hormone)) return [];
-    const times = estimate.simulation.timeH;
-    if (!times.length) return [];
+    const { simulation } = estimate;
+    const times = simulation.timeH;
+    const raw = hormone === 'E2' ? simulation.concPGmL_E2 : simulation.concNGdL_T;
+    if (!times.length || !raw || raw.length < times.length) return [];
     // endH is the following midnight. A plotted endpoint belongs to the selected day.
     const lastIncludedH = (range.endH * HOUR_MS - 1) / HOUR_MS;
     const endH = Math.min(lastIncludedH, estimate.nowH, nowH);
     if (endH <= range.startH) return [];
-    // The samples the curve needs: those inside the window, plus the ones on
-    // either side of it, so a clipped edge can be interpolated.
-    const first = Math.max(0, firstIndexAtOrAfter(times, range.startH) - 1);
-    const last = Math.min(times.length - 1, firstIndexAtOrAfter(times, endH));
-    const series = calibratedSeries(estimate, hormone, first, last);
-    if (!series) return [];
-    const points: ReportChart['points'] = [];
-    const startH = range.startH;
-    const seriesStart = series.times[0];
-    const seriesEnd = series.times[series.times.length - 1];
-    if (Number.isFinite(startH) && startH >= seriesStart && startH <= seriesEnd) {
-        points.push({ timeH: startH, value: interpolateSeries(series.times, series.values, startH) });
+    const start = Math.max(range.startH, times[0]);
+    const end = Math.min(endH, times[times.length - 1]);
+    if (end < start) return [];
+
+    const first = firstIndexAtOrAfter(times, start);
+    const last = firstIndexAtOrAfter(times, end);
+    const level = (index: number) => {
+        const value = raw[index] * (hormone === 'E2' ? estimate.calibrationFn(times[index]) : 1);
+        if (!Number.isFinite(value)) throw new RangeError('Invalid report estimate.');
+        return value;
+    };
+    try {
+        const firstPoint = { timeH: start, value: levelAtBoundary(times, level, start, first) };
+        if (start === end) return [firstPoint];
+        const interiorStart = times[first] === start ? first + 1 : first;
+        return [
+            firstPoint,
+            ...interiorPoints(times, level, interiorStart, last),
+            { timeH: end, value: levelAtBoundary(times, level, end, last) },
+        ];
+    } catch {
+        return [];
     }
-    for (let i = 0; i < series.times.length; i++) {
-        const time = series.times[i];
-        if (time > startH && time < endH) points.push({ timeH: time, value: series.values[i] });
-    }
-    if (endH >= seriesStart && endH <= seriesEnd) {
-        points.push({ timeH: endH, value: interpolateSeries(series.times, series.values, endH) });
-    }
-    return boundPoints(points, MAX_CHART_POINTS);
 }
 
 /** Records are already scoped to the requested owner and modes. Preview and PDF consume the same filtered result. */

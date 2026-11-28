@@ -7,6 +7,7 @@ import { Lock } from './icons';
 import { CopyTick } from './Tick';
 import { exportToCSV } from '../services/export';
 import ReportOptions, { type ReportOptionsProps } from './ReportOptions';
+import { defaultReportSelection } from '../reports/prepareReport';
 import { settingsSection, rowBleed } from './SettingsListItem';
 import { copyText } from '../utils/clipboard';
 import { MIN_PASSWORD_LENGTH, newPasswordLevel } from '../../passwordStrength';
@@ -63,6 +64,7 @@ const ExportSection: React.FC<ExportSectionProps> = ({
     const [showEncrypted, setShowEncrypted] = useState(saving);
     const [password, setPassword] = useState('');
     const [reportOpen, setReportOpen] = useState(false);
+    const [reportSelection, setReportSelection] = useState(defaultReportSelection);
     const reportId = useId();
     const [reportSaving, setReportSaving] = useState(false);
     const hasData = events.length > 0 || labResults.length > 0;
@@ -353,11 +355,8 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                     aria-controls={reportId}
                     onClick={() => setReportOpen(open => !open)}
                 >
-                    <span>
-                        <span className={rowLabel}>PDF</span>
-                        <span className={rowDesc}>{t('report.configure')}</span>
-                    </span>
-                    <span className={action}>{t('export.btn_pdf')}</span>
+                    <span className={rowLabel}>PDF</span>
+                    <span className={action}>{t('report.configure')}</span>
                 </button>
                 <div id={reportId} hidden={!reportOpen}>
                     {reportOpen && (
@@ -369,6 +368,8 @@ const ExportSection: React.FC<ExportSectionProps> = ({
                             reportNow={reportNow}
                             estimate={estimate}
                             readOtherMode={readOtherMode}
+                            selection={reportSelection}
+                            onSelectionChange={fields => setReportSelection(previous => ({ ...previous, ...fields }))}
                         />
                     )}
                 </div>

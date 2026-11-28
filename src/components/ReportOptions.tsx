@@ -4,7 +4,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useDialog } from '../contexts/DialogContext';
 import { useApplicationRuntime } from '../contexts/RecordsContext';
 import { useLauncherShortcutBlocker } from '../hooks/useLauncherShortcut';
-import { defaultReportSelection, prepareReport, reportMedicationKey } from '../reports/prepareReport';
+import { prepareReport, reportMedicationKey } from '../reports/prepareReport';
 import type { ReportEstimateSource, ReportHormone, ReportRecords, ReportSelection } from '../reports/types';
 import { createDayLabelFormatter, LOCALE_MAP } from '../utils/helpers';
 import { fill } from '../utils/regimenText';
@@ -14,6 +14,8 @@ export interface ReportOptionsProps extends ReportRecords {
     readOtherMode: () => ReportRecords;
     reportNow: Date;
     estimate?: ReportEstimateSource;
+    selection: ReportSelection;
+    onSelectionChange: (fields: Partial<ReportSelection>) => void;
 }
 
 const hormones: readonly ReportHormone[] = ['E2', 'T'];
@@ -55,17 +57,19 @@ export default function ReportOptions({
     readOtherMode,
     reportNow,
     estimate,
+    selection,
+    onSelectionChange,
     saving,
     onSavingChange,
 }: ReportOptionsProps & { saving: boolean; onSavingChange: (value: boolean) => void }) {
     const { t, lang } = useTranslation();
     const { showDialog } = useDialog();
     const { files } = useApplicationRuntime();
-    const [selection, setSelection] = useState(defaultReportSelection);
     const [saveNotice, setSaveNotice] = useState('');
     const savingRef = useRef(false);
     const mounted = useRef(false);
     const hintId = useId();
+    const scopeHintId = useId();
     const customSelection =
         selection.range !== '90' ||
         selection.bothModes ||
@@ -81,38 +85,43 @@ export default function ReportOptions({
         };
     }, []);
 
-    const records = useMemo((): ReportRecords | null => {
-        if (!selection.bothModes) return { events, labResults };
+    const { records, otherModeUnavailable } = useMemo(() => {
+        const active = { events, labResults };
+        if (!selection.bothModes) return { records: active, otherModeUnavailable: false };
         try {
             const other = readOtherMode();
-            return { events: [...events, ...other.events], labResults: [...labResults, ...other.labResults] };
+            return {
+                records: { events: [...events, ...other.events], labResults: [...labResults, ...other.labResults] },
+                otherModeUnavailable: false,
+            };
         } catch {
-            return null;
+            return { records: active, otherModeUnavailable: true };
         }
     }, [events, labResults, selection.bothModes, readOtherMode]);
 
     const medications = useMemo(() => {
         const items = new Map<string, string>();
-        for (const event of records?.events ?? []) {
+        for (const event of records.events) {
             const key = reportMedicationKey(event);
             if (!items.has(key)) items.set(key, medicationLabel(event, t));
         }
         return [...items].sort((a, b) => a[1].localeCompare(b[1], LOCALE_MAP[lang]));
     }, [records, lang, t]);
+    const selectedEstimate = selection.estimatedGraph ? estimate : undefined;
     const report = useMemo(
-        () => records && prepareReport(records, selection, reportNow, estimate),
-        [records, selection, reportNow, estimate],
+        () => prepareReport(records, selection, reportNow, selectedEstimate),
+        [records, selection, reportNow, selectedEstimate],
     );
     const included = selection.medications;
     const checkedMeds = medications.filter(([key]) => included === null || included.includes(key));
     const allMeds = included === null || (medications.length > 0 && checkedMeds.length === medications.length);
-    const missingMeasured = selection.measuredGraph && !report?.charts.some(chart => chart.kind === 'measured');
-    const missingEstimate = selection.estimatedGraph && !report?.charts.some(chart => chart.kind === 'estimated');
-    const hasContent = !!report && !!(report.events.length || report.labResults.length || report.charts.length);
-    const canSave = hasContent && !report?.invalidRange && !missingMeasured && !missingEstimate;
+    const missingMeasured = selection.measuredGraph && !report.charts.some(chart => chart.kind === 'measured');
+    const missingEstimate = selection.estimatedGraph && !report.charts.some(chart => chart.kind === 'estimated');
+    const hasContent = !!(report.events.length || report.labResults.length || report.charts.length);
+    const canSave = hasContent && !report.invalidRange && !otherModeUnavailable && !missingMeasured && !missingEstimate;
 
     function change(fields: Partial<ReportSelection>) {
-        setSelection(previous => ({ ...previous, ...fields }));
+        onSelectionChange(fields);
         setSaveNotice('');
     }
     function toggleMedication(key: string) {
@@ -121,7 +130,7 @@ export default function ReportOptions({
         change({ medications: selected.size === medications.length ? null : [...selected] });
     }
     async function save() {
-        if (!report || !canSave || savingRef.current) return;
+        if (!canSave || savingRef.current) return;
         savingRef.current = true;
         onSavingChange(true);
         setSaveNotice('');
@@ -142,19 +151,20 @@ export default function ReportOptions({
         }
     }
 
-    const dateLabel = createDayLabelFormatter(lang);
-    const rangeLabel =
-        report?.from && report.to && !report.invalidRange
-            ? [report.from, report.to].map(d => dateLabel(new Date(d + 'T12:00:00'))).join(' – ')
-            : t(rangeKeys[selection.range]);
-    const list = new Intl.ListFormat(LOCALE_MAP[lang]);
-    const shownMeds = new Set(report?.events.map(reportMedicationKey));
-    const shownHormones = new Set(report?.labResults.map(labHormone));
-    const graphNames =
-        report?.charts.map(
-            chart =>
-                `${t(chart.kind === 'measured' ? 'report.measured' : 'report.estimated')} (${hormoneLabel(chart.hormone, t)})`,
-        ) ?? [];
+    const { from, to, invalidRange } = report;
+    const dates = useMemo(() => {
+        if (!from || !to || invalidRange) return null;
+        const dateLabel = createDayLabelFormatter(lang);
+        return [from, to].map(day => dateLabel(new Date(day + 'T12:00:00'))).join(' – ');
+    }, [from, to, invalidRange, lang]);
+    const rangeLabel = dates ?? t(rangeKeys[selection.range]);
+    const list = useMemo(() => new Intl.ListFormat(LOCALE_MAP[lang]), [lang]);
+    const shownMeds = new Set(report.events.map(reportMedicationKey));
+    const shownHormones = new Set(report.labResults.map(labHormone));
+    const graphNames = report.charts.map(
+        chart =>
+            `${t(chart.kind === 'measured' ? 'report.measured' : 'report.estimated')} (${hormoneLabel(chart.hormone, t)})`,
+    );
 
     return (
         <fieldset disabled={saving} className="min-w-0 space-y-5 py-4">
@@ -182,8 +192,14 @@ export default function ReportOptions({
             <Choice
                 label={t('report.both_modes')}
                 checked={selection.bothModes}
+                describedBy={otherModeUnavailable ? scopeHintId : undefined}
                 onChange={() => change({ bothModes: !selection.bothModes })}
             />
+            {otherModeUnavailable && (
+                <p id={scopeHintId} role="alert" className="field-hint">
+                    {t('report.other_mode_unavailable')}
+                </p>
+            )}
             <fieldset>
                 <legend className="field-label">{t('report.hormones')}</legend>
                 {hormones.map(hormone => (
@@ -239,7 +255,7 @@ export default function ReportOptions({
             </fieldset>
             <section className="space-y-2 border-t border-[var(--border)] pt-4" aria-live="polite">
                 <h2 className="font-medium">{t('report.preview')}</h2>
-                {report && !report.invalidRange && (
+                {!invalidRange && (
                     <>
                         <p className="text-sm">{rangeLabel}</p>
                         <p className="text-sm">
@@ -262,9 +278,7 @@ export default function ReportOptions({
                         </p>
                     </>
                 )}
-                {!report ? (
-                    <p>{t('storage.open_failed')}</p>
-                ) : report.invalidRange ? (
+                {invalidRange ? (
                     <p>{t('report.invalid_range')}</p>
                 ) : (
                     <>

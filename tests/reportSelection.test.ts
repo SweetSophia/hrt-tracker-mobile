@@ -254,6 +254,27 @@ describe('the local day is the local day, whatever the clocks did', () => {
         );
         expect(report.events.map(e => e.id)).toEqual(['end-of-day', 'start-of-day']);
     });
+
+    it.each([
+        ['America/Santiago', '2026-09-06', '2026-09-06T04:00:00Z'],
+        ['Asia/Beirut', '2026-03-29', '2026-03-28T22:00:00Z'],
+        ['America/Havana', '2026-03-08', '2026-03-08T05:00:00Z'],
+    ])('includes the first instant of a date with no midnight in %s', (timezone, day, firstInstant) => {
+        process.env.TZ = timezone;
+        const start = Date.parse(firstInstant);
+        expect(new Date(start).getHours()).toBe(1);
+        const events = [
+            dose('previous-day', Route.oral, Ester.E2, 2, (start - 1) / HOUR),
+            dose('start-of-day', Route.oral, Ester.E2, 2, start / HOUR),
+            dose('inside-first-hour', Route.oral, Ester.E2, 2, (start + HOUR / 2) / HOUR),
+        ];
+        const report = prepareReport(
+            { events, labResults: [] },
+            selection({ range: 'custom', from: day, to: day }),
+            NOW,
+        );
+        expect(report.events.map(e => e.id)).toEqual(['inside-first-hour', 'start-of-day']);
+    });
 });
 
 describe('the table holds what was asked for', () => {
@@ -393,6 +414,30 @@ describe('the estimated graph', () => {
         expect(points[points.length - 1].timeH).toBe((end - 1) / HOUR);
     });
 
+    it('does not request calibration before the exact first sample of the selected date', () => {
+        const startH = new Date(2026, 10, 2).getTime() / HOUR;
+        const { estimate } = estimateSource({
+            calibrationFn: h => {
+                if (h < startH) throw new Error('Model sample unavailable.');
+                return 1;
+            },
+            nowH: startH + 3,
+        });
+        estimate.simulation.timeH = [startH - 1, startH, startH + 1, startH + 2, startH + 3, startH + 4];
+        const report = prepareReport(
+            { events: [], labResults: [] },
+            selection({ range: 'custom', from: '2026-11-02', to: '2026-11-02', estimatedGraph: true }),
+            NOW,
+            estimate,
+        );
+        expect(report.charts[0]?.points).toEqual([
+            { timeH: startH, value: 2 },
+            { timeH: startH + 1, value: 3 },
+            { timeH: startH + 2, value: 4 },
+            { timeH: startH + 3, value: 5 },
+        ]);
+    });
+
     it('omits an estimate when a calibrated level is not finite', () => {
         const { estimate } = estimateSource({ calibrationFn: () => Number.MAX_VALUE });
         const report = prepareReport(
@@ -416,12 +461,12 @@ describe('the estimated graph', () => {
         expect(chart?.points[chart?.points.length - 1].timeH).toBe(200);
     });
 
-    it('bounds a long curve without losing its peak', () => {
+    it('bounds a long curve without losing a peak introduced by calibration', () => {
         const times = Array.from({ length: 2000 }, (_, i) => 100 + i);
         const simulation: SimulationResult = {
             timeH: times,
             concPGmL: times.map(() => 0),
-            concPGmL_E2: times.map((_, i) => (i === 1234 ? 999 : 1)),
+            concPGmL_E2: times.map((_, i) => (i === 1233 ? 10 : 1)),
             concPGmL_CPA: times.map(() => 0),
             concPGmL_BICA: times.map(() => 0),
             concNGdL_T: times.map(() => 0),
@@ -431,7 +476,7 @@ describe('the estimated graph', () => {
             mode: 'transfem',
             events: [dose('e2-dose', Route.oral, Ester.E2, 2, 100)],
             simulation,
-            calibrationFn: () => 1,
+            calibrationFn: hour => (hour === times[1234] ? 999 : 1),
             nowH: 2100,
         };
         const report = prepareReport(
@@ -442,7 +487,7 @@ describe('the estimated graph', () => {
         );
         const points = report.charts.find(c => c.kind === 'estimated')?.points ?? [];
         expect(points.length).toBeLessThanOrEqual(400);
-        expect(points.some(point => point.value === 999)).toBe(true);
+        expect(points).toContainEqual({ timeH: times[1234], value: 999 });
         expect(points[0].timeH).toBe(100);
         expect(points[points.length - 1].timeH).toBe(2099);
     });

@@ -100,13 +100,35 @@ const rangeLabel = (report: PreparedReport, lang: Lang, t: T): string => {
 };
 
 /** The medications the report's rows are about, named the way the options name them. */
-const medicationNames = (report: PreparedReport, t: T): string[] => {
+const medicationNames = (report: PreparedReport, lang: Lang, t: T): string[] => {
     const names = new Map<string, string>();
     for (const event of report.events) {
         const label = medicationLabel(event, t);
         if (!names.has(label)) names.set(label, label);
     }
-    return [...names.values()].sort((a, b) => a.localeCompare(b, reportLocale('en')));
+    // The names are in the report's own language, so they are ordered by that
+    // language's rules. English collation sorts Chinese names by code point,
+    // which is not the order a Chinese reader expects to find them in.
+    return [...names.values()].sort((a, b) => a.localeCompare(b, reportLocale(lang)));
+};
+
+/**
+ * Where a table ended on the page.
+ *
+ * AutoTable reports the position of its last row through the document's
+ * `lastAutoTable`, and the report's own layout continues from there. The
+ * plugin's own types say that position is optional, and the table object is
+ * not there at all until a table has been drawn, so the position is checked
+ * rather than assumed. A table that did not come out is refused: carrying on
+ * from a guessed position would draw the next section on top of the table.
+ */
+const tableEnd = (doc: jsPDF): number => {
+    const table = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable;
+    const finalY = table?.finalY;
+    if (typeof finalY !== 'number' || !Number.isFinite(finalY)) {
+        throw new Error('A table in the report did not finish drawing.');
+    }
+    return finalY;
 };
 
 /** One line of the "what this report holds" list. */
@@ -157,8 +179,8 @@ export const buildReportDocument = async (
     });
     y = 26;
 
-    const heading = (text: string): void => {
-        space(18);
+    const heading = (text: string, minimumHeight = 18): void => {
+        space(minimumHeight);
         drawText(doc, text, left, y + 4, { size: TYPE.section, color: COLORS.purple, bold: true });
         y += 7.5;
         drawLine(doc, left, y, left + width, y, COLORS.purpleLine, 0.4);
@@ -191,7 +213,7 @@ export const buildReportDocument = async (
         const hormones = HORMONE_ORDER.filter(hormone => represented.has(hormone)).map(hormone =>
             hormoneLabel(hormone, t),
         );
-        const medications = medicationNames(report, t);
+        const medications = medicationNames(report, lang, t);
         const lines: MetaLine[] = [{ label: t('report.range'), value: rangeLabel(report, lang, t) }];
         if (report.selection.bothModes) lines.push({ label: t('report.scope') });
         lines.push({
@@ -261,8 +283,10 @@ export const buildReportDocument = async (
             paragraph(t('report.estimate_unavailable'), TYPE.small, COLORS.muted);
         }
 
+        // Keep a table heading, its columns and the first row together.
+        const tableStartHeight = 30;
         if (report.labResults.length) {
-            heading(t('export.pdf.labs'));
+            heading(t('export.pdf.labs'), tableStartHeight);
             const showAssay = report.labResults.some(lab => isLabAssay(lab.assay));
             const columns = [t('export.col.date'), t('export.col.item'), t('report.level'), t('export.col.unit')];
             if (showAssay) columns.push(t('lab.assay'));
@@ -303,11 +327,11 @@ export const buildReportDocument = async (
                     3: { cellWidth: 20 },
                 },
             });
-            y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+            y = tableEnd(doc) + 6;
         }
 
         if (report.events.length) {
-            heading(t('export.pdf.history'));
+            heading(t('export.pdf.history'), tableStartHeight);
             const rows = report.events.map(event => [
                 formatDayTime(lang, localDate(event.timeH)),
                 medicationLabel(event, t),
@@ -344,7 +368,11 @@ export const buildReportDocument = async (
                     3: { cellWidth: 26, halign: 'right' },
                 },
             });
-            y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+            // The history table is the last thing in the report, so nothing
+            // reads where it ended; the check is still worth making, because a
+            // table that did not come out is a report that cannot be vouched
+            // for.
+            tableEnd(doc);
         }
 
         if (!report.events.length && !report.labResults.length && !report.charts.length) {

@@ -164,7 +164,7 @@ test('real browser downloads preserve JSON, encrypted JSON, complete backup, CSV
         page,
         async () => {
             // The PDF row opens the report options; the file is written from there.
-            await page.getByRole('button', { name: /Export PDF file/ }).click();
+            await page.getByRole('button', { name: /Choose what to include/ }).click();
             await page.getByRole('button', { name: /^Save PDF/ }).click();
         },
         `hrt-report-${DATE}.pdf`,
@@ -577,7 +577,7 @@ for (const format of ['JSON', 'CSV', 'PDF', 'complete'] as const) {
             await confirmDialog(page, 'Download');
         } else if (format === 'PDF') {
             // The PDF row opens the report options; the file is written from there.
-            await page.getByRole('button', { name: /Export PDF file/ }).click();
+            await page.getByRole('button', { name: /Choose what to include/ }).click();
             await page.getByRole('button', { name: /^Save PDF/ }).click();
         } else await page.getByRole('button', { name: new RegExp(`Export ${format} file`) }).click();
         const request: ExportFilesFixture['requests'][number] = await pendingSave(page);
@@ -642,7 +642,7 @@ const reportStorage = (extra: Record<string, string> = {}) =>
 /** The report's options, opened from the PDF row in Settings. */
 async function openReport(page: Page) {
     await openExport(page);
-    await page.getByRole('button', { name: /Export PDF file/ }).click();
+    await page.getByRole('button', { name: /Choose what to include/ }).click();
     await expect(page.getByRole('heading', { name: 'Report preview' })).toBeVisible();
 }
 
@@ -897,6 +897,73 @@ test('a rejected save says so without leaking the adapter error', async ({ page,
     await pendingSave(page);
     await settle(page, 'saved');
     await expect(page.getByRole('status').filter({ hasText: 'PDF saved.' })).toHaveCount(1);
+});
+
+const SCOPE_ERROR = "Couldn't read the other mode's records. Clear this option to save only the current mode.";
+
+test('the report keeps its choices when the panel is folded and opened again', async ({ page, context }) => {
+    await page.clock.setFixedTime(NOW);
+    await seedStorage(context, reportStorage());
+    await gotoApp(page);
+    await openReport(page);
+
+    const row = page.getByRole('button', { name: /Choose what to include/ });
+    const trigger = page.getByRole('button', { name: /^Date range/ });
+
+    // A custom range, and the date list left open on purpose.
+    await chooseRange(page, 'Custom dates');
+    await page.getByLabel('From', { exact: true }).fill('2026-01-01');
+    await page.getByLabel('To', { exact: true }).fill('2026-01-06');
+    await trigger.click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await bothModesChoice(page).check();
+    await expectCounts(page, { doses: 2, labs: 2 });
+
+    // Fold the panel away with the date list still open.
+    await row.click();
+    await expect(row).toHaveAttribute('aria-expanded', 'false');
+
+    const panelId = await row.getAttribute('aria-controls');
+    expect(panelId).toBeTruthy();
+    const panel = page.locator(`[id="${panelId}"]`);
+    await expect(panel).toHaveCount(1);
+    await expect(panel).toBeHidden();
+
+    // Open it again: the choices are still there, and the date list is closed.
+    await row.click();
+    await expect(row).toHaveAttribute('aria-expanded', 'true');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toContainText('Custom dates');
+    await expect(page.getByLabel('From', { exact: true })).toHaveValue('2026-01-01');
+    await expect(page.getByLabel('To', { exact: true })).toHaveValue('2026-01-06');
+    await expect(bothModesChoice(page)).toBeChecked();
+    await expectCounts(page, { doses: 2, labs: 2 });
+});
+
+test('a corrupt other mode keeps the current mode in the preview and waits for the scope to be dropped', async ({
+    page,
+    context,
+}) => {
+    await page.clock.setFixedTime(NOW);
+    // The other mode's lab results are not a list, so they cannot be read.
+    await seedStorage(context, reportStorage({ 'hrt-masc-lab-results': '{"not":"an array"}' }));
+    await gotoApp(page);
+    await openReport(page);
+
+    await bothModesChoice(page).check();
+
+    // The current mode's records are still in the preview.
+    await expectCounts(page, { doses: 1, labs: 1 });
+    await expect(page.getByRole('alert').filter({ hasText: SCOPE_ERROR })).toBeVisible();
+    await expect(bothModesChoice(page)).toHaveAccessibleDescription(SCOPE_ERROR);
+    // Nothing is written while the scope that cannot be read is still asked for.
+    await expect(saveReportButton(page)).toBeDisabled();
+
+    // The scope has to be dropped on purpose before the report can be saved.
+    await bothModesChoice(page).uncheck();
+    await expect(page.getByText(SCOPE_ERROR)).toBeHidden();
+    await expectCounts(page, { doses: 1, labs: 1 });
+    await expect(saveReportButton(page)).toBeEnabled();
 });
 
 test('the report options fit a narrow phone screen', async ({ page, context }, testInfo) => {

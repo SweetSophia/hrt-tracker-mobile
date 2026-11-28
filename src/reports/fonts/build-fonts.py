@@ -129,14 +129,14 @@ def charsets() -> dict[str, str]:
             cwd=REPO,
         )
         result = subprocess.run(
-            ["node", str(bundle)], check=True, cwd=REPO, capture_output=True, text=True
+            ["node", str(bundle)], check=True, cwd=REPO, capture_output=True, encoding="utf-8"
         )
     return json.loads(result.stdout)
 
 
 def subset_font(source: Path, characters: str, axes: dict[str, float], out: Path) -> list[str]:
     """Pin the weight, cut to the characters, and report what did not fit."""
-    font = TTFont(source)
+    font = TTFont(source, recalcTimestamp=False)
     if "fvar" in font:
         font = instancer.instantiateVariableFont(font, axes, updateFontNames=True)
 
@@ -160,8 +160,8 @@ def subset_font(source: Path, characters: str, axes: dict[str, float], out: Path
     covered = set(font.getBestCmap().keys())
     missing = sorted({ord(c) for c in characters if ord(c) not in covered})
 
-    out.parent.mkdir(parents=True, exist_ok=True)
-    font.save(out)
+    if not missing:
+        font.save(out)
     font.close()
     return [chr(code) for code in missing]
 
@@ -187,27 +187,33 @@ def main() -> int:
         "charsets": per_language,
     }
 
-    failed = False
-    for group, spec in FONTS.items():
-        languages = spec["langs"]
-        characters = "".join(sorted(set("".join(per_language[lang] for lang in languages))))
-        source = source_font(spec["source"], cache)
-        target = out_dir / spec["file"]
-        missing = subset_font(source, characters, spec["axes"], target)
-        digest = hashlib.sha256(target.read_bytes()).hexdigest()
-        print(f"{spec['file']}: {len(characters)} characters, {target.stat().st_size // 1024} KiB")
-        if missing:
-            failed = True
-            print(f"  MISSING {len(missing)} characters: {''.join(missing)[:120]}")
-        manifest["fonts"][group] = {
-            "file": spec["file"],
-            "source": spec["source"],
-            "family": spec["family"],
-            "langs": languages,
-            "sha256": digest,
-            "bytes": target.stat().st_size,
-            "characters": len(characters),
-        }
+    out_dir.mkdir(parents=True, exist_ok=True)
+    # Publish the subsets only after every language's glyphs have been checked.
+    with tempfile.TemporaryDirectory(prefix=".report-fonts-", dir=out_dir) as tmp:
+        staged = Path(tmp)
+        for group, spec in FONTS.items():
+            languages = spec["langs"]
+            characters = "".join(sorted(set("".join(per_language[lang] for lang in languages))))
+            source = source_font(spec["source"], cache)
+            target = staged / spec["file"]
+            missing = subset_font(source, characters, spec["axes"], target)
+            if missing:
+                codes = " ".join(f"U+{ord(char):04X}" for char in missing[:20])
+                print(f"{spec['file']}: missing {len(missing)} glyphs ({codes})", file=sys.stderr)
+                return 1
+            size = target.stat().st_size
+            print(f"{spec['file']}: {len(characters)} characters, {size // 1024} KiB")
+            manifest["fonts"][group] = {
+                "file": spec["file"],
+                "source": spec["source"],
+                "family": spec["family"],
+                "langs": languages,
+                "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+                "bytes": size,
+                "characters": len(characters),
+            }
+        for target in staged.iterdir():
+            target.replace(out_dir / target.name)
 
     # The licence travels with the font, and with the distribution: the file in
     # public/ is copied into the built site and into the Android package, so a
@@ -239,7 +245,7 @@ def main() -> int:
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("  (prettier was not available; the manifest may need formatting)")
-    return 1 if failed else 0
+    return 0
 
 
 if __name__ == "__main__":

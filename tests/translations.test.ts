@@ -312,6 +312,11 @@ describe('report copy', () => {
         }
     });
 
+    it.each(['zh-TW', 'yue'] as const)('uses the Overview tab name in the %s estimate hint', locale => {
+        const pack = TRANSLATIONS[locale];
+        expect(pack['report.estimate_hint']).toContain(pack['nav.home']);
+    });
+
     it('does not leave a locale reading as English', () => {
         for (const locale of reportLocales) {
             if (locale === 'en') continue;

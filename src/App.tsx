@@ -37,6 +37,7 @@ import {
     isPartialReplaceFailure,
 } from './utils/backupWarnings';
 import { useAppData } from './hooks/useAppData';
+import type { ReportEstimateSource } from './reports/types';
 import { ModelStatus } from './components/ModelStatus';
 import { useAppNavigation, tabForView, ViewKey } from './hooks/useAppNavigation';
 import { isSteppingBack } from './hooks/navHistory';
@@ -187,6 +188,14 @@ const AppContent = ({ session }: { session: UiSession }) => {
         deleteSupply,
     } = useAppData(showDialog, { withPrediction: showPrediction });
     const nowH = currentTime.getTime() / 3600000;
+    const reportModelNowH = modelNowMs === undefined ? nowH : modelNowMs / 3_600_000;
+    const reportEstimate = useMemo<ReportEstimateSource | undefined>(
+        () =>
+            modelStatus === 'ready' && simulation
+                ? { mode, events, simulation, calibrationFn, nowH: reportModelNowH }
+                : undefined,
+        [mode, events, simulation, calibrationFn, reportModelNowH, modelStatus],
+    );
     // How far ahead a supply counts as running low. A preference, so it stays on the device.
     const [supplyLeadDays, setSupplyLeadDays] = usePortablePreference('hrt-supply-lead-days', raw => Number(raw) || 14);
 
@@ -1286,17 +1295,7 @@ const AppContent = ({ session }: { session: UiSession }) => {
                                 key={scope}
                                 readOtherMode={readOtherReportMode}
                                 reportNow={currentTime}
-                                estimate={
-                                    modelStatus === 'ready' && simulation
-                                        ? {
-                                              mode,
-                                              events,
-                                              simulation,
-                                              calibrationFn,
-                                              nowH: (modelNowMs ?? currentTime.getTime()) / 3_600_000,
-                                          }
-                                        : undefined
-                                }
+                                estimate={reportEstimate}
                                 events={events}
                                 labResults={labResults}
                                 weight={weight}

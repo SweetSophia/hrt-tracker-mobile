@@ -1,13 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { jsPDF } from 'jspdf';
 import { Ester, Route, type DoseEvent, type LabResult, type SimulationResult } from '../logic';
 import { TRANSLATIONS } from '../src/i18n/translations';
 import type { Lang } from '../src/i18n/languages';
 import { defaultReportSelection, prepareReport } from '../src/reports/prepareReport';
-import type { PreparedReport, ReportEstimateSource, ReportSelection } from '../src/reports/types';
+import type { PreparedReport, ReportChart, ReportEstimateSource, ReportSelection } from '../src/reports/types';
 import { buildReportDocument, saveReport } from '../src/reports/pdf';
-import { formatTickNumber } from '../src/reports/labels';
+import { formatTickNumber, medicationLabel, reportLocale } from '../src/reports/labels';
+import { buildDomain, drawChart } from '../src/reports/pdf/charts';
+import { drawParagraph, paragraphHeight } from '../src/reports/pdf/draw';
 import { reportFontCharacters } from '../src/reports/pdf/charset';
 import { MAX_DOCUMENT_BYTES, type FileSaveRequest } from '../src/platform/contracts/files';
 import { reportText } from './helpers/reportText';
@@ -374,6 +378,130 @@ describe('report PDF', () => {
     });
 });
 
+/** A point in points is this many millimetres. */
+const PT_TO_MM = 25.4 / 72;
+
+/** A paragraph long enough to wrap in a narrow column. */
+const LONG_TEXT =
+    'This is a long paragraph of report text that is meant to wrap over several lines when the column ' +
+    'is narrow enough to force it, and the number of lines it takes must be measured rather than guessed.';
+
+describe('report PDF layout', () => {
+    it('wraps a paragraph at the size it is drawn at', () => {
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        // The size an earlier drawing left behind.
+        doc.setFontSize(8);
+        const drawn = vi.spyOn(doc, 'text');
+        const height = drawParagraph(doc, LONG_TEXT, 16, 20, { size: 9, maxWidth: 178, lineHeight: 1.3 });
+        const lines = drawn.mock.calls[0][0] as string[];
+        expect(lines.length).toBeGreaterThan(1);
+        // Every line fits the column at the size the paragraph is drawn at: a
+        // line that does not fit takes more rows than the room measured for
+        // it, and the block under it is covered.
+        doc.setFontSize(9);
+        for (const line of lines) {
+            expect(doc.getTextWidth(line)).toBeLessThanOrEqual(178);
+        }
+        // The room reserved is the room the lines take.
+        expect(lines.length * 9 * 1.3 * PT_TO_MM).toBeCloseTo(height, 5);
+    });
+
+    it('measures a paragraph at the size it is given', () => {
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        doc.setFontSize(9);
+        const measured = paragraphHeight(doc, LONG_TEXT, 9, 50);
+        // The same paragraph, measured with a different size in the document.
+        doc.setFontSize(8);
+        expect(paragraphHeight(doc, LONG_TEXT, 9, 50)).toBe(measured);
+    });
+
+    it('keeps a negative measurement inside the chart', () => {
+        const domain = buildDomain(-5, 100);
+        expect(domain).not.toBeNull();
+        expect(domain![0]).toBeLessThanOrEqual(-5);
+        expect(domain![1]).toBeGreaterThanOrEqual(100);
+        const onlyNegative = buildDomain(-5, -2);
+        expect(onlyNegative).not.toBeNull();
+        expect(onlyNegative![0]).toBeLessThanOrEqual(-5);
+        expect(onlyNegative![1]).toBeGreaterThanOrEqual(-2);
+        // A quantity that never went below zero keeps the axis it always had.
+        expect(buildDomain(80, 120)).toEqual([70, 130]);
+
+        const chart: ReportChart = {
+            kind: 'measured',
+            hormone: 'E2',
+            unit: 'pg/mL',
+            points: [
+                { timeH: at('2026-01-08T09:00:00Z'), value: -5 },
+                { timeH: at('2026-01-20T09:00:00Z'), value: 100 },
+            ],
+        };
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const circles = vi.spyOn(doc, 'circle');
+        const lines = vi.spyOn(doc, 'line');
+        drawChart(doc, chart, {
+            lang: 'en',
+            t: translator('en'),
+            x: 16,
+            y: 20,
+            width: 178,
+            series: 'Measured lab results',
+        });
+        // The points run in time order, so the first circle is the negative
+        // measurement, and a value below zero is drawn lower on the page.
+        const negative = circles.mock.calls[0];
+        expect(negative[1]).toBeGreaterThan(circles.mock.calls[1][1]);
+        // The value axis is the tallest upright line the chart drew, and the
+        // point has to stand between its ends.
+        const axis = lines.mock.calls
+            .filter(call => call[0] === call[2])
+            .sort((a, b) => Math.abs(b[3] - b[1]) - Math.abs(a[3] - a[1]))[0];
+        expect(axis).toBeDefined();
+        expect(negative[1]).toBeGreaterThanOrEqual(Math.min(axis![1], axis![3]));
+        expect(negative[1]).toBeLessThanOrEqual(Math.max(axis![1], axis![3]));
+    });
+
+    it('orders the medications by the language the report is written in', async () => {
+        const report = prepared();
+        const names = [...new Set(report.events.map(event => medicationLabel(event, translator('zh'))))];
+        const byReport = [...names].sort((a, b) => a.localeCompare(b, reportLocale('zh')));
+        const byEnglish = [...names].sort((a, b) => a.localeCompare(b, 'en-US'));
+        // The two orders have to differ, or the report would say nothing about
+        // which locale was used.
+        expect(byReport).not.toEqual(byEnglish);
+        const text = await render(report, 'zh');
+        const line = text.split('\n').find(candidate => byReport.every(name => candidate.includes(name)));
+        expect(line).toBeDefined();
+        const positions = byReport.map(name => line!.indexOf(name));
+        expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    });
+
+    it('refuses a report whose table did not come out', async () => {
+        vi.resetModules();
+        vi.doMock('jspdf-autotable', async importOriginal => {
+            const actual = await importOriginal<typeof import('jspdf-autotable')>();
+            return {
+                ...actual,
+                autoTable: (doc: jsPDF, options: Parameters<typeof actual.autoTable>[1]) => {
+                    actual.autoTable(doc, options);
+                    // The layout did not come out.
+                    const table = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable;
+                    if (table) table.finalY = undefined;
+                },
+            };
+        });
+        try {
+            const failing = await import('../src/reports/pdf');
+            await expect(failing.buildReportDocument(prepared(), 'en', translator('en'), NOW)).rejects.toThrow(
+                'A table in the report did not finish drawing.',
+            );
+        } finally {
+            vi.doUnmock('jspdf-autotable');
+            vi.resetModules();
+        }
+    });
+});
+
 describe('report fonts', () => {
     const manifestPath = fileURLToPath(new URL('../src/reports/fonts/manifest.json', import.meta.url));
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
@@ -392,11 +520,35 @@ describe('report fonts', () => {
         expect([...covered].sort()).toEqual(Object.keys(manifest.charsets).sort());
     });
 
-    it('ships the font files the manifest names', () => {
+    it('ships the exact font files listed in the manifest with every required glyph', () => {
+        const { TTFFont } = jsPDF.API as typeof jsPDF.API & {
+            TTFFont: { open(data: Uint8Array): { characterToGlyph(codePoint: number): number } };
+        };
         for (const font of Object.values(manifest.fonts)) {
             const path = fileURLToPath(new URL('../src/reports/fonts/' + font.file, import.meta.url));
             const bytes = readFileSync(path);
             expect(bytes.byteLength).toBe(font.bytes);
+            expect(createHash('sha256').update(bytes).digest('hex'), font.file).toBe(font.sha256);
+            const parsed = TTFFont.open(bytes);
+            for (const lang of font.langs) {
+                const missing = [...manifest.charsets[lang]].filter(
+                    char => parsed.characterToGlyph(char.codePointAt(0)!) === 0,
+                );
+                expect(missing, lang).toEqual([]);
+            }
+        }
+    });
+
+    it('rejects a font imported as an asset URL', async () => {
+        const path = '../src/reports/fonts/NotoSans-Latin.ttf?inline';
+        vi.resetModules();
+        vi.doMock(path, () => ({ default: '/assets/NotoSans-Latin.ttf' }));
+        try {
+            const { loadReportFont } = await import('../src/reports/pdf/fonts');
+            await expect(loadReportFont('en')).rejects.toThrow('Invalid bundled report font for en.');
+        } finally {
+            vi.doUnmock(path);
+            vi.resetModules();
         }
     });
 

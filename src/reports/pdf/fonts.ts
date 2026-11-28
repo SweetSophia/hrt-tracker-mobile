@@ -33,11 +33,7 @@ const FONT_SOURCES: Record<Lang, () => Promise<FontModule>> = {
     ko: () => import('../fonts/NotoSansKR-ko.ttf?inline'),
 };
 
-/** Vite writes the font as a data URI; jsPDF wants the base64 on its own. */
-const stripDataUri = (value: string): string => {
-    const comma = value.indexOf(',');
-    return comma >= 0 ? value.slice(comma + 1) : value;
-};
+const BASE64_FONT_URI = /^data:[^,]*;base64,([a-zA-Z0-9+/]+={0,2})$/;
 
 export interface LoadedFont {
     /** The name jsPDF knows the font by. */
@@ -51,7 +47,7 @@ export interface LoadedFont {
 /** The font a language's report needs, loaded and ready to embed. */
 export const loadReportFont = async (lang: Lang): Promise<LoadedFont> => {
     const module = await FONT_SOURCES[lang]();
-    const base64 = stripDataUri(module.default);
-    if (!base64) throw new Error('The report font for ' + lang + ' is empty.');
+    const base64 = BASE64_FONT_URI.exec(module.default)?.[1];
+    if (!base64 || base64.length % 4 !== 0) throw new Error(`Invalid bundled report font for ${lang}.`);
     return { name: REPORT_FONT_NAME, file: 'report-' + lang + '.ttf', base64 };
 };

@@ -45,17 +45,20 @@ public final class ScreenMigrationTest {
         ready(a); assertEquals("ready", call(a, "__hrtScreenQualification.prepare()").getString("value"));
         a.recreate(); ready(a);
     }
+    /** A null label matches the only visible control of its kind, without asking what it says. */
     private static String nodes(String selector, String label, boolean contains) {
+        if (label == null)
+            return "[...document.querySelectorAll(" + JSONObject.quote(selector) + ")].filter(n=>n.getClientRects().length && !n.disabled)";
         String value = JSONObject.quote(label);
         return "[...document.querySelectorAll(" + JSONObject.quote(selector) + ")].filter(n=>n.getClientRects().length && !n.disabled && " +
             "[n.getAttribute('aria-label')||'',n.textContent.trim()].some(t=>" + (contains ? "t.includes(" + value + ")" : "t===" + value) + "))";
     }
     private static void tap(ActivityScenario<MainActivity> a, String selector, String label, boolean contains) throws Exception {
-        Bundle status = new Bundle(); status.putString("screen_step", label); I.sendStatus(2,status);
+        Bundle status = new Bundle(); status.putString("screen_step", label == null ? selector : label); I.sendStatus(2,status);
         String expression = nodes(selector, label, contains);
         long deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(20);
         while (!"true".equals(js(a,expression + ".length===1"))) {
-            if (System.nanoTime()>deadline) throw new AssertionError("Missing unique visible control: " + label + "; available=" +
+            if (System.nanoTime()>deadline) throw new AssertionError("Missing unique visible control: " + (label == null ? selector : label) + "; available=" +
                 js(a,"JSON.stringify([...document.querySelectorAll("+JSONObject.quote(selector)+")].filter(n=>n.getClientRects().length).map(n=>n.getAttribute('aria-label')||n.textContent.trim()).slice(0,20))"));
             Thread.sleep(100);
         }
@@ -188,7 +191,31 @@ public final class ScreenMigrationTest {
             assertFalse("Cancelled save did not create its unique file", names.contains(absent));
         }
     }
-    private static void verifyPdf(byte[] bytes) throws Exception {
+    /**
+     * The report row opens the options screen, and the options screen owns the
+     * save. The row's call to action is the design's to change, so the row is
+     * matched on the "PDF" the reader sees and not on the words beside it.
+     */
+    private static byte[] reportPdf(ActivityScenario<MainActivity> a) throws Exception {
+        String name = unique("pdf");
+        tap(a, "button", "PDF", true);
+        // The range picker is the only listbox on the options screen.
+        tap(a, "button[aria-haspopup=listbox]", null, false);
+        // The synthetic rows sit on 1 Nov 2026. The default window is the last
+        // ninety days of the device clock, and the clock is not the test's to
+        // set, so all time is what keeps those rows in the report wherever the
+        // device stands.
+        tap(a, "button[role=option]", "All time", false);
+        tap(a, "button", "Save PDF", false);
+        picker(); saved(a, name);
+        byte[] bytes = picked(a, name); removeSynthetic(name); return bytes;
+    }
+    /**
+     * The finished page, read back: the two dose rows and the lab result in
+     * the words the report prints. The stored unit is "pg/ml" and the printed
+     * one is "pg/mL", so the raw form must not appear.
+     */
+    private static void verifyReportPdf(byte[] bytes) throws Exception {
         File file=File.createTempFile("synthetic-screen-", ".pdf", I.getTargetContext().getNoBackupFilesDir());
         try {
             try (OutputStream output=new FileOutputStream(file)) { output.write(bytes); }
@@ -197,8 +224,12 @@ public final class ScreenMigrationTest {
                 try (android.graphics.pdf.PdfRenderer.Page page=renderer.openPage(0)) {
                     StringBuilder text=new StringBuilder(); page.getTextContents().forEach(item->text.append(item.getText()).append(' '));
                     String normalized=text.toString().replaceAll("\\s+"," ");
-                    for (String expected:new String[]{"Dose history","1 mg","2 mg","oral","E2","Lab results","120 pg/ml"})
+                    for (String expected:new String[]{"HRT Tracker report","All time","Dose history","Lab results","Oral estradiol","1 mg","2 mg","120","pg/mL","Dose entries: 2","Lab results: 1"})
                         assertTrue("Actual screen PDF data: "+expected,normalized.contains(expected));
+                    // The cells of each row, in the order the page draws them.
+                    for (String row:new String[]{"Estradiol 120 pg/mL","Oral estradiol Oral 1 mg","Oral estradiol Oral 2 mg"})
+                        assertTrue("Actual screen PDF row: "+row,normalized.contains(row));
+                    assertFalse("Actual screen PDF keeps the raw stored unit",normalized.contains("pg/ml"));
                 }
             }
         } finally { assertTrue("Synthetic PDF temp removed",file.delete()); }
@@ -231,9 +262,9 @@ public final class ScreenMigrationTest {
             assertEquals(4,csvText.split("\\n").length);
             for (String expected:new String[]{",1,mg,oral - E2",",2,mg,oral - E2",",120,pg/ml,-"}) assertTrue(csvText.contains(expected));
             report.put("csvRowsVerified",true);
-            byte[] pdf=exportFile(a,"Export PDF file","pdf");
+            byte[] pdf=reportPdf(a);
             assertEquals("%PDF-",new String(pdf,0,5,StandardCharsets.US_ASCII));
-            assertTrue(pdf.length>3000); verifyPdf(pdf); report.put("pdfTextVerified",true);
+            assertTrue(pdf.length>3000); verifyReportPdf(pdf); report.put("pdfTextVerified",true);
             report.put("jsonRows",2).put("csvSha256",sha(csv)).put("pdfSha256",sha(pdf));
 
             tap(a,"button","JSON (Encrypted)",true);

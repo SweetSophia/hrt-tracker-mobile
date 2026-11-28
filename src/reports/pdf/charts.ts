@@ -86,18 +86,30 @@ const niceStep = (raw: number): number => {
  */
 export const buildDomain = (min: number, max: number, steps = 4): [number, number] | null => {
     if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-    if (max <= 0) return [0, 1];
+    if (max < min) return null;
     if (max === min) {
-        const grown = max * 0.15;
-        max = Number.isFinite(grown) && grown > 0 ? max + grown : max * 2;
-        if (!Number.isFinite(max)) return null;
+        // A single value still needs an axis around it. The room grows away
+        // from zero, so a value below zero grows downwards and a value above
+        // zero grows upwards.
+        const grown = Math.abs(max) * 0.15;
+        if (Number.isFinite(grown) && grown > 0) {
+            if (max < 0) min = max - grown;
+            else max = max + grown;
+        } else {
+            max = max * 2;
+        }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
     }
     const pad = (max - min) * 0.12;
     const step = niceStep((max - min + 2 * pad) / steps);
     if (!Number.isFinite(step) || step <= 0) return null;
-    const low = Math.max(0, Math.floor((min - pad) / step) * step);
+    const floorValue = Math.floor((min - pad) / step) * step;
     let high = Math.ceil((max + pad) / step) * step;
-    if (!Number.isFinite(low) || !Number.isFinite(high)) return null;
+    if (!Number.isFinite(floorValue) || !Number.isFinite(high)) return null;
+    // A quantity that never went below zero does not get a negative axis. One
+    // that did keeps its negative values inside its own range, or they would
+    // be drawn below the axis and off the page.
+    const low = min < 0 ? floorValue : Math.max(0, floorValue);
     if (high <= low) high = low + step;
     if (!Number.isFinite(high)) return null;
     return [low, high];

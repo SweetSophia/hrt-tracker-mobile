@@ -36,6 +36,18 @@ const strokeWeight = (text: string, size: number): number | null =>
     FINE_STROKED.test(text) ? null : size * BOLD_STROKE;
 
 /**
+ * The lines a block of text wraps into, at the size it will be drawn at.
+ *
+ * jsPDF measures with whatever font size the document happens to carry unless
+ * it is told otherwise, so the size is passed to the splitter. Splitting at
+ * the size the document happens to carry wraps the text for a different size
+ * than the one it is drawn at: the block then takes more lines than the room
+ * that was measured for it, and the block under it is covered.
+ */
+const wrappedLines = (doc: jsPDF, text: string, size: number, maxWidth: number): string[] =>
+    doc.splitTextToSize(text, maxWidth, { fontSize: size });
+
+/**
  * One line of text in the report's font.
  *
  * There is no bold cut of the font: the subset carries one weight, and a
@@ -83,7 +95,7 @@ export const drawParagraph = (
     const color = options.color ?? COLORS.ink;
     const lineHeight = options.lineHeight ?? 1.25;
     const maxWidth = options.maxWidth ?? Number.POSITIVE_INFINITY;
-    const lines = doc.splitTextToSize(text, maxWidth);
+    const lines = wrappedLines(doc, text, size, maxWidth);
     doc.setFontSize(size);
     doc.setTextColor(color[0], color[1], color[2]);
     doc.setLineHeightFactor(lineHeight);
@@ -103,7 +115,7 @@ export const drawParagraph = (
 
 /** The room a block of text would take, without drawing it. */
 export const paragraphHeight = (doc: jsPDF, text: string, size: number, maxWidth: number, lineHeight = 1.25): number =>
-    doc.splitTextToSize(text, maxWidth).length * size * lineHeight * PT_TO_MM;
+    wrappedLines(doc, text, size, maxWidth).length * size * lineHeight * PT_TO_MM;
 
 /** A straight rule. */
 export const drawLine = (

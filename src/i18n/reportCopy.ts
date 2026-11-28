@@ -10,6 +10,7 @@ export const REPORT_COPY_KEYS = [
     'report.from',
     'report.to',
     'report.both_modes',
+    'report.other_mode_unavailable',
     'report.hormones',
     'report.estradiol',
     'report.testosterone',
@@ -51,6 +52,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': '开始',
         'report.to': '结束',
         'report.both_modes': '包含两种 HRT 模式的记录',
+        'report.other_mode_unavailable': '无法读取另一种模式的记录。取消勾选后，即可保存仅包含当前模式的报告。',
         'report.hormones': '检查项目',
         'report.estradiol': '雌二醇',
         'report.testosterone': '睾酮',
@@ -90,6 +92,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': '開始',
         'report.to': '結束',
         'report.both_modes': '包含兩種 HRT 模式的紀錄',
+        'report.other_mode_unavailable': '無法讀取另一種模式的紀錄。取消勾選後，就可以儲存只包含目前模式的報告。',
         'report.hormones': '檢驗項目',
         'report.estradiol': '雌二醇',
         'report.testosterone': '睪固酮',
@@ -100,7 +103,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.measured_unavailable': '沒有符合所選檢驗項目和日期的檢驗結果。',
         'report.estimated': '估算激素濃度',
         'report.estimate_hint':
-            '使用目前模式的完整用藥紀錄。如果概覽使用了檢驗校準，所選日期之外的檢驗結果也會影響估算值。',
+            '使用目前模式的完整用藥紀錄。如果總覽使用了檢驗校準，所選日期之外的檢驗結果也會影響估算值。',
         'report.estimate_unavailable': '這些日期和選項下沒有可用的激素估算。',
         'report.preview': '報告預覽',
         'report.counts': '用藥紀錄：{doses} 筆 · 檢驗結果：{labs} 筆',
@@ -129,6 +132,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': '由',
         'report.to': '至',
         'report.both_modes': '連兩種 HRT 模式嘅紀錄都包括',
+        'report.other_mode_unavailable': '讀唔到另一種模式嘅紀錄。取消剔選，就可以淨係儲存而家呢個模式嘅報告。',
         'report.hormones': '檢驗項目',
         'report.estradiol': '雌二醇',
         'report.testosterone': '睪固酮',
@@ -139,7 +143,7 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.measured_unavailable': '冇符合你揀嘅檢驗項目同日期嘅檢驗結果。',
         'report.estimated': '估算激素濃度',
         'report.estimate_hint':
-            '用緊目前模式嘅完整用藥紀錄。如果概覽用咗驗血校準，所選日期以外嘅驗血結果亦會影響估算值。',
+            '用緊目前模式嘅完整用藥紀錄。如果總覽用咗驗血校準，所選日期以外嘅驗血結果亦會影響估算值。',
         'report.estimate_unavailable': '呢啲日期同選項冇得用嘅激素估算。',
         'report.preview': '報告預覽',
         'report.counts': '用藥紀錄：{doses} 條 · 檢驗結果：{labs} 條',
@@ -168,6 +172,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': 'From',
         'report.to': 'To',
         'report.both_modes': 'Include records from both HRT modes',
+        'report.other_mode_unavailable':
+            "Couldn't read the other mode's records. Clear this option to save only the current mode.",
         'report.hormones': 'Lab measurements',
         'report.estradiol': 'Estradiol',
         'report.testosterone': 'Testosterone',
@@ -207,6 +213,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': 'Von',
         'report.to': 'Bis',
         'report.both_modes': 'Datensätze aus beiden HRT-Modi einbeziehen',
+        'report.other_mode_unavailable':
+            'Die Daten des anderen Modus konnten nicht gelesen werden. Entferne das Häkchen, um nur den aktuellen Modus zu exportieren.',
         'report.hormones': 'Laborwerte',
         'report.estradiol': 'Estradiol',
         'report.testosterone': 'Testosteron',
@@ -246,6 +254,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': '開始',
         'report.to': '終了',
         'report.both_modes': '両方の HRT モードの記録を含める',
+        'report.other_mode_unavailable':
+            'もう一方のモードの記録を読み込めませんでした。この項目のチェックを外すと、現在のモードの記録だけを保存できます。',
         'report.hormones': '検査項目',
         'report.estradiol': 'エストラジオール',
         'report.testosterone': 'テストステロン',
@@ -285,6 +295,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': '시작',
         'report.to': '종료',
         'report.both_modes': '두 HRT 모드의 기록을 모두 포함',
+        'report.other_mode_unavailable':
+            '다른 모드의 기록을 읽을 수 없어요. 이 항목의 선택을 해제하면 현재 모드의 기록만 저장할 수 있어요.',
         'report.hormones': '검사 항목',
         'report.estradiol': '에스트라디올',
         'report.testosterone': '테스토스테론',
@@ -324,6 +336,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': 'Başlangıç',
         'report.to': 'Bitiş',
         'report.both_modes': 'Her iki HRT modunun kayıtlarını da dahil et',
+        'report.other_mode_unavailable':
+            'Diğer modun kayıtları okunamadı. Yalnızca geçerli modun kayıtlarını kaydetmek için bu seçeneğin işaretini kaldırın.',
         'report.hormones': 'Laboratuvar ölçümleri',
         'report.estradiol': 'Östradiol',
         'report.testosterone': 'Testosteron',
@@ -363,6 +377,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': 'С',
         'report.to': 'По',
         'report.both_modes': 'Включить записи обоих режимов ЗГТ',
+        'report.other_mode_unavailable':
+            'Не удалось прочитать записи другого режима. Снимите флажок, чтобы сохранить отчёт только для текущего режима.',
         'report.hormones': 'Анализы',
         'report.estradiol': 'Эстрадиол',
         'report.testosterone': 'Тестостерон',
@@ -402,6 +418,8 @@ export const REPORT_COPY: Record<Lang, Record<ReportCopyKey, string>> = {
         'report.from': 'Від',
         'report.to': 'До',
         'report.both_modes': 'Включити записи обох режимів ЗГТ',
+        'report.other_mode_unavailable':
+            'Не вдалося прочитати записи іншого режиму. Зніміть позначку, щоб зберегти звіт лише для поточного режиму.',
         'report.hormones': 'Аналізи',
         'report.estradiol': 'Естрадіол',
         'report.testosterone': 'Тестостерон',
